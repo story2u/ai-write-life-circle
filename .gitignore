@@ -1,0 +1,9 @@
+# 本地配置与密钥
+.env
+.env.*
+!.env.example
+.DS_Store
+node_modules/
+__pycache__/
+*.pyc
+.local/
