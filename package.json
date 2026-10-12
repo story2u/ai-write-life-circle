@@ -1,0 +1,13 @@
+{
+  "name": "ai-write-life-circle",
+  "private": true,
+  "version": "0.2.0",
+  "packageManager": "pnpm@10.15.1",
+  "scripts": {
+    "dev": "pnpm --filter @writer-agent/web dev",
+    "build": "pnpm --filter @writer-agent/web build",
+    "typecheck": "pnpm --filter @writer-agent/contracts typecheck && pnpm --filter @writer-agent/api typecheck && pnpm --filter @writer-agent/web typecheck",
+    "lint": "pnpm --filter @writer-agent/web lint",
+    "test": "pnpm --filter @writer-agent/web test"
+  }
+}
