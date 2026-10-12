@@ -8,6 +8,7 @@
     "build": "pnpm --filter @writer-agent/web build",
     "typecheck": "pnpm --filter @writer-agent/contracts typecheck && pnpm --filter @writer-agent/api typecheck && pnpm --filter @writer-agent/web typecheck",
     "lint": "pnpm --filter @writer-agent/web lint",
-    "test": "pnpm --filter @writer-agent/web test"
+    "test": "pnpm --filter @writer-agent/web test",
+    "test:e2e": "pnpm --filter @writer-agent/web test:e2e"
   }
 }

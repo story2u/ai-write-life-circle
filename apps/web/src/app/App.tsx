@@ -9,7 +9,9 @@ import ChallengePanel from '../components/ChallengePanel'
 import { DecisionHistory, KnowledgeViewer, ProposalDetail } from '../components/Proposals'
 import DesignNotes from '../components/DesignNotes'
 import { Btn, ConfirmDialog, Kbd, Toasts } from '../components/ui'
-import { useWriterAgentAdapter } from '../hooks/useWriterAgentAdapter'
+import type { WorkspaceSnapshot } from '@writer-agent/contracts'
+import type { WriterAgentAdapter } from '../services/writerAgent'
+import { createWriterAgentAdapter } from '../services/adapterFactory'
 import { useWorkspaceController, WORKSPACE_STORAGE_KEY, type WorkspaceConfirmAction } from '../features/workspace/useWorkspaceController'
 import { createId } from '../lib/id'
 
@@ -28,9 +30,44 @@ function Resizer({ onDrag, side }: { onDrag: (dx: number) => void; side: 'left' 
   return <div onMouseDown={down} role="separator" aria-orientation="vertical" className="group relative z-10 w-0 cursor-col-resize"><div className="absolute inset-y-0 -left-1 w-2 group-hover:bg-[var(--accent)] group-hover:opacity-30" /></div>
 }
 
-export default function App() {
-  const adapter = useWriterAgentAdapter()
-  const { chapters, knowledge } = adapter.seed
+type AppLoadState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; adapter: WriterAgentAdapter; workspace: WorkspaceSnapshot }
+
+export default function App({ adapter: providedAdapter }: { adapter?: WriterAgentAdapter } = {}) {
+  const [attempt, setAttempt] = useState(0)
+  const [load, setLoad] = useState<AppLoadState>({ status: 'loading' })
+  useEffect(() => {
+    let active = true
+    setLoad({ status: 'loading' })
+    void (async () => {
+      const adapter = providedAdapter ?? await createWriterAgentAdapter()
+      const projectId = import.meta.env.VITE_WRITER_AGENT_PROJECT_ID || (adapter.mode === 'demo' ? 'demo-writer-agent' : 'default')
+      const workspace = await adapter.loadWorkspace(projectId)
+      if (active) setLoad({ status: 'ready', adapter, workspace })
+    })().catch((cause: unknown) => {
+      if (active) setLoad({ status: 'error', message: cause instanceof Error ? cause.message : '工作区加载失败。' })
+    })
+    return () => { active = false }
+  }, [providedAdapter, attempt])
+
+  if (load.status === 'loading') return <WorkspaceLoadNotice message="正在加载作品工作区…" />
+  if (load.status === 'error') return <WorkspaceLoadNotice message={`工作区加载失败：${load.message}`} onRetry={() => setAttempt((value) => value + 1)} />
+  return <WriterStudio adapter={load.adapter} initialWorkspace={load.workspace} />
+}
+
+function WorkspaceLoadNotice({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center gap-4 bg-[var(--bg)] text-sm text-[var(--ink-2)]">
+      <p role="status" aria-live="polite">{message}</p>
+      {onRetry && <button type="button" className="btn rounded border px-3 py-2" onClick={onRetry}>重试加载</button>}
+    </div>
+  )
+}
+
+function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapter; initialWorkspace: WorkspaceSnapshot }) {
+  const { chapters, knowledge } = initialWorkspace
   const [view, setView] = useState<'app' | 'spec'>('app')
   const [tab, setTab] = useState<Tab>('审查')
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -58,9 +95,9 @@ export default function App() {
     setToasts((t) => [...t, { id, text }])
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2400)
   }, [])
-  const workspace = useWorkspaceController({ adapter, toast, requestConfirm: setConfirm })
+  const workspace = useWorkspaceController({ adapter, initialWorkspace, toast, requestConfirm: setConfirm })
   const { doc, proposals, decisions, layout, setLayout, chat, challenge, setChallenge, current, dark, setDark,
-    task, saveState, flushSave, onChange, runReview: runWorkspaceReview, cancelReview, decide, createProposal,
+    task, saveState, flushSave, retrySave, onChange, runReview: runWorkspaceReview, cancelReview, decide, createProposal,
     sendChat, markChatSaved, requestChallenge } = workspace
 
   useEffect(() => {
@@ -129,7 +166,10 @@ export default function App() {
       else if (e.key === '\\' || e.key === '|') { e.preventDefault(); setLayout((l) => ({ ...l, focus: false, rightOpen: !l.rightOpen })) }
       else if (e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); setLayout((l) => ({ ...l, focus: !l.focus })) }
       else if (e.shiftKey && e.key.toLowerCase() === 'r') { e.preventDefault(); runReview() }
-      else if (e.key.toLowerCase() === 's') { e.preventDefault(); flushSave(); toast('已保存') }
+      else if (e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        void flushSave().then((saved) => { if (saved) toast('已保存') })
+      }
     }
     window.addEventListener('keydown', k)
     return () => window.removeEventListener('keydown', k)
@@ -171,7 +211,7 @@ export default function App() {
             <div className="ml-auto flex items-center gap-1">
               {view === 'app' && !layout.leftOpen && <Btn small onClick={() => setLayout((l) => ({ ...l, leftOpen: true }))}>显示导航</Btn>}
               {view === 'app' && !layout.rightOpen && <Btn small onClick={() => setLayout((l) => ({ ...l, rightOpen: true }))}>Agent 面板 <Kbd>⌘\</Kbd></Btn>}
-              <Btn small onClick={resetDemo}>重置演示数据</Btn>
+              {adapter.mode === 'demo' && <Btn small onClick={resetDemo}>重置演示数据</Btn>}
               <Btn small onClick={() => setDark(!dark)}>{dark ? '浅色' : '深色'}主题</Btn>
             </div>
           </div>
@@ -198,7 +238,10 @@ export default function App() {
                   <Btn small disabled={!ed?.can().undo()} onClick={() => ed?.chain().focus().undo().run()} title="撤销 ⌘Z">撤销</Btn>
                   <Btn small disabled={!ed?.can().redo()} onClick={() => ed?.chain().focus().redo().run()} title="重做 ⌘⇧Z">重做</Btn>
                   <span className="mx-2 tabular-nums">{words.toLocaleString()} 字</span>
-                  <span className="w-[92px] text-right" aria-live="polite">{saveState.s === 'saving' ? '保存中…' : `已保存 ${new Date(saveState.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`}</span>
+                  <span className="w-[92px] text-right" title={saveState.s === 'error' ? saveState.message : undefined} aria-live="polite">
+                    {saveState.s === 'saving' ? '保存中…' : saveState.s === 'dirty' ? '有未保存修改' : saveState.s === 'error' ? (saveState.conflict ? '版本冲突' : '保存失败') : `已保存 ${new Date(saveState.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`}
+                  </span>
+                  {saveState.s === 'error' && !saveState.conflict && <button type="button" className="btn ghost rounded px-1" onClick={() => void retrySave()} aria-label="重试保存">重试</button>}
                   <Btn small variant={layout.focus ? 'outline' : 'ghost'} onClick={() => setLayout((l) => ({ ...l, focus: !l.focus }))} title="⌘⇧F">{layout.focus ? '退出专注' : '专注'}</Btn>
                 </span>
               </div>

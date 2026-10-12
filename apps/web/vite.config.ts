@@ -18,6 +18,7 @@ export default {
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    include: ['src/test/**/*.test.{ts,tsx}'],
     css: true,
   },
 }

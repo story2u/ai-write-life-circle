@@ -9,6 +9,24 @@ export type Chapter = z.infer<typeof chapterSchema>
 export const documentSchema = z.record(z.string(), z.array(z.string()))
 export type Document = z.infer<typeof documentSchema>
 
+export const sourceHashSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/)
+export const chapterVersionSchema = z.object({
+  revision: z.number().int().nonnegative(),
+  sourceHash: sourceHashSchema,
+})
+export type ChapterVersion = z.infer<typeof chapterVersionSchema>
+
+/** Stable pointer to the exact source version used to support a proposal. */
+export const evidenceRefSchema = z.object({
+  type: z.enum(['chapter', 'knowledge', 'external']),
+  sourceId: z.string(),
+  sourceHash: sourceHashSchema.optional(),
+  chapterId: z.string().optional(),
+  revision: z.number().int().nonnegative().optional(),
+  paraIndex: z.number().int().nonnegative().optional(),
+})
+export type EvidenceRef = z.infer<typeof evidenceRefSchema>
+
 export const knowledgeKindSchema = z.enum(['时间线', '人物档案', '伏笔', '世界观'])
 export type KnowledgeKind = z.infer<typeof knowledgeKindSchema>
 export const knowledgeEntrySchema = z.object({
@@ -35,6 +53,9 @@ export type Analysis = z.infer<typeof analysisSchema>
 export const proposalSchema = z.object({
   id: z.string(), ruleKey: z.string(), kind: proposalKindSchema,
   title: z.string(), chapterId: z.string().optional(),
+  projectId: z.string().optional(), reviewRunId: z.string().optional(),
+  chapterRevision: z.number().int().nonnegative().optional(), sourceHash: sourceHashSchema.optional(),
+  evidenceRefs: z.array(evidenceRefSchema).optional(),
   anchor: z.object({ paraIndex: z.number().int().nonnegative(), quote: z.string() }).optional(),
   analysis: analysisSchema, evidence: z.array(evidenceSchema), impact: z.array(z.string()),
   options: z.array(optionSchema), chosenOption: z.string().optional(), status: proposalStatusSchema,
@@ -65,34 +86,57 @@ export const challengeRoundSchema = z.object({
 export type ChallengeRound = z.infer<typeof challengeRoundSchema>
 
 export const workspaceSnapshotSchema = z.object({
+  projectId: z.string(),
   chapters: z.array(chapterSchema), knowledge: z.array(knowledgeEntrySchema), document: documentSchema,
+  chapterVersions: z.record(z.string(), chapterVersionSchema),
   proposals: z.array(proposalSchema), decisions: z.array(decisionSchema),
   chat: z.array(chatMessageSchema), challenge: z.array(challengeRoundSchema), sequence: z.number().int().nonnegative(),
-  currentChapterId: z.string(), dark: z.boolean(),
+  currentChapterId: z.string(),
+}).refine((workspace) => workspace.chapters.every((chapter) => workspace.chapterVersions[chapter.id] !== undefined), {
+  message: 'Every chapter must include its current revision and source hash.',
+  path: ['chapterVersions'],
 })
 export type WorkspaceSnapshot = z.infer<typeof workspaceSnapshotSchema>
 
-export const saveChapterRequestSchema = z.object({ chapterId: z.string(), paragraphs: z.array(z.string()) })
+export const saveChapterRequestSchema = z.object({
+  projectId: z.string(), chapterId: z.string(), paragraphs: z.array(z.string()),
+  revision: z.number().int().nonnegative(), sourceHash: sourceHashSchema,
+})
 export type SaveChapterRequest = z.infer<typeof saveChapterRequestSchema>
-export const saveChapterResponseSchema = z.object({ chapterId: z.string(), savedAt: z.number() })
+export const saveChapterResponseSchema = z.object({
+  projectId: z.string(), chapterId: z.string(), revision: z.number().int().nonnegative(),
+  sourceHash: sourceHashSchema, savedAt: z.number(),
+})
 export type SaveChapterResponse = z.infer<typeof saveChapterResponseSchema>
 
-export const runReviewRequestSchema = z.object({ chapterId: z.string(), paragraphs: z.array(z.string()), sequence: z.number().int().nonnegative() })
+export const reviewScopeSchema = z.enum(['timeline', 'characters', 'foreshadowing', 'worldbuilding'])
+export type ReviewScope = z.infer<typeof reviewScopeSchema>
+export const runReviewRequestSchema = z.object({
+  projectId: z.string(), chapterId: z.string(), paragraphs: z.array(z.string()),
+  revision: z.number().int().nonnegative(), sourceHash: sourceHashSchema, reviewRunId: z.string(),
+  scope: z.array(reviewScopeSchema).min(1), sequence: z.number().int().nonnegative(),
+})
 export type RunReviewRequest = z.infer<typeof runReviewRequestSchema>
-export const runReviewResponseSchema = z.object({ proposals: z.array(proposalSchema), demo: z.boolean() })
+export const runReviewResponseSchema = z.object({
+  projectId: z.string(), chapterId: z.string(), revision: z.number().int().nonnegative(),
+  sourceHash: sourceHashSchema, reviewRunId: z.string(), proposals: z.array(proposalSchema), demo: z.boolean(),
+  coverage: z.object({ requestedScopes: z.array(reviewScopeSchema), completedScopes: z.array(reviewScopeSchema), complete: z.boolean() }),
+  evidenceValidation: z.object({ status: z.enum(['valid', 'partial', 'invalid']), unresolved: z.array(evidenceRefSchema) }),
+})
 export type RunReviewResponse = z.infer<typeof runReviewResponseSchema>
 
-export const chatRequestSchema = z.object({ chapterId: z.string(), text: z.string().min(1), quote: z.string().optional() })
+export const chatRequestSchema = z.object({ projectId: z.string(), chapterId: z.string(), text: z.string().min(1), quote: z.string().optional() })
 export type ChatRequest = z.infer<typeof chatRequestSchema>
 export const chatResponseSchema = z.object({ text: z.string(), cites: z.array(evidenceSchema).optional(), demo: z.boolean() })
 export type ChatResponse = z.infer<typeof chatResponseSchema>
 
-export const challengeRequestSchema = z.object({ intent: z.string().min(1), previousRounds: z.array(challengeRoundSchema) })
+export const challengeRequestSchema = z.object({ projectId: z.string(), intent: z.string().min(1), previousRounds: z.array(challengeRoundSchema) })
 export type ChallengeRequest = z.infer<typeof challengeRequestSchema>
 export const challengeResponseSchema = challengeRoundSchema.extend({ demo: z.boolean() })
 export type ChallengeResponse = z.infer<typeof challengeResponseSchema>
 
 export const workspaceStateSchema = z.object({
+  projectId: z.string(),
   proposals: z.array(proposalSchema), decisions: z.array(decisionSchema), chat: z.array(chatMessageSchema),
   challenge: z.array(challengeRoundSchema), sequence: z.number().int().nonnegative(),
 })

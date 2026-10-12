@@ -1,20 +1,16 @@
 import { useCallback, useMemo } from 'react'
-import type { ChallengeRound } from '@writer-agent/contracts'
+import type { ChallengeRequest, ChatRequest, RunReviewRequest, SaveChapterRequest } from '@writer-agent/contracts'
 import type { WriterAgentAdapter } from '../../services/writerAgent'
 
 /** Application workflow boundary between UI events and whichever API adapter is active. */
 export function useWorkspaceActions(adapter: WriterAgentAdapter) {
-  const saveChapter = useCallback((chapterId: string, paragraphs: string[]) =>
-    adapter.saveChapter({ chapterId, paragraphs }), [adapter])
+  const saveChapter = useCallback((input: SaveChapterRequest) => adapter.saveChapter(input), [adapter])
 
-  const reviewChapter = useCallback((chapterId: string, paragraphs: string[], sequence: number) =>
-    adapter.runReview({ chapterId, paragraphs, sequence }), [adapter])
+  const reviewChapter = useCallback((input: RunReviewRequest) => adapter.runReview(input), [adapter])
 
-  const sendMessage = useCallback((chapterId: string, text: string, quote?: string) =>
-    adapter.sendMessage({ chapterId, text, quote }), [adapter])
+  const sendMessage = useCallback((input: ChatRequest) => adapter.sendMessage(input), [adapter])
 
-  const challenge = useCallback((intent: string, previousRounds: ChallengeRound[]) =>
-    adapter.challenge({ intent, previousRounds }), [adapter])
+  const challenge = useCallback((input: ChallengeRequest) => adapter.challenge(input), [adapter])
 
   return useMemo(() => ({ saveChapter, reviewChapter, sendMessage, challenge }), [saveChapter, reviewChapter, sendMessage, challenge])
 }
