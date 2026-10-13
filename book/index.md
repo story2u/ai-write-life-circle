@@ -20,7 +20,7 @@ updated: 2026-10-13
 
 - [世界规则索引](world/index.md)：按规则查证据和边界。
 - [大纲](outline.md)：unknown。
-- [角色](characters/index.md)：unknown。
+- [角色](characters/index.md)：CHAR-001 已部分确认（贯穿全书男主角，丈夫/父亲/儿子；姓名、年龄、职业等 unknown）。
 - [主线与支线](threads/index.md)：unknown；主题冲突尚未成为情节线。
 - [时间线](timeline.md)：unknown。
 - [风格基线](style.md)：unknown；没有作者认可的正文样本。
