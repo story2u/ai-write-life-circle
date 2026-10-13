@@ -25,6 +25,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+      - run: node scripts/check-knowledge-ids.mjs --fail
       - run: pnpm build
       - name: Install Chromium
         run: pnpm --filter @writer-agent/web exec playwright install --with-deps chromium

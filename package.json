@@ -5,10 +5,12 @@
   "packageManager": "pnpm@10.15.1",
   "scripts": {
     "dev": "pnpm --filter @writer-agent/web dev",
-    "build": "pnpm --filter @writer-agent/web build",
+    "build": "pnpm --filter @writer-agent/api build && pnpm --filter @writer-agent/web build",
     "typecheck": "pnpm --filter @writer-agent/contracts typecheck && pnpm --filter @writer-agent/api typecheck && pnpm --filter @writer-agent/web typecheck",
-    "lint": "pnpm --filter @writer-agent/web lint",
-    "test": "pnpm --filter @writer-agent/web test",
+    "lint": "pnpm --filter @writer-agent/web lint && ./apps/web/node_modules/.bin/eslint --config apps/web/eslint.config.js apps/api/src apps/api/test packages/contracts/src",
+    "test": "pnpm --filter @writer-agent/api test && pnpm --filter @writer-agent/web test",
+    "dev:api": "pnpm --filter @writer-agent/api dev",
+    "harness:rebuild": "pnpm --filter @writer-agent/api harness:rebuild",
     "test:e2e": "pnpm --filter @writer-agent/web test:e2e"
   }
 }

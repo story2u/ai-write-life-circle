@@ -12,7 +12,7 @@
  *   node scripts/check-knowledge-ids.mjs --json     # 输出 JSON
  *   node scripts/check-knowledge-ids.mjs --fail     # 存在冲突时退出码 1（未来 CI 阻断开关）
  *
- * 说明：在作者确认并消除历史冲突前，不应使用 --fail 将本工具升级为 CI 阻断条件。
+ * 说明：历史冲突已由作者确认并修复；CI 使用 --fail 防止新增文件级或索引级冲突。
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -167,7 +167,7 @@ function report() {
 
   out.push('## 提示')
   out.push('本工具只报告冲突，不修改任何档案。所有「建议映射」都需作者确认后才能执行；')
-  out.push('在作者确认并消除历史冲突前，不应使用 --fail 将本工具升级为 CI 阻断条件。')
+  out.push('作者确认的历史映射已由维护者应用；CI 使用 --fail 阻止新增文件级或索引级 ID 冲突。')
   return out.join('\n')
 }
 

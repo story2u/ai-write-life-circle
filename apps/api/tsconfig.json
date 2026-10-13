@@ -1,8 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2020"],
-    "types": []
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"]
   },
   "include": ["src"]
 }
