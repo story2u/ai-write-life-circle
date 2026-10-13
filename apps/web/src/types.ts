@@ -16,7 +16,7 @@ export const statusMeta: Record<ProposalStatus, { label: string; c: string; bg: 
   rejected: { label: '已拒绝', c: 'var(--ink-3)', bg: 'var(--surface-2)' },
   deferred: { label: '已暂缓', c: 'var(--ink-2)', bg: 'var(--surface-2)' },
   resolved: { label: '已解决', c: 'var(--ok)', bg: 'var(--ok-soft)' },
-  noted: { label: '已收录参考', c: 'var(--ok)', bg: 'var(--ok-soft)' },
+  noted: { label: '已标记待整理', c: 'var(--ok)', bg: 'var(--ok-soft)' },
 }
 
 export const kindMeta: Record<ProposalKind, { label: string; c: string; bg: string; hint: string }> = {

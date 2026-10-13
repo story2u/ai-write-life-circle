@@ -109,7 +109,7 @@ export function mockReview(chapterId: string, doc: Document, seq: number): Propo
         suggestion: '仅作参考，不构成作品事实，也不涉及正文修改。',
       },
       evidence: [{ type: 'unavailable', label: '外部文献 · 归有光《项脊轩志》', quote: '庭有枇杷树，吾妻死之年所手植也，今已亭亭如盖矣。' }],
-      impact: ['研究笔记'], options: [], status: 'pending', createdAt: now, updatedAt: now,
+      impact: ['待整理参考'], options: [], status: 'pending', createdAt: now, updatedAt: now,
     })
   }
   return found

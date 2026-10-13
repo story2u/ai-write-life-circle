@@ -77,7 +77,7 @@ export function ProposalDetail({ p, decisions, chapters, onClose, onDecide, onEv
           </>
         )}
         {p.status === 'pending' && p.kind === 'research' && (
-          <><Btn variant="outline" onClick={() => onDecide(p.id, 'note')}>收录为研究笔记</Btn><Btn onClick={() => onDecide(p.id, 'reject')}>忽略</Btn></>
+          <><Btn variant="outline" onClick={() => onDecide(p.id, 'note')}>标记为待整理参考</Btn><Btn onClick={() => onDecide(p.id, 'reject')}>忽略</Btn></>
         )}
         {p.status !== 'pending' && p.status !== 'resolved' && <Btn variant="outline" onClick={() => onDecide(p.id, 'reopen')}>撤回决定，重新待确认</Btn>}
         {p.status === 'resolved' && <span className="text-[12px]" style={{ color: 'var(--ok)' }}>复审确认：问题已不再出现。</span>}

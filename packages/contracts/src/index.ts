@@ -63,7 +63,7 @@ export const proposalSchema = z.object({
 })
 export type Proposal = z.infer<typeof proposalSchema>
 
-export const decisionActionSchema = z.enum(['采纳', '拒绝', '暂缓', '收录参考', '复审：已解决', '复审：再次出现', '重新打开', '创建提案'])
+export const decisionActionSchema = z.enum(['采纳', '拒绝', '暂缓', '标记为待整理参考', '复审：已解决', '复审：再次出现', '重新打开', '创建提案'])
 export type DecisionAction = z.infer<typeof decisionActionSchema>
 export const decisionSchema = z.object({
   id: z.string(), proposalId: z.string(), action: decisionActionSchema,

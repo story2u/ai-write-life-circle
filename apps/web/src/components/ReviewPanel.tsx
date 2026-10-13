@@ -84,7 +84,7 @@ export function ProposalCard({ p, active, onSelect, onDecide, onOpenDetail, onEv
             )}
             {p.status === 'pending' && p.kind === 'research' && (
               <>
-                <Btn small variant="outline" onClick={stop(() => onDecide(p.id, 'note'))}>收录为研究笔记</Btn>
+                <Btn small variant="outline" onClick={stop(() => onDecide(p.id, 'note'))}>标记为待整理参考</Btn>
                 <Btn small onClick={stop(() => onDecide(p.id, 'reject'))}>忽略</Btn>
               </>
             )}

@@ -272,6 +272,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         let created = 0
         let reopened = 0
         let kept = 0
+        const touchedIds = new Set<string>()
         const newDecisions: Decision[] = []
         const next = proposalsRef.current.map((proposal) => ({ ...proposal }))
         for (const resultProposal of result.proposals) {
@@ -281,7 +282,8 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
             return
           }
           const existing = next.find((proposal) => proposal.chapterId === chapterId && proposal.ruleKey === resultProposal.ruleKey)
-          if (!existing) { next.push(resultProposal); created++; continue }
+          if (!existing) { next.push(resultProposal); touchedIds.add(resultProposal.id); created++; continue }
+          touchedIds.add(existing.id)
           existing.anchor = resultProposal.anchor
           existing.projectId = resultProposal.projectId
           existing.reviewRunId = resultProposal.reviewRunId
@@ -298,13 +300,30 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         }
         setProposals(next)
         setDecisions((existing) => [...existing, ...newDecisions])
+        const historicalUnresolved = next.filter((proposal) => proposal.status === 'pending' && !touchedIds.has(proposal.id)).length
+        const coverageIncomplete = !result.coverage.complete
+        const evidencePartial = result.evidenceValidation.status === 'partial'
         const notices = [
-          result.coverage.complete ? '' : '覆盖不完整',
-          result.evidenceValidation.status === 'partial' ? '部分证据未核验' : '',
+          coverageIncomplete ? '本次仅完成部分检查，不能认定章节不存在其他问题' : '',
+          evidencePartial ? '部分证据未核验' : '',
         ].filter(Boolean)
-        const summary = result.proposals.length === 0 && kept === 0 && reopened === 0
-          ? '未发现问题'
-          : `新发现 ${created} 项${kept ? ` · 保留 ${kept} 项` : ''}${reopened ? ` · 重开 ${reopened} 项` : ''}`
+        const found = created + kept + reopened
+        let summary: string
+        if (found > 0) {
+          const parts = [
+            created ? `新增 ${created} 项` : '',
+            kept ? `保留 ${kept} 项` : '',
+            reopened ? `重开 ${reopened} 项` : '',
+            historicalUnresolved ? `另有 ${historicalUnresolved} 项历史待处理` : '',
+          ].filter(Boolean)
+          summary = parts.join(' · ')
+        } else if (historicalUnresolved > 0) {
+          summary = `本次未检出新问题，仍有 ${historicalUnresolved} 项历史待处理问题`
+        } else if (coverageIncomplete || evidencePartial) {
+          summary = '本次未检出新问题'
+        } else {
+          summary = '未发现问题'
+        }
         reviewInFlight.current = false
         setTask({ state: 'done', summary: [summary, ...notices].join(' · '), at: Date.now() })
         toast(`审查完成：${[summary, ...notices].join(' · ')}`)
@@ -341,13 +360,13 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
       }
     }
     const apply = () => {
-      const map = { adopt: ['adopted', '采纳'], reject: ['rejected', '拒绝'], defer: ['deferred', '暂缓'], note: ['noted', '收录参考'], reopen: ['pending', '重新打开'] } as const
+      const map = { adopt: ['adopted', '采纳'], reject: ['rejected', '拒绝'], defer: ['deferred', '暂缓'], note: ['noted', '标记为待整理参考'], reopen: ['pending', '重新打开'] } as const
       const [status, label] = map[action]
       setProposals((all) => all.map((value) => value.id === id ? {
         ...value, status, chosenOption: action === 'adopt' ? optionId : action === 'reopen' ? undefined : value.chosenOption, updatedAt: Date.now(),
       } : value))
       setDecisions((all) => [...all, addDecision(id, label, '作者', action === 'adopt' ? proposal.options.find((option) => option.id === optionId)?.label : undefined)])
-      toast(action === 'adopt' ? '已采纳 · 正文保持不变，等待你修改' : action === 'note' ? '已收录至研究笔记（不写入作品设定）' : `提案 ${id} 已${label}`)
+      toast(action === 'adopt' ? '已采纳 · 正文保持不变，等待你修改' : action === 'note' ? '已标记为待整理参考（仅记录状态，未创建独立笔记或写入设定）' : `提案 ${id} 已${label}`)
     }
     if (action === 'reject') requestConfirm({
       title: proposal.kind === 'research' ? '忽略这条研究参考？' : '拒绝这条建议？',

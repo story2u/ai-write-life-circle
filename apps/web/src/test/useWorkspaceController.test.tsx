@@ -175,4 +175,65 @@ describe('workspace save and review version safety', () => {
     expect(initialWorkspace.chapterVersions.c12.sourceHash).toBe(hash)
     expect(initialWorkspace.chapterVersions.c12.revision).toBe(0)
   })
+
+  it('reports historical pending issues instead of "未发现问题" when a later review returns nothing', async () => {
+    vi.useFakeTimers()
+    const { result, adapter } = await setupController()
+    const runOnce = adapter.runReview.bind(adapter)
+    vi.spyOn(adapter, 'runReview')
+      .mockImplementationOnce((input) => runOnce(input))
+      .mockImplementationOnce(async (input) => ({ ...await runOnce(input), proposals: [] }))
+
+    await completeReview(result)
+    const pendingBefore = result.current.proposals.filter((item) => item.status === 'pending').length
+    expect(pendingBefore).toBeGreaterThan(0)
+
+    await completeReview(result)
+    expect(result.current.task).toMatchObject({ state: 'done', summary: expect.stringContaining('历史待处理') })
+    expect(result.current.task).toMatchObject({ state: 'done', summary: expect.not.stringContaining('未发现问题') })
+  })
+
+  it('flags incomplete coverage instead of claiming the chapter is clean', async () => {
+    vi.useFakeTimers()
+    const { result, adapter } = await setupController()
+    const runOnce = adapter.runReview.bind(adapter)
+    vi.spyOn(adapter, 'runReview').mockImplementation(async (input) => ({
+      ...await runOnce(input),
+      proposals: [],
+      coverage: { requestedScopes: input.scope, completedScopes: ['timeline'], complete: false },
+    }))
+
+    await completeReview(result)
+    expect(result.current.task).toMatchObject({ state: 'done', summary: expect.stringContaining('本次仅完成部分检查') })
+  })
+
+  it('flags unverified evidence instead of reporting a clean chapter', async () => {
+    vi.useFakeTimers()
+    const { result, adapter } = await setupController()
+    const runOnce = adapter.runReview.bind(adapter)
+    vi.spyOn(adapter, 'runReview').mockImplementation(async (input) => ({
+      ...await runOnce(input),
+      proposals: [],
+      evidenceValidation: { status: 'partial', unresolved: [] },
+    }))
+
+    await completeReview(result)
+    expect(result.current.task).toMatchObject({ state: 'done', summary: expect.stringContaining('部分证据未核验') })
+  })
+
+  it('discards a result whose revision does not match the submitted chapter version', async () => {
+    vi.useFakeTimers()
+    const { result, adapter } = await setupController()
+    const runOnce = adapter.runReview.bind(adapter)
+    vi.spyOn(adapter, 'runReview').mockImplementation(async (input) => ({
+      ...await runOnce(input),
+      revision: input.revision + 1,
+    }))
+
+    await act(async () => { await result.current.runReview() })
+    await act(async () => { await vi.advanceTimersByTimeAsync(520 * 5) })
+    vi.useRealTimers()
+    await waitFor(() => expect(result.current.task.state).toBe('failed'))
+    expect(result.current.task).toMatchObject({ state: 'failed', error: expect.stringContaining('版本不匹配') })
+  })
 })
