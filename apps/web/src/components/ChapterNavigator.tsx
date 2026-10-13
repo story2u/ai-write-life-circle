@@ -1,0 +1,58 @@
+import type { Chapter, Document } from '@writer-agent/contracts'
+
+const count = (ps: string[] = []) => ps.join('').replace(/\s/g, '').length
+
+export default function ChapterNavigator({ chapters, doc, current, onPick, pendingByChapter, onNav, onCollapse }: {
+  chapters: Chapter[]
+  doc: Document; current: string; onPick: (id: string) => void; pendingByChapter: Record<string, number>
+  onNav: (n: string) => void; onCollapse: () => void
+}) {
+  const total = Object.values(doc).reduce((s, p) => s + count(p), 0)
+  const volumes = [...new Set(chapters.map((c) => c.volume))]
+  const nav: [string, string][] = [['knowledge', '作品知识库'], ['decisions', '提案与决策'], ['agent', 'Agent 工作台']]
+  return (
+    <div className="flex h-full flex-col" style={{ background: 'var(--surface-2)' }}>
+      <div className="flex items-start px-5 pt-5 pb-4">
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] tracking-widest" style={{ color: 'var(--ink-3)' }}>WRITER AGENT</div>
+          <div className="font-prose mt-1 text-[17px] font-semibold">雨落江宁</div>
+          <div className="mt-1 text-xs" style={{ color: 'var(--ink-3)' }}>长篇 · 演示稿 {total.toLocaleString()} 字</div>
+        </div>
+        <button type="button" onClick={onCollapse} className="btn ghost rounded px-1.5 text-sm" style={{ color: 'var(--ink-3)' }} title="折叠导航 ⌘⇧\" aria-label="折叠导航">⟨</button>
+      </div>
+      <nav className="px-2" aria-label="模块">
+        <div className="flex items-center rounded-md px-3 py-1.5 text-[13px]" style={{ background: 'var(--surface)', boxShadow: 'var(--shadow)' }}>沉浸式写作</div>
+        {nav.map(([k, n]) => (
+          <button key={k} type="button" onClick={() => onNav(k)} className="btn ghost flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-[13px]" style={{ color: 'var(--ink-2)' }}>
+            {n}
+            {k === 'decisions' && Object.values(pendingByChapter).reduce((a, b) => a + b, 0) > 0 && (
+              <span className="rounded px-1.5 text-[11px]" style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}>{Object.values(pendingByChapter).reduce((a, b) => a + b, 0)}</span>
+            )}
+          </button>
+        ))}
+        {['创作总览', '故事结构'].map((n) => (
+          <div key={n} className="flex items-center justify-between px-3 py-1.5 text-[13px]" style={{ color: 'var(--ink-3)' }}>{n}<span className="text-[10.5px]">下一阶段</span></div>
+        ))}
+      </nav>
+      <div className="scroll mt-5 min-h-0 flex-1 overflow-auto px-2 pb-4" role="tree" aria-label="章节目录">
+        <div className="px-3 pb-1 text-[11px] font-medium" style={{ color: 'var(--ink-3)' }}>章节目录</div>
+        {volumes.map((v) => (
+          <div key={v} className="mb-2">
+            <div className="px-3 py-1 text-xs font-medium" style={{ color: 'var(--ink-2)' }}>{v}</div>
+            {chapters.filter((c) => c.volume === v).map((c) => (
+              <button
+                key={c.id} type="button" role="treeitem" aria-selected={c.id === current} onClick={() => onPick(c.id)}
+                className="btn ghost font-prose flex w-full items-center gap-2 rounded-md py-1 pr-2 pl-5 text-left text-[13px]"
+                style={c.id === current ? { background: 'var(--accent-soft)', color: 'var(--accent)' } : { color: 'var(--ink-2)' }}
+              >
+                <span className="min-w-0 flex-1 truncate">{c.title}</span>
+                {pendingByChapter[c.id] > 0 && <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--warn)' }} title={`${pendingByChapter[c.id]} 项待确认`} />}
+                <span className="font-sans text-[10.5px]" style={{ color: 'var(--ink-3)' }}>{count(doc[c.id])}</span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

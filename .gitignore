@@ -7,3 +7,10 @@ node_modules/
 __pycache__/
 *.pyc
 .local/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+.dev.vars
+apps/web/playwright-report/
+apps/web/test-results/
