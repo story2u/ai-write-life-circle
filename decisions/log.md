@@ -9,5 +9,7 @@
 | 2026-09-29 | P-001 第 1–3 项 | inbox/2026-09-29-answers-2.md 明确重述核心表达、主题张力、揭示规则；“所以是读者先知” | book/intent.md, book/index.md, book/world/WORLD-003.md | proposed → confirmed；具体打碎手段仍未接受 | a369c29 |
 | 2026-09-29 | P-001 C、E | 同上：“‘能量体’不是神，没有神，或者说，意识本身是唯一的神”；意识本身不受“维持→极端→灾难”约束 | book/world/WORLD-003.md, book/intent.md | C、E 未决 → 已决；不采用能量体即神的推断 | a369c29 |
 | 2026-09-29 | P-001 第 6 项补充、I、G | 同上：普通碳基主角通过经历渐渐开悟；全书第三人称，“最好是群像”；“结尾还没想好” | book/characters/CHAR-001.md, book/style.md, book/intent.md, book/index.md | 主角补充 confirmed；第三人称 confirmed；群像仅为偏好；结尾暂缓 | a369c29 |
+| 2026-10-07 | 首版资料登记：INTENT-001、WORLD-001—003 | 作者本次要求结合既有世界观“建立首版故事档案”，并限定整理范围与不代写；此前明确表述及证据限制见建档来源 SRC-001—004、SRC-006 | book/intent.md；book/world/；book/index.md；state/current.md；README.md；notes/bootstrap-sources-2026-10-07.md | 初始化时“尚未建档/暂无资料”的占位状态 | 基于 e716e7b03a80fad3d50a6afb45e2822efeca182c；本条随首版建档提交 |
+| 2026-10-13 | 合并 origin/main 首版档案 | 远端提交 b71a09e 保留的历史摘要与资料条目 | book/index.md；book/intent.md；book/world/index.md；state/current.md；首版 WORLD 条目、提案及来源记录 | 两套 WORLD-001—003 含义不一致；均保留，映射待作者决定 | b71a09e |
 
-只记录明确决策，不记录 AI 擅自选择。
+截至 2026-10-07 的首版整理没有接受 P-001 候选。后续作者于 2026-09-29 明确接受 P-001 第 1—3 项及其他条目，详见上表。登记既有表达与接受新创意分开记录。
