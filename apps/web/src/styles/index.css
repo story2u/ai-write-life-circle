@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+/* Design tokens mirrored from the Figma Make source. */
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #f1efea;
+  --line: #e6e3dc;
+  --ink: #1f1d1a;
+  --ink-2: #5c5852;
+  --ink-3: #9a958c;
+  --accent: #4a5bd4;
+  --accent-soft: #eceefb;
+  --warn: #b7791f;
+  --warn-soft: #fbf3e4;
+  --danger: #b4443a;
+  --danger-soft: #f9ebe9;
+  --ok: #3f7d58;
+  --ok-soft: #e9f3ec;
+  --shadow: 0 1px 2px rgba(30, 25, 15, 0.04), 0 4px 16px rgba(30, 25, 15, 0.05);
+}
+.dark {
+  --bg: #161614;
+  --surface: #1d1c1a;
+  --surface-2: #252421;
+  --line: #2f2d2a;
+  --ink: #e9e6df;
+  --ink-2: #aaa59c;
+  --ink-3: #6f6b64;
+  --accent: #8b97f0;
+  --accent-soft: #252846;
+  --warn: #d9a54a;
+  --warn-soft: #2e2618;
+  --danger: #e07a6f;
+  --danger-soft: #33201d;
+  --ok: #6fb98b;
+  --ok-soft: #1c2b21;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+body {
+  font-family: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+.font-prose {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+.dot { animation: pulse-dot 1.2s infinite; }
+
+/* Manuscript */
+.manuscript p {
+  font-size: 17px;
+  line-height: 2.05;
+  letter-spacing: 0.02em;
+  text-indent: 2em;
+  margin: 0 -8px 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  position: relative;
+  transition: background 0.25s;
+}
+.manuscript p.is-empty:first-child::after,
+.manuscript:has(> p:only-child:empty)::before { content: none; }
+.manuscript { caret-color: var(--accent); min-height: 50vh; }
+.ann-para::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 14px;
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: var(--c);
+}
+.ann-fact { --c: var(--danger); --b: var(--danger-soft); }
+.ann-suggestion { --c: var(--accent); --b: var(--accent-soft); }
+.ann-research { --c: var(--ok); --b: var(--ok-soft); }
+.ann-active { background: var(--b); }
+.ann-mark { cursor: pointer; text-decoration: underline wavy; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.ann-mark-fact { text-decoration-color: var(--danger); }
+.ann-mark-suggestion { text-decoration-color: var(--accent); text-decoration-style: dotted; }
+.ann-mark-research { text-decoration-color: var(--ok); text-decoration-style: dotted; }
+@keyframes flash { 0%, 60% { background: var(--warn-soft); box-shadow: 0 0 0 2px var(--warn); } 100% { background: transparent; box-shadow: none; } }
+.ann-flash { animation: flash 2s ease-out; }
+
+@keyframes slide-in { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+.slide-in { animation: slide-in 0.18s ease-out; }
+@keyframes fade-up { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+.fade-up { animation: fade-up 0.18s ease-out; }
+
+.btn { transition: background 0.12s, opacity 0.12s, transform 0.06s; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.ghost:hover { background: var(--surface-2); }
+.scroll::-webkit-scrollbar { width: 8px; }
+.scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
