@@ -8,7 +8,7 @@ import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { rebuildHarnessProjection } from './harness/projection.js'
 import type { HarnessWorkspaceProjection } from './harness/types.js'
-import { ChapterNotFoundError, DuplicateChapterIdError, getHarnessChapter, getUniqueHarnessChapterSource, listHarnessChapters } from './chapters/repository.js'
+import { ChapterNotFoundError, DuplicateChapterIdError, InvalidChapterSourceError, getHarnessChapter, getUniqueHarnessChapterSource, listHarnessChapters } from './chapters/repository.js'
 import { FileChapterRevisionStore, IdempotencyKeyReuseError } from './chapters/revision-store.js'
 import { RevisionConflictError } from './concurrency/revision.js'
 import { appendAuditRecord } from './audit/log.js'
@@ -53,6 +53,7 @@ function requireRole(actor: ApiActor, allowed: ApiActor['role'][]): Response | n
 function errorResponse(error: unknown): Response {
   if (error instanceof ChapterNotFoundError) return problem(404, 'NOT_FOUND', error.message)
   if (error instanceof DuplicateChapterIdError) return problem(409, 'VALIDATION_FAILED', error.message, { chapterId: error.chapterId, paths: error.paths })
+  if (error instanceof InvalidChapterSourceError) return problem(422, 'VALIDATION_FAILED', error.message, { chapterId: error.chapterId })
   if (error instanceof RevisionConflictError) {
     return problem(409, 'REVISION_CONFLICT', error.message, {
       expectedRevisionId: error.expectedRevisionId,

@@ -1,4 +1,5 @@
 import { chapterListV04Schema, chapterDetailV04Schema, type ChapterDetailV04, type ChapterListV04 } from '@writer-agent/contracts'
+import { basename } from 'node:path'
 import type { HarnessWorkspaceProjection } from '../harness/types.js'
 import { FileChapterRevisionStore } from './revision-store.js'
 
@@ -15,18 +16,26 @@ export type ChapterSource = {
 
 function toChapterSources(projection: HarnessWorkspaceProjection): ChapterSource[] {
   return projection.chapterDocuments.flatMap((document) => {
-    // OQ-016 is unresolved: only explicit CH IDs in metadata count. Do not
-    // manufacture a chapter from a filename or a template placeholder.
+    // Require the stable ID in the existing leading key-value metadata block;
+    // a filename or template placeholder alone is not a formal chapter.
     if (document.idSource !== 'metadata' || !/^CH-\d{1,6}$/.test(document.stableId ?? '')) return []
+    if (!basename(document.path).startsWith(`${document.stableId}.`) && !basename(document.path).startsWith(`${document.stableId}-`)) {
+      throw new InvalidChapterSourceError(document.stableId!, 'filename must begin with the stable chapter ID')
+    }
     const title = document.title ?? document.metadata.title
-    if (!title?.trim()) return []
+    if (!title?.trim()) throw new InvalidChapterSourceError(document.stableId!, 'a level-one Markdown title is required')
     const paragraphs = document.bodyMarkdown.split(/\r?\n\s*\r?\n/).map((paragraph) => paragraph.trim()).filter(Boolean)
+    const rawOrder = document.metadata.order
+    const order = rawOrder === undefined ? undefined : Number(rawOrder)
+    if (rawOrder !== undefined && (!/^\d+$/.test(rawOrder) || !Number.isSafeInteger(order) || order === undefined || order < 1)) {
+      throw new InvalidChapterSourceError(document.stableId!, 'order must be a positive integer')
+    }
     return [{
       chapterId: document.stableId!,
       title: title.trim(),
       volumeId: document.metadata.volumeId || undefined,
       meta: document.metadata.meta || undefined,
-      order: document.metadata.order && /^\d+$/.test(document.metadata.order) ? Number(document.metadata.order) : undefined,
+      order,
       paragraphs,
       sourceHash: document.sha256,
       sourceRevisionId: `source:${document.gitBlobHash}`,
@@ -52,6 +61,21 @@ export class DuplicateChapterIdError extends Error {
   }
 }
 
+export class InvalidChapterSourceError extends Error {
+  readonly code = 'VALIDATION_FAILED'
+
+  constructor(readonly chapterId: string, reason: string) {
+    super(`Chapter source ${chapterId} is invalid: ${reason}.`)
+    this.name = 'InvalidChapterSourceError'
+  }
+}
+
+function compareChapterIds(left: string, right: string): number {
+  const leftNumber = Number(left.slice('CH-'.length))
+  const rightNumber = Number(right.slice('CH-'.length))
+  return leftNumber - rightNumber || left.localeCompare(right)
+}
+
 export function listHarnessChapters(projection: HarnessWorkspaceProjection): ChapterListV04 {
   const chapterCollision = projection.idCollisions.find((collision) => /^CH-\d{1,6}$/.test(collision.id))
   if (chapterCollision) throw new DuplicateChapterIdError(chapterCollision.id, chapterCollision.paths)
@@ -73,7 +97,10 @@ export function listHarnessChapters(projection: HarnessWorkspaceProjection): Cha
   return chapterListV04Schema.parse({
     volumes: [...groups.values()].map((group) => ({
       ...(group.volumeId ? { volumeId: group.volumeId } : {}),
-      chapters: group.chapters.sort((left, right) => (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER)).map((chapter) => ({
+      chapters: group.chapters.sort((left, right) =>
+        (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER)
+        || compareChapterIds(left.chapterId, right.chapterId),
+      ).map((chapter) => ({
         chapterId: chapter.chapterId,
         title: chapter.title,
         ...(chapter.meta ? { meta: chapter.meta } : {}),

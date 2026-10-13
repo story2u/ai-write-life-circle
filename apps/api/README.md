@@ -1,7 +1,7 @@
 # Writer Agent API boundary
 
 Sprint 1 implements the proposed V0.4 Workspace and Chapter operations that
-can be exercised without selecting a database or inventing chapter records.
+can be exercised using the author's approved Harness chapter convention.
 The supplied OpenAPI YAML is still a proposed product contract. The Zod
 schemas in `packages/contracts/src/v04.ts` are the runtime source for the
 implemented subset; their TypeScript types are inferred from those schemas.
@@ -19,7 +19,7 @@ claimed.
 - `PATCH /v1/projects/:projectId/workspace` — persist user layout/theme/view
   state outside the Harness.
 - `GET /v1/projects/:projectId/chapters` — list only manuscript documents
-  with an explicit `CH-*` metadata ID.
+  with an explicit `CH-*` metadata ID and matching ID-prefixed filename.
 - `GET /v1/projects/:projectId/chapters/:chapterId` — current Harness content
   or latest application draft, with an `ETag`.
 - `GET /v1/projects/:projectId/chapters/:chapterId/revisions` — immutable
@@ -29,9 +29,20 @@ claimed.
   `Idempotency-Key`.
 
 The repository currently contains no formal chapter records, so chapter reads
-return an empty list until an author-created manuscript file has an explicit
-`CH-*` ID and title. This code does not allocate chapter IDs or rewrite
-manuscript files while OQ-016 remains open.
+return an empty list until the author creates a Markdown chapter file such as
+`manuscript/CH-001.md`. It must start with a level-one title, then ordinary
+`Key: value` metadata including `ID: CH-001`, followed by a blank line and
+author-written Markdown prose. An optional `volumeId` groups chapters; an
+optional positive-integer `order` sorts them within the volume. When omitted,
+chapters sort by their numeric CH ID. The filename must begin with the same
+chapter ID as the metadata. This follows the author's decision to use the
+existing Harness conventions; `templates/chapter.md` remains a planning and
+fact-extraction card, not a manuscript template.
+
+The TipTap/editor representation is Markdown at the Harness boundary. Chapter
+saves remain immutable application drafts outside the Harness; the author
+separately decides whether and when to write and commit manuscript prose to
+Git. The API does not allocate a chapter record or rewrite manuscript files.
 
 ## Persistence and trust boundary
 

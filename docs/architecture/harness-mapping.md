@@ -12,7 +12,7 @@
 | --- | --- |
 | 事实来源 | Markdown 文件 + Git 历史；正文在 `manuscript/` 默认只读 |
 | 元数据格式 | **非 YAML front-matter**，是正文顶部的键值行（`ID:` / `status:` / `updated:` / `source:` / `related:`） |
-| 稳定 ID | 实际档案可见 CHAR/THREAD/WORLD/EVENT/P/REF 与 `INTENT-001`；作者已批准并应用 WORLD/P 冲突映射；章节 `CH-*` 规则尚未确认（OQ-016），不得分配 |
+| 稳定 ID | 实际档案可见 CHAR/THREAD/WORLD/EVENT/P/REF 与 `INTENT-001`；作者已批准并应用 WORLD/P 冲突映射；章节使用 `CH-*`，按 2026-10-14 作者决定沿用 Harness 稳定 ID 规则 |
 | 状态机 | 文件保留原始 `status` 字符串；不能据此推断每个条款的状态机 |
 | 来源定位 | 保存 `source` 原文，并尽力解析仓库相对 `.md` 路径、locator 与 Git blob hash；自由文本定位仍需核对 |
 | 条款级状态 | P-001 等文件中存在条款级状态，但尚无通用结构化解析和明确 OQ-004 状态映射 |
@@ -58,6 +58,13 @@ related: WORLD-002, WORLD-003
 解析器**不得**假设 front-matter 存在。本仓库读取器只识别标题后连续的 `Key: value` 行；无元数据的模板、纯索引和 YAML 样式内容均保留为原始 Markdown，不把 YAML 解释成契约字段。
 
 `status` 值可能带括号注释（如 `confirmed（部分）`）或提案复合状态。当前读取器只保留 `rawStatus`，不将其归一化成新的状态枚举，也不推断条款状态。
+
+### 章节正文映射（作者于 2026-10-14 确认沿用现有 Harness 习惯）
+
+- 正式正文是 `manuscript/CH-001.md` 这类 Markdown 文件，文件名以稳定章节 ID 开头；元数据中的 `ID: CH-001` 是 API 映射所需的正式 ID，模板占位或仅有文件名都不构成已建档章节。
+- 文件以一级标题作为章节标题，随后使用普通 `Key: value` 行写元数据，空行后是作者正文 Markdown。V0.4 的 `volumeId` 是可选分卷 ID，`order` 是可选正整数；已提供顺序时按其排序，未提供时按 CH 数字排序。
+- TipTap 内容以 Markdown 正文为持久化表示，不把编辑器专属 JSON 写入 Harness。API 保存只创建 Harness 外的不可变应用草稿；作者单独决定何时把正文写入并提交 Git。Agent 不写 `manuscript/`。
+- 现有 `templates/chapter.md` 是写作规划/事实提取卡，不是正文模板，也不分配章节 ID。
 
 ## 5. 条款级状态
 
@@ -117,8 +124,8 @@ related: WORLD-002, WORLD-003
 | Knowledge 实体 | `book/*.md` | 只读投影 + 稳定 ID + 状态 + source hash |
 | Proposal | `proposals/*.md` | 只读投影（逐项状态） |
 | Decision | `decisions/log.md` | 只读投影 |
-| Chapter | `manuscript/*.md` | **不可写**（INV-01）；现有章节文件、章节 ID、排序及富文本格式均未确定（OQ-016） |
-| 正文修订 | 尚无确认的持久化 adapter | OQ-015 已确认应用草稿 + 作者独立 Git 提交；OQ-016 仍需确定章节 ID、排序与文件格式，之后才能绑定具体 Harness 文件 |
+| Chapter | `manuscript/CH-*.md` | 作者正文的只读 Markdown 投影；要求标题和元数据稳定 ID，映射可选 `volumeId` / 正整数 `order` |
+| 正文修订 | Markdown + Git 是正式事实源；TipTap Markdown 表示 | OQ-015 已确认应用草稿 + 作者独立 Git 提交；API 不写回 Harness |
 
 **关键区分**：Harness 的 Markdown 是「作者已确认知识」的事实源；`apps/api` 的数据库（未来）是「运行时推演/会话/任务」的工作状态。二者通过稳定 ID + source hash 关联，不可互相覆盖。
 
@@ -128,7 +135,7 @@ related: WORLD-002, WORLD-003
 - `apps/api/src/harness/parser.ts` 保存原始 Markdown、原始元数据与 hash；只对约定的键值头做解析。
 - `apps/api/src/harness/projection.ts` 按路径投影档案、提案和章节候选；重复 ID 均保留，章节无 ID 时列为 unmapped。
 - `/internal/projects/:id/harness-projection` 是本地诊断路由。Sprint 1 另实现了 V0.4 候选契约中 Workspace 与 Chapter 的读接口，以及应用草稿保存接口；对应 Zod schemas 是 `packages/contracts/src/v04.ts` 的运行时来源，尚未从 OpenAPI 自动生成。完整候选 YAML 由作者在任务中提供，但没有保存为仓库 OpenAPI 文件，也未声称完成全规格验证。
-- ID 预留、审计、workspace 状态、章节草稿和 revision compare-and-swap 都写入应用状态目录，不会修改 Harness。WORLD/P 冲突经作者确认后可继续分配后续编号；`CH` 仍因 OQ-016 禁用。
+- ID 预留、审计、workspace 状态、章节草稿和 revision compare-and-swap 都写入应用状态目录，不会修改 Harness。WORLD/P 冲突经作者确认后可继续分配后续编号；CH 按 `harness/data-contract.md` 的稳定 ID 规则分配。
 
 ## 13. 尚未建档 / unknown 的语义
 

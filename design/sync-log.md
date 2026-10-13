@@ -1,5 +1,25 @@
 # Figma synchronization log
 
+## 2026-10-14 — OQ-016 chapter source convention
+
+- Author decision: “沿用现有 Harness 习惯”. This resolves OQ-016 using the
+  existing Markdown + Git source of truth, stable `CH-*` IDs, leading
+  `Key: value` metadata, level-one chapter title, and author-only manuscript
+  writes.
+- V0.4 mapping: chapter files use `manuscript/CH-001.md` (filename begins with
+  the metadata ID); `volumeId` is optional and `order`, when present, is a
+  positive integer. TipTap content uses Markdown at the Harness boundary.
+  Chapter saves remain immutable application drafts; the author commits to
+  Git separately.
+- Enabled CH ID reservation, made chapter ordering deterministic, and added
+  validation for invalid order metadata. Updated the API/Harness mapping and
+  OQ review. No manuscript prose or chapter record was created or modified.
+- Verification: `pnpm typecheck`, `pnpm lint`, `pnpm test` (16 API + 22 web
+  tests), `pnpm build`, and `pnpm test:e2e` (3 Playwright checks) passed.
+  `pnpm harness:rebuild` still reports 0 chapters and no ID collisions;
+  `node scripts/check-knowledge-ids.mjs --fail` passed. Build retains the
+  existing Vite large-chunk advisory.
+
 ## 2026-10-14 — V0.4 product and contract review
 
 - Source: Writer Agent UI/UX Design, Figma Make, key `kWBOdcae5utBZ6VtBHHXui`, node `0:1`; read through the registered official remote Figma MCP.
@@ -7,7 +27,7 @@
 - The V0.4 API spec resource was truncated in MCP output (`…6290 tokens truncated…`); the author then supplied the full proposed YAML in the task reply. The full YAML is not checked in or automatically OpenAPI-validated. `packages/contracts/src/v04.ts` is the hand-aligned Zod runtime contract for the implemented Workspace/Chapter subset, and its TypeScript types are inferred. Operations marked `proposed` remain non-final.
 - The visible preview/source remains the V0.3 prototype baseline, while the V0.4 PRD is marked `draft-for-engineering`. No UI implementation changed in this Sprint 1 data/API pass; current app-to-API and product-contract differences are documented for follow-up. Make screenshot and variable-definition tools explicitly do not support Make files, so no pixel diff is claimed.
 - Implemented a read-only Harness reader and projection, key-value metadata parser, source hashes, duplicate-ID reporting, app-state ID reservation and audit, Workspace GET/PATCH, Chapter list/detail/revision-history, and author-only immutable application draft saves with CAS, idempotency, and external-change conflict detection. App state stays outside Harness; these APIs do not invoke Git.
-- The author approved the ID mapping and OQ-015 save strategy. This branch updates affected IDs, file names, indexes and references while preserving setting text/status; `manuscript/` prose was not changed. The repository has no formal chapters; OQ-016 still blocks assigning chapter identity/order.
+- The author approved the ID mapping and OQ-015 save strategy during the initial V0.4 review. This branch updates affected IDs, file names, indexes and references while preserving setting text/status; `manuscript/` prose was not changed. At that point the repository had no formal chapters and OQ-016 was awaiting the author's answer; the subsequent author decision is recorded above.
 - No `.figma/make` runtime was added. The review and remaining product questions are in `docs/reviews/v0.4-contract-review.md`.
 - Verification: `pnpm typecheck`, `pnpm lint`, `pnpm test` (35 unit tests: 13 API + 22 web), `pnpm build`, and `pnpm test:e2e` (3 Chromium tests at 1440px: light, dark, focus) passed. `node scripts/check-knowledge-ids.mjs --fail` passed with no collisions. `pnpm harness:rebuild` reported 44 Markdown documents, 7 knowledge documents, 2 proposals, and 0 formal chapters; `manuscript/README.md` remains unmapped. A local API smoke check passed for `/healthz` and Workspace GET. Vite reports a 779 kB main bundle advisory. Browser layout checks are not a pixel diff; the Make screenshot endpoint is unsupported.
 

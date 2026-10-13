@@ -14,19 +14,23 @@ those schemas. The candidate is not checked into the repository as an OpenAPI
 file and no full-spec validator or generator is claimed.
 
 The author resolved OQ-015: a chapter save creates an immutable application
-draft; the author later commits to Git separately. OQ-016 (chapter file format,
-stable ID and ordering) remains unresolved, and the repository has no formal
-manuscript chapter. OQ-014 (database/search) and OQ-026 (production
-deployment/auth) are also open. Existing Harness rules make Markdown + Git the
-source of truth and prohibit Agent writes to chapter prose or unapproved canon.
+draft; the author later commits to Git separately. The author also resolved
+OQ-016 on 2026-10-14 by asking to follow existing Harness conventions. Chapter
+sources use Markdown + Git, a stable `CH-*` ID in leading key-value metadata,
+an ID-prefixed filename, a level-one title, and optional `volumeId` / positive
+integer `order` metadata. TipTap content is represented as Markdown at the
+Harness boundary. The repository has no formal manuscript chapter. OQ-014
+(database/search) and OQ-026 (production deployment/auth) are also open.
+Existing Harness rules prohibit Agent writes to chapter prose or unapproved
+canon.
 
 ## Decision
 
 Read Harness Markdown through an allowlisted, symlink-skipping reader. Preserve
 raw source and hashes, retain duplicate IDs as separate paths, and rebuild the
 projection from the current files. Expose only the Workspace and Chapter
-operations whose behavior does not require choosing a database or inventing
-chapter IDs. Workspace preferences and immutable chapter drafts use atomic
+operations whose behavior does not require choosing a database. Workspace
+preferences and immutable chapter drafts use atomic
 JSON files in an application state directory outside the Harness.
 
 Chapter saves require an explicit author actor, a current `baseRevisionId`, and
@@ -43,8 +47,8 @@ decision workflow in this slice.
 
 - Harness reads and projection rebuilds do not change source files.
 - Chapter endpoints return no chapter records until an author-created source
-  file has an explicit `CH-*` ID and title. OQ-016 remains the gate for a
-  canonical chapter registry and future file adapter.
+  file follows the approved Markdown metadata and ID-prefixed filename
+  convention. The current repository has no formal chapter file.
 - Application draft saves and author Git commits are separate events;
   `commitRef` remains null and drafts are not presented as Harness commits.
 - JSON-file storage is local Sprint 1 infrastructure, not a production

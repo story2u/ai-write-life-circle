@@ -21,12 +21,13 @@ describe('ID allocation and audit foundation', () => {
     await expect(readFile(join(stateDirectory, 'id-reservations.json'), 'utf8')).resolves.toContain('"CHAR": 5')
   })
 
-  it('blocks colliding and unresolved ID prefixes', async () => {
+  it('blocks colliding and singleton ID prefixes while reserving chapter IDs', async () => {
     const stateDirectory = await temporaryDirectory()
     const allocator = new FileIdAllocator(stateDirectory, async () => ({ ids: ['WORLD-001'], collisions: ['WORLD-001'] }))
 
     await expect(allocator.reserve('WORLD')).rejects.toBeInstanceOf(IdAllocationBlockedError)
-    await expect(allocator.reserve('CH')).rejects.toBeInstanceOf(IdAllocationBlockedError)
+    await expect(allocator.reserve('CH')).resolves.toBe('CH-001')
+    await expect(allocator.reserve('CH')).resolves.toBe('CH-002')
     await expect(allocator.reserve('INTENT')).rejects.toBeInstanceOf(IdAllocationBlockedError)
   })
 

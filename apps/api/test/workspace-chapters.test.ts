@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, mkdir, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, mkdir, rename, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -11,7 +11,7 @@ async function temporaryDirectory(): Promise<string> {
 async function createChapterRepository(): Promise<{ root: string; chapterPath: string; source: string }> {
   const root = await temporaryDirectory()
   await mkdir(join(root, 'manuscript'), { recursive: true })
-  const chapterPath = join(root, 'manuscript', 'chapter-one.md')
+  const chapterPath = join(root, 'manuscript', 'CH-001.md')
   const source = '# Chapter One\nID: CH-001\nvolumeId: VOL-01\norder: 1\nmeta: Opening\nupdated: 2026-10-14\n\nFirst paragraph.\n\nSecond paragraph.'
   await writeFile(chapterPath, source)
   return { root, chapterPath, source }
@@ -149,9 +149,61 @@ describe('V0.4 workspace and chapter APIs', () => {
     expect(await response.json()).toMatchObject({ code: 'REVISION_CONFLICT' })
   })
 
+  it('orders chapters by Harness metadata and rejects invalid order values', async () => {
+    const { root, chapterPath, source } = await createChapterRepository()
+    await writeFile(chapterPath, source.replace('order: 1', 'order: 2'))
+    await writeFile(join(root, 'manuscript', 'CH-002.md'), '# Chapter Two\nID: CH-002\nvolumeId: VOL-01\norder: 1\n\nAnother author chapter.')
+    const handler = createApiHandler({
+      harnessRoot: root,
+      projectId: 'project-1',
+      stateDirectory: join(root, 'state'),
+      resolveActor: async () => ({ id: 'author-1', role: 'author' }),
+    })
+
+    const list = await handler(new Request('http://localhost/v1/projects/project-1/chapters'))
+    expect(await list.json()).toMatchObject({
+      volumes: [{ chapters: [{ chapterId: 'CH-002', order: 1 }, { chapterId: 'CH-001', order: 2 }] }],
+    })
+
+    await writeFile(chapterPath, source.replace('order: 1', 'order: 0'))
+    const invalid = await handler(new Request('http://localhost/v1/projects/project-1/chapters'))
+    expect(invalid.status).toBe(422)
+    expect(await invalid.json()).toMatchObject({ code: 'VALIDATION_FAILED', current: { chapterId: 'CH-001' } })
+  })
+
+  it('rejects chapter filenames that do not start with the metadata ID', async () => {
+    const { root, chapterPath } = await createChapterRepository()
+    await rename(chapterPath, join(root, 'manuscript', 'chapter-one.md'))
+    const handler = createApiHandler({
+      harnessRoot: root,
+      projectId: 'project-1',
+      stateDirectory: join(root, 'state'),
+      resolveActor: async () => ({ id: 'author-1', role: 'author' }),
+    })
+
+    const response = await handler(new Request('http://localhost/v1/projects/project-1/chapters'))
+    expect(response.status).toBe(422)
+    expect(await response.json()).toMatchObject({ code: 'VALIDATION_FAILED', current: { chapterId: 'CH-001' } })
+  })
+
+  it('requires a level-one title for a formal chapter source', async () => {
+    const { root, chapterPath } = await createChapterRepository()
+    await writeFile(chapterPath, 'ID: CH-001\nvolumeId: VOL-01\norder: 1\n\nChapter body.')
+    const handler = createApiHandler({
+      harnessRoot: root,
+      projectId: 'project-1',
+      stateDirectory: join(root, 'state'),
+      resolveActor: async () => ({ id: 'author-1', role: 'author' }),
+    })
+
+    const response = await handler(new Request('http://localhost/v1/projects/project-1/chapters'))
+    expect(response.status).toBe(422)
+    expect(await response.json()).toMatchObject({ code: 'VALIDATION_FAILED', current: { chapterId: 'CH-001' } })
+  })
+
   it('rejects duplicate chapter IDs instead of selecting one file for revision history', async () => {
     const { root } = await createChapterRepository()
-    await writeFile(join(root, 'manuscript', 'chapter-two.md'), '# Chapter Two\nID: CH-001\nvolumeId: VOL-01\norder: 2\n\nA second source.')
+    await writeFile(join(root, 'manuscript', 'CH-001-copy.md'), '# Chapter Two\nID: CH-001\nvolumeId: VOL-01\norder: 2\n\nA second source.')
     const handler = createApiHandler({
       harnessRoot: root,
       projectId: 'project-1',

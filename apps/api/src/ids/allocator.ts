@@ -21,7 +21,6 @@ export class IdAllocationBlockedError extends Error {
 type ReservationFile = { nextByPrefix: Record<string, number> }
 
 const blockedUntilAuthorResolution = new Map<string, string>([
-  ['CH', 'chapter ID and ordering rules remain unresolved (OQ-016)'],
   ['INTENT', 'INTENT-001 is a fixed singleton, not a generated sequence'],
 ])
 

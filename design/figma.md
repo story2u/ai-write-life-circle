@@ -55,8 +55,10 @@ subset. Operations marked `proposed` remain non-final. The Make
 `get_screenshot` and `get_variable_defs` tools report that they do not support
 Make files. A public browser preview was visible and showed the V0.3 workbench;
 its source-code panel requested sign-in. No screenshot pixel diff is claimed.
-The application draft endpoint is implemented, but no chapter record exists
-until OQ-016 defines the source mapping; the API does not write Harness files.
+The application draft endpoint is implemented. The author resolved OQ-016 by
+confirming the existing Harness conventions for chapter files; no chapter
+record exists yet because `manuscript/` contains no authored chapter. The API
+does not write Harness files.
 The initial API-spec truncation was a resource limit, not a file permission
 failure.
 
