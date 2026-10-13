@@ -128,12 +128,9 @@ describe('workspace save and review version safety', () => {
 
     act(() => result.current.onChange([...request.paragraphs, '审查期间作者继续写下的新段落。']))
     vi.useRealTimers()
-    await act(async () => {
-      resolveReview(reviewResponse(request))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
+    await act(async () => { resolveReview(reviewResponse(request)) })
 
-    expect(result.current.task).toMatchObject({ state: 'failed', error: expect.stringContaining('旧结果已丢弃') })
+    await waitFor(() => expect(result.current.task).toMatchObject({ state: 'failed', error: expect.stringContaining('旧结果已丢弃') }))
     expect(result.current.proposals).toHaveLength(0)
   })
 
