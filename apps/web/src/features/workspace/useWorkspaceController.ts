@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChallengeRound, ChatMessage, ChapterVersion, Decision, DecisionAction, Document, Proposal, WorkspaceSnapshot } from '@writer-agent/contracts'
+import type { ApiChapterVersion, ChallengeRound, ChatMessage, ChapterVersion, Decision, DecisionAction, Document, Proposal, UserWorkspaceStateV04, WorkspaceSnapshot, WorkspacePreferences } from '@writer-agent/contracts'
 import type { AgentTask, Layout } from '../../types'
 import { ChapterRevisionConflictError, type WriterAgentAdapter } from '../../services/writerAgent'
 import { useWorkspaceActions } from './useWorkspaceActions'
 import { createId } from '../../lib/id'
 import { hashMarkdown } from '../../lib/sourceHash'
 import { plainParagraphsToMarkdown } from '../../lib/manuscriptMarkdown'
+import { mapChapterDetail } from '../../services/mappers/chapterMapper'
+import { clearLocalChapterDraft, createIdempotencyKey, readLocalChapterDraft, writeLocalChapterDraft, type LocalChapterDraft } from '../../services/localChapterDraft'
 
 export const WORKSPACE_STORAGE_KEY = 'writer-agent.v2'
 
@@ -22,6 +24,12 @@ export type SaveState =
   | { s: 'saving' }
   | { s: 'saved'; at: number }
   | { s: 'error'; message: string; conflict: boolean }
+
+export type ChapterLoadState =
+  | { status: 'idle' | 'loading' | 'loaded' }
+  | { status: 'error'; message: string }
+
+export type RecoverableChapterDraft = LocalChapterDraft & { conflict: boolean }
 
 type PersistedWorkspace = {
   doc: Document
@@ -49,6 +57,15 @@ function getDemoPreferences() {
   }
 }
 
+function getInitialPreferences(adapterMode: WriterAgentAdapter['mode'], workspacePreferences: WorkspacePreferences | undefined) {
+  if (adapterMode === 'demo') return getDemoPreferences()
+  const stored = workspacePreferences
+  return {
+    layout: stored?.layout ?? defaultLayout,
+    dark: stored?.theme === 'dark',
+  }
+}
+
 export function useWorkspaceController({ adapter, initialWorkspace, toast, requestConfirm }: {
   adapter: WriterAgentAdapter
   initialWorkspace: WorkspaceSnapshot
@@ -56,7 +73,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   requestConfirm: (action: WorkspaceConfirmAction) => void
 }) {
   const actions = useWorkspaceActions(adapter)
-  const preferences = useMemo(() => adapter.mode === 'demo' ? getDemoPreferences() : { layout: defaultLayout, dark: false }, [adapter.mode])
+  const preferences = useMemo(() => getInitialPreferences(adapter.mode, initialWorkspace.preferences), [adapter.mode, initialWorkspace.preferences])
   const chapterIds = useMemo(() => new Set(initialWorkspace.chapters.map((chapter) => chapter.id)), [initialWorkspace])
   const [doc, setDoc] = useState(initialWorkspace.document)
   const [markdownByChapter, setMarkdownByChapter] = useState(initialWorkspace.markdownByChapter ?? Object.fromEntries(
@@ -75,6 +92,11 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>(() => Object.fromEntries(
     initialWorkspace.chapters.map((chapter) => [chapter.id, { s: 'saved', at: Date.now() } satisfies SaveState]),
   ))
+  const [chapterLoadStates, setChapterLoadStates] = useState<Record<string, ChapterLoadState>>(() => Object.fromEntries(
+    initialWorkspace.chapters.map((chapter) => [chapter.id, { status: adapter.mode === 'demo' ? 'loaded' : 'idle' } satisfies ChapterLoadState]),
+  ))
+  const [recoveryDrafts, setRecoveryDrafts] = useState<Record<string, RecoverableChapterDraft>>({})
+  const [editorGeneration, setEditorGeneration] = useState(0)
 
   const docRef = useRef(doc)
   docRef.current = doc
@@ -83,11 +105,22 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   const proposalsRef = useRef(proposals)
   proposalsRef.current = proposals
   const chapterVersionsRef = useRef(chapterVersions)
+  const apiVersionsRef = useRef<Record<string, ApiChapterVersion>>(Object.fromEntries(
+    Object.entries(initialWorkspace.chapterVersions).flatMap(([id, version]) => version.mode === 'api' ? [[id, version]] : []),
+  ))
+  const apiSaveBaseRevisionRef = useRef<Record<string, string | null>>(Object.fromEntries(
+    Object.entries(apiVersionsRef.current).map(([id, version]) => [id, version.revisionId]),
+  ))
   const editVersionsRef = useRef(new Map(initialWorkspace.chapters.map((chapter) => [chapter.id, 0])))
   const savedEditVersionsRef = useRef(new Map(initialWorkspace.chapters.map((chapter) => [chapter.id, 0])))
   const saveTimersRef = useRef(new Map<string, number>())
   const saveQueuesRef = useRef(new Map<string, Promise<boolean>>())
   const saveAttemptsRef = useRef(new Map<string, Promise<boolean>>())
+  const loadedApiChaptersRef = useRef(new Set<string>())
+  const pendingApiChapterLoadsRef = useRef(new Map<string, Promise<void>>())
+  const conflictedChaptersRef = useRef(new Set<string>())
+  const aliveRef = useRef(true)
+  const workspacePatchQueueRef = useRef(Promise.resolve())
   const reviewTimer = useRef<number | undefined>(undefined)
   const reviewGeneration = useRef(0)
   const reviewInFlight = useRef(false)
@@ -101,9 +134,117 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   }, [adapter.mode, doc, markdownByChapter, proposals, decisions, chapterVersions, layout, chat, challenge, seq, current, dark])
   useEffect(persist, [persist])
 
+  useEffect(() => {
+    aliveRef.current = true
+    return () => { aliveRef.current = false }
+  }, [])
+
   const setChapterSaveState = useCallback((chapterId: string, state: SaveState) => {
     setSaveStates((states) => ({ ...states, [chapterId]: state }))
   }, [])
+
+  const setChapterLoadState = useCallback((chapterId: string, state: ChapterLoadState) => {
+    setChapterLoadStates((states) => ({ ...states, [chapterId]: state }))
+  }, [])
+
+  const updateChapterVersion = useCallback((chapterId: string, version: ChapterVersion) => {
+    const next = { ...chapterVersionsRef.current, [chapterId]: version }
+    chapterVersionsRef.current = next
+    setChapterVersions(next)
+    if (version.mode === 'api') apiVersionsRef.current = { ...apiVersionsRef.current, [chapterId]: version }
+  }, [])
+
+  const loadApiChapter = useCallback((chapterId: string, force = false, discardLocalDraft = false): Promise<void> => {
+    if (adapter.mode !== 'api') return Promise.resolve()
+    if (!force && loadedApiChaptersRef.current.has(chapterId)) return Promise.resolve()
+    const pending = pendingApiChapterLoadsRef.current.get(chapterId)
+    if (pending) return pending
+
+    setChapterLoadState(chapterId, { status: 'loading' })
+    const request = (async () => {
+      const draftBeforeRead = discardLocalDraft ? null : readLocalChapterDraft(initialWorkspace.projectId, chapterId)
+      if (draftBeforeRead) {
+        setRecoveryDrafts((drafts) => ({ ...drafts, [chapterId]: { ...draftBeforeRead, conflict: true } }))
+      }
+      const detail = await adapter.loadChapter(initialWorkspace.projectId, chapterId)
+      if (detail.chapterId !== chapterId) throw new Error('Chapter 响应的 chapterId 与请求不一致。')
+      const volumeLabel = initialWorkspace.chapters.find((chapter) => chapter.id === chapterId)?.volume
+      const mapped = mapChapterDetail(detail, volumeLabel)
+      const actualContentHash = await hashMarkdown(mapped.markdown)
+      if (actualContentHash !== mapped.version.contentHash) {
+        throw new Error('章节 Markdown 与服务端 contentHash 不一致；已阻止编辑和保存。')
+      }
+      const currentRevisionId = mapped.version.revisionId
+      const localDraft = discardLocalDraft ? null : readLocalChapterDraft(initialWorkspace.projectId, chapterId)
+      let recovery: RecoverableChapterDraft | null = null
+      if (localDraft) {
+        const localHash = await hashMarkdown(localDraft.markdown)
+        if (localHash === mapped.version.contentHash) {
+          clearLocalChapterDraft(initialWorkspace.projectId, chapterId)
+        } else {
+          recovery = { ...localDraft, contentHash: localHash, conflict: localDraft.baseRevisionId !== currentRevisionId }
+        }
+      }
+      if (discardLocalDraft) clearLocalChapterDraft(initialWorkspace.projectId, chapterId)
+      if (!aliveRef.current) return
+
+      apiSaveBaseRevisionRef.current = { ...apiSaveBaseRevisionRef.current, [chapterId]: currentRevisionId }
+      updateChapterVersion(chapterId, mapped.version)
+      const nextMarkdown = { ...markdownByChapterRef.current, [chapterId]: mapped.markdown }
+      markdownByChapterRef.current = nextMarkdown
+      setMarkdownByChapter(nextMarkdown)
+      const nextDocument = { ...docRef.current }
+      delete nextDocument[chapterId]
+      docRef.current = nextDocument
+      setDoc(nextDocument)
+      setEditorGeneration((generation) => generation + 1)
+      setRecoveryDrafts((drafts) => {
+        const next = { ...drafts }
+        if (recovery) next[chapterId] = recovery
+        else delete next[chapterId]
+        return next
+      })
+      setChapterSaveState(chapterId, { s: 'saved', at: Date.now() })
+      setChapterLoadState(chapterId, { status: 'loaded' })
+      loadedApiChaptersRef.current.add(chapterId)
+      const editVersion = editVersionsRef.current.get(chapterId) ?? 0
+      savedEditVersionsRef.current.set(chapterId, editVersion)
+      if (discardLocalDraft) conflictedChaptersRef.current.delete(chapterId)
+    })().catch((cause: unknown) => {
+      if (aliveRef.current) setChapterLoadState(chapterId, {
+        status: 'error',
+        message: cause instanceof Error ? cause.message : '章节加载失败。',
+      })
+      throw cause
+    }).finally(() => {
+      pendingApiChapterLoadsRef.current.delete(chapterId)
+    })
+    pendingApiChapterLoadsRef.current.set(chapterId, request)
+    return request
+  }, [adapter, initialWorkspace.chapters, initialWorkspace.projectId, setChapterLoadState, setChapterSaveState, updateChapterVersion])
+
+  useEffect(() => {
+    if (adapter.mode !== 'api' || !current) return
+    void loadApiChapter(current).catch(() => undefined)
+  }, [adapter.mode, current, loadApiChapter])
+
+  useEffect(() => {
+    if (adapter.mode !== 'api') return
+    const timer = window.setTimeout(() => {
+      const patch: UserWorkspaceStateV04 = {
+        lastView: 'write',
+        ...(current ? { lastChapterId: current } : {}),
+        layout: { ...layout },
+        theme: dark ? 'dark' : 'light',
+      }
+      workspacePatchQueueRef.current = workspacePatchQueueRef.current
+        .catch(() => undefined)
+        .then(() => adapter.updateWorkspaceState(initialWorkspace.projectId, patch))
+        .then(() => undefined)
+        .catch((cause: unknown) => toast(cause instanceof Error ? `工作台偏好保存失败：${cause.message}` : '工作台偏好保存失败。'))
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [adapter, adapter.mode, current, dark, initialWorkspace.projectId, layout, toast])
 
   const enqueueSave = useCallback((chapterId: string, paragraphs: string[], markdown: string, editVersion: number): Promise<boolean> => {
     const attemptKey = `${chapterId}:${editVersion}`
@@ -112,8 +253,71 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
 
     const prior = saveQueuesRef.current.get(chapterId) ?? Promise.resolve(true)
     const attempt = prior.catch(() => false).then(async () => {
+      if (adapter.mode === 'api') {
+        const baseVersion = apiVersionsRef.current[chapterId]
+        if (!baseVersion) throw new Error('缺少服务端章节版本，无法安全保存。')
+        const baseRevisionId = apiSaveBaseRevisionRef.current[chapterId] ?? baseVersion.revisionId
+        const contentHash = await hashMarkdown(markdown)
+        const existingDraft = readLocalChapterDraft(initialWorkspace.projectId, chapterId)
+        const draft: LocalChapterDraft = existingDraft
+          && existingDraft.markdown === markdown
+          && existingDraft.baseRevisionId === baseRevisionId
+          ? { ...existingDraft, contentHash, updatedAt: new Date().toISOString() }
+          : {
+              projectId: initialWorkspace.projectId,
+              chapterId,
+              baseRevisionId,
+              markdown,
+              contentHash,
+              idempotencyKey: createIdempotencyKey(),
+              updatedAt: new Date().toISOString(),
+            }
+        // Persist the exact payload and key before sending; a lost response can be replayed safely.
+        try {
+          writeLocalChapterDraft(draft)
+        } catch {
+          throw new Error('浏览器无法保存本地恢复草稿；为避免请求结果丢失，本次尚未发送到服务器。')
+        }
+        const result = await adapter.saveChapterRevision({
+          projectId: initialWorkspace.projectId,
+          chapterId,
+          revision: {
+            baseRevisionId,
+            markdown,
+            clientSavedAt: new Date().toISOString(),
+            trigger: 'autosave',
+          },
+          idempotencyKey: draft.idempotencyKey,
+        })
+        if (!result.revisionId?.trim() || result.contentHash !== contentHash) {
+          throw new Error('服务器保存响应的 revisionId 或正文 Hash 与本次内容不匹配；本地草稿仍保留。')
+        }
+        const nextVersion = {
+          mode: 'api' as const,
+          revisionId: result.revisionId,
+          parentRevisionId: result.parentRevisionId ?? baseRevisionId,
+          contentHash: result.contentHash,
+          ...(result.createdAt ? { createdAt: result.createdAt } : {}),
+        }
+        apiSaveBaseRevisionRef.current = { ...apiSaveBaseRevisionRef.current, [chapterId]: result.revisionId }
+        conflictedChaptersRef.current.delete(chapterId)
+        updateChapterVersion(chapterId, nextVersion)
+        const persistedDraft = readLocalChapterDraft(initialWorkspace.projectId, chapterId)
+        if (persistedDraft?.idempotencyKey === draft.idempotencyKey && persistedDraft.markdown === markdown) {
+          clearLocalChapterDraft(initialWorkspace.projectId, chapterId)
+          setRecoveryDrafts((drafts) => {
+            const next = { ...drafts }
+            delete next[chapterId]
+            return next
+          })
+        }
+        savedEditVersionsRef.current.set(chapterId, editVersion)
+        if (editVersionsRef.current.get(chapterId) === editVersion) setChapterSaveState(chapterId, { s: 'saved', at: Date.now() })
+        return true
+      }
+
       const baseVersion = chapterVersionsRef.current[chapterId]
-      if (!baseVersion) throw new Error('缺少章节版本信息，无法安全保存。')
+      if (!baseVersion || baseVersion.mode !== 'demo') throw new Error('缺少演示章节版本，无法安全保存。')
       const sourceHash = await hashMarkdown(markdown)
       const result = await actions.saveChapter({
         projectId: initialWorkspace.projectId,
@@ -127,15 +331,14 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         throw new Error('保存响应与当前章节版本不匹配，草稿仍保留在本地。')
       }
 
-      const nextVersion = { revision: result.revision, sourceHash: result.sourceHash }
-      chapterVersionsRef.current = { ...chapterVersionsRef.current, [chapterId]: nextVersion }
-      setChapterVersions(chapterVersionsRef.current)
+      updateChapterVersion(chapterId, { mode: 'demo', revision: result.revision, sourceHash: result.sourceHash })
       savedEditVersionsRef.current.set(chapterId, editVersion)
       if (editVersionsRef.current.get(chapterId) === editVersion) setChapterSaveState(chapterId, { s: 'saved', at: result.savedAt })
       return true
     }).catch((cause: unknown) => {
-      if (editVersionsRef.current.get(chapterId) === editVersion) {
-        const conflict = cause instanceof ChapterRevisionConflictError
+      const conflict = cause instanceof ChapterRevisionConflictError
+      if (conflict) conflictedChaptersRef.current.add(chapterId)
+      if (conflict || editVersionsRef.current.get(chapterId) === editVersion) {
         const message = cause instanceof Error ? cause.message : '保存失败。'
         setChapterSaveState(chapterId, { s: 'error', message, conflict })
         toast(message)
@@ -150,7 +353,19 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
       if (saveQueuesRef.current.get(chapterId) === attempt) saveQueuesRef.current.delete(chapterId)
     })
     return attempt
-  }, [actions, initialWorkspace.projectId, setChapterSaveState, toast])
+  }, [actions, adapter, initialWorkspace.projectId, setChapterSaveState, toast, updateChapterVersion])
+
+  const scheduleSave = useCallback((chapterId: string, paragraphs: string[], markdown: string, editVersion: number) => {
+    const previousTimer = saveTimersRef.current.get(chapterId)
+    if (previousTimer !== undefined) window.clearTimeout(previousTimer)
+    if (conflictedChaptersRef.current.has(chapterId)) return
+    const timer = window.setTimeout(() => {
+      saveTimersRef.current.delete(chapterId)
+      setChapterSaveState(chapterId, { s: 'saving' })
+      void enqueueSave(chapterId, paragraphs, markdown, editVersion)
+    }, 700)
+    saveTimersRef.current.set(chapterId, timer)
+  }, [enqueueSave, setChapterSaveState])
 
   const flushSave = useCallback(async (chapterId = current): Promise<boolean> => {
     const timer = saveTimersRef.current.get(chapterId)
@@ -160,6 +375,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     }
     const editVersion = editVersionsRef.current.get(chapterId) ?? 0
     if (editVersion === (savedEditVersionsRef.current.get(chapterId) ?? 0)) return true
+    if (conflictedChaptersRef.current.has(chapterId)) return false
     setChapterSaveState(chapterId, { s: 'saving' })
     return enqueueSave(chapterId, docRef.current[chapterId] ?? [], markdownByChapterRef.current[chapterId] ?? '', editVersion)
   }, [current, enqueueSave, setChapterSaveState])
@@ -167,6 +383,33 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   const onChange = useCallback((paragraphs: string[], changedMarkdown?: string) => {
     const chapterId = current
     const markdown = changedMarkdown ?? plainParagraphsToMarkdown(paragraphs)
+    let storageFailure = false
+    if (adapter.mode === 'api') {
+      if (changedMarkdown === undefined) {
+        setChapterSaveState(chapterId, { s: 'error', message: '编辑器没有提供 Markdown 序列化结果，已阻止保存以保护原格式。', conflict: false })
+        return
+      }
+      const baseRevisionId = apiSaveBaseRevisionRef.current[chapterId] ?? apiVersionsRef.current[chapterId]?.revisionId ?? null
+      const existingDraft = readLocalChapterDraft(initialWorkspace.projectId, chapterId)
+      const draft: LocalChapterDraft = existingDraft
+        && existingDraft.markdown === markdown
+        && existingDraft.baseRevisionId === baseRevisionId
+        ? { ...existingDraft, updatedAt: new Date().toISOString() }
+        : {
+            projectId: initialWorkspace.projectId,
+            chapterId,
+            baseRevisionId,
+            markdown,
+            idempotencyKey: createIdempotencyKey(),
+            updatedAt: new Date().toISOString(),
+          }
+      try {
+        // Write through synchronously so even an immediate refresh leaves a recoverable draft.
+        writeLocalChapterDraft(draft)
+      } catch {
+        storageFailure = true
+      }
+    }
     const editVersion = (editVersionsRef.current.get(chapterId) ?? 0) + 1
     editVersionsRef.current.set(chapterId, editVersion)
     const nextDocument = { ...docRef.current, [chapterId]: paragraphs }
@@ -175,19 +418,79 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     const nextMarkdown = { ...markdownByChapterRef.current, [chapterId]: markdown }
     markdownByChapterRef.current = nextMarkdown
     setMarkdownByChapter(nextMarkdown)
-    setChapterSaveState(chapterId, { s: 'dirty' })
-
-    const previousTimer = saveTimersRef.current.get(chapterId)
-    if (previousTimer !== undefined) window.clearTimeout(previousTimer)
-    const timer = window.setTimeout(() => {
-      saveTimersRef.current.delete(chapterId)
-      setChapterSaveState(chapterId, { s: 'saving' })
-      void enqueueSave(chapterId, paragraphs, markdown, editVersion)
-    }, 700)
-    saveTimersRef.current.set(chapterId, timer)
-  }, [current, enqueueSave, setChapterSaveState])
+    const blockedByConflict = conflictedChaptersRef.current.has(chapterId)
+    if (storageFailure) {
+      setChapterSaveState(chapterId, { s: 'error', message: '浏览器无法保存本地恢复草稿；当前页面仍保留正文，尚未发送到服务器。', conflict: false })
+    } else if (blockedByConflict) {
+      setChapterSaveState(chapterId, { s: 'error', message: '版本冲突尚未处理。请导出本地草稿或明确加载服务器版本。', conflict: true })
+    } else {
+      setChapterSaveState(chapterId, { s: 'dirty' })
+      scheduleSave(chapterId, paragraphs, markdown, editVersion)
+    }
+  }, [adapter.mode, current, initialWorkspace.projectId, scheduleSave, setChapterSaveState])
 
   const retrySave = useCallback(() => flushSave(current), [current, flushSave])
+
+  const restoreLocalDraft = useCallback(async (chapterId = current) => {
+    if (adapter.mode !== 'api') return
+    const draft = recoveryDrafts[chapterId] ?? readLocalChapterDraft(initialWorkspace.projectId, chapterId)
+    const version = apiVersionsRef.current[chapterId]
+    if (!draft || !version) return
+    const contentHash = await hashMarkdown(draft.markdown)
+    const editVersion = (editVersionsRef.current.get(chapterId) ?? 0) + 1
+    editVersionsRef.current.set(chapterId, editVersion)
+    apiSaveBaseRevisionRef.current = { ...apiSaveBaseRevisionRef.current, [chapterId]: draft.baseRevisionId }
+    try {
+      writeLocalChapterDraft({ ...draft, contentHash, updatedAt: new Date().toISOString() })
+    } catch {
+      setChapterSaveState(chapterId, { s: 'error', message: '无法更新本地恢复记录；原始恢复草稿仍保留。', conflict: false })
+      return
+    }
+    const nextMarkdown = { ...markdownByChapterRef.current, [chapterId]: draft.markdown }
+    markdownByChapterRef.current = nextMarkdown
+    setMarkdownByChapter(nextMarkdown)
+    const nextDocument = { ...docRef.current, [chapterId]: [] }
+    docRef.current = nextDocument
+    setDoc(nextDocument)
+    setEditorGeneration((generation) => generation + 1)
+    setRecoveryDrafts((drafts) => {
+      const next = { ...drafts }
+      delete next[chapterId]
+      return next
+    })
+    const conflict = draft.baseRevisionId !== version.revisionId
+    if (conflict) {
+      conflictedChaptersRef.current.add(chapterId)
+      setChapterSaveState(chapterId, { s: 'error', message: '本地草稿基于较旧版本。正文已恢复到编辑器，但不会自动覆盖服务器版本。', conflict: true })
+      return
+    }
+    conflictedChaptersRef.current.delete(chapterId)
+    savedEditVersionsRef.current.set(chapterId, editVersion - 1)
+    setChapterSaveState(chapterId, { s: 'dirty' })
+    scheduleSave(chapterId, [], draft.markdown, editVersion)
+  }, [adapter.mode, current, initialWorkspace.projectId, recoveryDrafts, scheduleSave, setChapterSaveState])
+
+  const reloadServerVersion = useCallback((chapterId = current) => {
+    if (adapter.mode !== 'api') return
+    requestConfirm({
+      title: '使用服务器版本？',
+      desc: '这会清除该章节浏览器中尚未确认保存的本地草稿，并重新读取服务器版本。建议先导出本地草稿。',
+      confirmText: '使用服务器版本',
+      danger: true,
+      run: () => { void loadApiChapter(chapterId, true, true).catch((cause: unknown) => toast(cause instanceof Error ? cause.message : '章节重新加载失败。')) },
+    })
+  }, [adapter.mode, current, loadApiChapter, requestConfirm, toast])
+
+  const retryLoadChapter = useCallback((chapterId = current) => {
+    if (adapter.mode === 'api') void loadApiChapter(chapterId, true).catch(() => undefined)
+  }, [adapter.mode, current, loadApiChapter])
+
+  const exportLocalDraft = useCallback((chapterId = current): string | null => {
+    if (adapter.mode !== 'api') return null
+    return recoveryDrafts[chapterId]?.markdown
+      ?? readLocalChapterDraft(initialWorkspace.projectId, chapterId)?.markdown
+      ?? null
+  }, [adapter.mode, current, initialWorkspace.projectId, recoveryDrafts])
 
   useEffect(() => {
     const hasUnsavedChanges = Object.values(saveStates).some((state) => state.s === 'dirty' || state.s === 'saving' || state.s === 'error')
@@ -216,6 +519,10 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   })
 
   const runReview = useCallback(async () => {
+    if (adapter.mode !== 'demo') {
+      setTask({ state: 'failed', error: '真实 Agent 审查尚未接入；API 模式不会调用演示响应。' })
+      return
+    }
     if (reviewInFlight.current) return
     reviewInFlight.current = true
     const runId = ++reviewGeneration.current
@@ -234,6 +541,11 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     const reviewRunId = createId()
     const paragraphs = docRef.current[chapterId] ?? []
     const baseVersion = chapterVersionsRef.current[chapterId]
+    if (!baseVersion || baseVersion.mode !== 'demo') {
+      reviewInFlight.current = false
+      setTask({ state: 'failed', error: '当前章节版本不支持演示审查。' })
+      return
+    }
     const markdown = markdownByChapterRef.current[chapterId] ?? plainParagraphsToMarkdown(paragraphs)
     const sourceHash = await hashMarkdown(markdown)
     const steps = ['读取本章正文', '比对时间线', '检索人物档案', '核对伏笔库', '整理证据与分析']
@@ -266,7 +578,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         if (runId !== reviewGeneration.current) return
         const liveHash = await hashMarkdown(markdownByChapterRef.current[chapterId] ?? '')
         const liveVersion = chapterVersionsRef.current[chapterId]
-        if (liveHash !== sourceHash || liveVersion?.revision !== baseVersion.revision) {
+        if (liveHash !== sourceHash || liveVersion?.mode !== 'demo' || liveVersion.revision !== baseVersion.revision) {
           reviewInFlight.current = false
           setTask({ state: 'failed', error: '审查期间正文版本发生变化，旧结果已丢弃。请重新审查。' })
           return
@@ -348,7 +660,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         }
       })
     }, 520)
-  }, [actions, current, flushSave, initialWorkspace.chapters, initialWorkspace.projectId, seq, toast])
+  }, [actions, adapter.mode, current, flushSave, initialWorkspace.chapters, initialWorkspace.projectId, seq, toast])
 
   const cancelReview = useCallback(() => {
     reviewGeneration.current++
@@ -368,7 +680,8 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         return
       }
       const liveHash = await hashMarkdown(markdownByChapterRef.current[chapterId] ?? '')
-      if (proposal.projectId !== initialWorkspace.projectId || proposal.sourceHash !== liveHash || proposal.chapterRevision !== chapterVersionsRef.current[chapterId]?.revision) {
+      const chapterVersion = chapterVersionsRef.current[chapterId]
+      if (proposal.projectId !== initialWorkspace.projectId || proposal.sourceHash !== liveHash || chapterVersion?.mode !== 'demo' || proposal.chapterRevision !== chapterVersion.revision) {
         toast('这条提案对应的正文版本已变化，已阻止采纳。请重新审查后再决定。')
         return
       }
@@ -420,8 +733,14 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     chapters: initialWorkspace.chapters,
     knowledge: initialWorkspace.knowledge,
     projectId: initialWorkspace.projectId,
-    doc, markdownByChapter, proposals, decisions, layout, setLayout, chat, challenge, setChallenge, seq,
+    projectTitle: initialWorkspace.projectTitle ?? 'Writer Agent',
+    adapterMode: adapter.mode,
+    doc, markdownByChapter, chapterVersions, proposals, decisions, layout, setLayout, chat, challenge, setChallenge, seq,
     current, dark, setDark, task, saveState: saveStates[current] ?? { s: 'saved', at: Date.now() },
+    chapterLoadState: chapterLoadStates[current] ?? { status: 'idle' as const },
+    editorGeneration,
+    recoveryDraft: recoveryDrafts[current],
+    restoreLocalDraft, reloadServerVersion, retryLoadChapter, exportLocalDraft,
     flushSave, retrySave, onChange, switchChapter, runReview, cancelReview, decide,
     createProposal, sendChat, markChatSaved, requestChallenge,
   }

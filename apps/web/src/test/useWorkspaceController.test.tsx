@@ -170,8 +170,12 @@ describe('workspace save and review version safety', () => {
   it('binds the review request to the exact chapter revision hash', async () => {
     const { initialWorkspace } = await setupController()
     const hash = await hashMarkdown(initialWorkspace.markdownByChapter?.c12 ?? plainParagraphsToMarkdown(initialWorkspace.document.c12))
-    expect(initialWorkspace.chapterVersions.c12.sourceHash).toBe(hash)
-    expect(initialWorkspace.chapterVersions.c12.revision).toBe(0)
+    const version = initialWorkspace.chapterVersions.c12
+    expect(version.mode).toBe('demo')
+    if (version.mode === 'demo') {
+      expect(version.sourceHash).toBe(hash)
+      expect(version.revision).toBe(0)
+    }
   })
 
   it('reports historical pending issues instead of "未发现问题" when a later review returns nothing', async () => {

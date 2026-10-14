@@ -2,12 +2,13 @@ import type { Chapter, Document } from '@writer-agent/contracts'
 
 const count = (ps: string[] = []) => ps.join('').replace(/\s/g, '').length
 
-export default function ChapterNavigator({ chapters, doc, current, onPick, pendingByChapter, onNav, onCollapse }: {
+export default function ChapterNavigator({ chapters, doc, current, onPick, pendingByChapter, onNav, onCollapse, projectTitle, adapterMode }: {
   chapters: Chapter[]
   doc: Document; current: string; onPick: (id: string) => void; pendingByChapter: Record<string, number>
   onNav: (n: string) => void; onCollapse: () => void
+  projectTitle: string; adapterMode: 'demo' | 'api'
 }) {
-  const total = Object.values(doc).reduce((s, p) => s + count(p), 0)
+  const total = chapters.reduce((sum, chapter) => sum + (doc[chapter.id] ? count(doc[chapter.id]) : chapter.wordCount ?? 0), 0)
   const volumes = [...new Set(chapters.map((c) => c.volume))]
   const nav: [string, string][] = [['knowledge', '作品知识库'], ['decisions', '提案与决策'], ['agent', 'Agent 工作台']]
   return (
@@ -15,8 +16,8 @@ export default function ChapterNavigator({ chapters, doc, current, onPick, pendi
       <div className="flex items-start px-5 pt-5 pb-4">
         <div className="min-w-0 flex-1">
           <div className="text-[11px] tracking-widest" style={{ color: 'var(--ink-3)' }}>WRITER AGENT</div>
-          <div className="font-prose mt-1 text-[17px] font-semibold">雨落江宁</div>
-          <div className="mt-1 text-xs" style={{ color: 'var(--ink-3)' }}>长篇 · 演示稿 {total.toLocaleString()} 字</div>
+          <div className="font-prose mt-1 text-[17px] font-semibold">{projectTitle}</div>
+          <div className="mt-1 text-xs" style={{ color: 'var(--ink-3)' }}>{adapterMode === 'demo' ? '长篇 · 演示稿' : 'Harness · 应用草稿'} {total.toLocaleString()} 字</div>
         </div>
         <button type="button" onClick={onCollapse} className="btn ghost rounded px-1.5 text-sm" style={{ color: 'var(--ink-3)' }} title="折叠导航 ⌘⇧\" aria-label="折叠导航">⟨</button>
       </div>
@@ -47,7 +48,7 @@ export default function ChapterNavigator({ chapters, doc, current, onPick, pendi
               >
                 <span className="min-w-0 flex-1 truncate">{c.title}</span>
                 {pendingByChapter[c.id] > 0 && <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--warn)' }} title={`${pendingByChapter[c.id]} 项待确认`} />}
-                <span className="font-sans text-[10.5px]" style={{ color: 'var(--ink-3)' }}>{count(doc[c.id])}</span>
+                <span className="font-sans text-[10.5px]" style={{ color: 'var(--ink-3)' }}>{doc[c.id] ? count(doc[c.id]) : c.wordCount ?? 0}</span>
               </button>
             ))}
           </div>
