@@ -84,13 +84,9 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
   const [winW, setWinW] = useState(window.innerWidth)
 
   const editorRef = useRef<Editor | null>(null)
+  const editorChapterRef = useRef<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [, force] = useState(0)
-  const handleEditorReady = useCallback((editor: Editor | null) => {
-    editorRef.current = editor
-    editor?.on('transaction', () => force((n) => n + 1))
-    force((n) => n + 1)
-  }, [])
 
   const toast = useCallback((text: string) => {
     const id = createId()
@@ -102,6 +98,12 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
     task, saveState, flushSave, retrySave, onChange, runReview: runWorkspaceReview, cancelReview, decide, createProposal,
     sendChat, markChatSaved, requestChallenge, chapterLoadState, editorGeneration, recoveryDraft,
     restoreLocalDraft, reloadServerVersion, retryLoadChapter, exportLocalDraft } = workspace
+  const handleEditorReady = useCallback((editor: Editor | null) => {
+    editorRef.current = editor
+    editorChapterRef.current = editor ? current : null
+    editor?.on('transaction', () => force((n) => n + 1))
+    force((n) => n + 1)
+  }, [current])
 
   useEffect(() => {
     const r = () => setWinW(window.innerWidth)
@@ -186,9 +188,12 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
     [chProposals, activeId],
   )
   const pendingByChapter = proposals.reduce<Record<string, number>>((m, p) => { if (p.status === 'pending') m[p.chapterId ?? '_'] = (m[p.chapterId ?? '_'] ?? 0) + 1; return m }, {})
-  const words = doc[current] ? doc[current].join('').replace(/\s/g, '').length : chapter.wordCount ?? 0
   const detail = proposals.find((p) => p.id === detailId)
   const ed = editorRef.current
+  const editorText = editorChapterRef.current === current && ed && !ed.isDestroyed ? ed.getText() : undefined
+  const words = editorText !== undefined
+    ? editorText.replace(/\s/g, '').length
+    : doc[current] ? doc[current].join('').replace(/\s/g, '').length : chapter.wordCount ?? 0
 
   const narrow = winW < 1180
   const veryNarrow = winW < 900
@@ -255,9 +260,10 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
                   <Btn small disabled={!ed?.can().redo()} onClick={() => ed?.chain().focus().redo().run()} title="重做 ⌘⇧Z">重做</Btn>
                   <span className="mx-2 tabular-nums">{words.toLocaleString()} 字</span>
                   <span className="w-[92px] text-right" title={saveState.s === 'error' ? saveState.message : undefined} aria-live="polite">
-                    {saveState.s === 'saving' ? '保存中…' : saveState.s === 'dirty' ? '有未保存修改' : saveState.s === 'error' ? (saveState.conflict ? '版本冲突' : '保存失败') : `已保存 ${new Date(saveState.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`}
+                    {saveState.s === 'saving' ? '保存中…' : saveState.s === 'dirty' ? '有未保存修改' : saveState.s === 'recovery' ? '有待恢复草稿' : saveState.s === 'error' ? (saveState.conflict ? '版本冲突' : '保存失败') : `已保存 ${new Date(saveState.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`}
                   </span>
                   {saveState.s === 'error' && !saveState.conflict && <button type="button" className="btn ghost rounded px-1" onClick={() => void retrySave()} aria-label="重试保存">重试</button>}
+                  {adapter.mode === 'api' && saveState.s === 'error' && !saveState.conflict && exportLocalDraft() !== null && <button type="button" className="btn ghost rounded px-1" onClick={downloadLocalDraft}>导出当前草稿</button>}
                   <Btn small variant={layout.focus ? 'outline' : 'ghost'} onClick={() => setLayout((l) => ({ ...l, focus: !l.focus }))} title="⌘⇧F">{layout.focus ? '退出专注' : '专注'}</Btn>
                 </span>
               </div>

@@ -23,6 +23,7 @@ export type SaveState =
   | { s: 'dirty' }
   | { s: 'saving' }
   | { s: 'saved'; at: number }
+  | { s: 'recovery' }
   | { s: 'error'; message: string; conflict: boolean }
 
 export type ChapterLoadState =
@@ -96,6 +97,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     initialWorkspace.chapters.map((chapter) => [chapter.id, { status: adapter.mode === 'demo' ? 'loaded' : 'idle' } satisfies ChapterLoadState]),
   ))
   const [recoveryDrafts, setRecoveryDrafts] = useState<Record<string, RecoverableChapterDraft>>({})
+  const [volatileDrafts, setVolatileDrafts] = useState<Record<string, string>>({})
   const [editorGeneration, setEditorGeneration] = useState(0)
 
   const docRef = useRef(doc)
@@ -165,6 +167,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
       const draftBeforeRead = discardLocalDraft ? null : readLocalChapterDraft(initialWorkspace.projectId, chapterId)
       if (draftBeforeRead) {
         setRecoveryDrafts((drafts) => ({ ...drafts, [chapterId]: { ...draftBeforeRead, conflict: true } }))
+        setChapterSaveState(chapterId, { s: 'recovery' })
       }
       const detail = await adapter.loadChapter(initialWorkspace.projectId, chapterId)
       if (detail.chapterId !== chapterId) throw new Error('Chapter 响应的 chapterId 与请求不一致。')
@@ -204,7 +207,14 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         else delete next[chapterId]
         return next
       })
-      setChapterSaveState(chapterId, { s: 'saved', at: Date.now() })
+      if (discardLocalDraft) {
+        setVolatileDrafts((drafts) => {
+          const next = { ...drafts }
+          delete next[chapterId]
+          return next
+        })
+      }
+      setChapterSaveState(chapterId, recovery ? { s: 'recovery' } : { s: 'saved', at: Date.now() })
       setChapterLoadState(chapterId, { status: 'loaded' })
       loadedApiChaptersRef.current.add(chapterId)
       const editVersion = editVersionsRef.current.get(chapterId) ?? 0
@@ -311,6 +321,13 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
             return next
           })
         }
+        if (markdownByChapterRef.current[chapterId] === markdown) {
+          setVolatileDrafts((drafts) => {
+            const next = { ...drafts }
+            delete next[chapterId]
+            return next
+          })
+        }
         savedEditVersionsRef.current.set(chapterId, editVersion)
         if (editVersionsRef.current.get(chapterId) === editVersion) setChapterSaveState(chapterId, { s: 'saved', at: Date.now() })
         return true
@@ -406,8 +423,14 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
       try {
         // Write through synchronously so even an immediate refresh leaves a recoverable draft.
         writeLocalChapterDraft(draft)
+        setVolatileDrafts((drafts) => {
+          const next = { ...drafts }
+          delete next[chapterId]
+          return next
+        })
       } catch {
         storageFailure = true
+        setVolatileDrafts((drafts) => ({ ...drafts, [chapterId]: markdown }))
       }
     }
     const editVersion = (editVersionsRef.current.get(chapterId) ?? 0) + 1
@@ -487,13 +510,14 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
 
   const exportLocalDraft = useCallback((chapterId = current): string | null => {
     if (adapter.mode !== 'api') return null
-    return recoveryDrafts[chapterId]?.markdown
+    return volatileDrafts[chapterId]
+      ?? recoveryDrafts[chapterId]?.markdown
       ?? readLocalChapterDraft(initialWorkspace.projectId, chapterId)?.markdown
       ?? null
-  }, [adapter.mode, current, initialWorkspace.projectId, recoveryDrafts])
+  }, [adapter.mode, current, initialWorkspace.projectId, recoveryDrafts, volatileDrafts])
 
   useEffect(() => {
-    const hasUnsavedChanges = Object.values(saveStates).some((state) => state.s === 'dirty' || state.s === 'saving' || state.s === 'error')
+    const hasUnsavedChanges = Object.values(saveStates).some((state) => state.s === 'dirty' || state.s === 'saving' || state.s === 'recovery' || state.s === 'error')
     if (!hasUnsavedChanges) return
     const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
       event.preventDefault()

@@ -1,10 +1,15 @@
+import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 
 test('real Harness chapter read, save, recovery, conflict safety, and Workspace preferences', async ({ browser }) => {
   const requestsA: string[] = []
   const contextA = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   const pageA = await contextA.newPage()
-  pageA.on('request', (request) => requestsA.push(request.url()))
+  let revisionPostsA = 0
+  pageA.on('request', (request) => {
+    requestsA.push(request.url())
+    if (request.method() === 'POST' && request.url().includes('/revisions')) revisionPostsA++
+  })
 
   await pageA.goto('/')
   const chapterOne = pageA.getByRole('treeitem', { name: /第一章 · 雨前/ })
@@ -56,6 +61,12 @@ test('real Harness chapter read, save, recovery, conflict safety, and Workspace 
   await pageA.keyboard.press('Control+S')
   await expect(pageA.getByRole('alert').filter({ hasText: '检测到版本冲突' })).toBeVisible()
   await expect(pageA.getByLabel('正文编辑器')).toContainText(localText)
+  await pageA.reload()
+  await expect(pageA.getByText('有待恢复草稿', { exact: true })).toBeVisible()
+  await pageA.getByRole('button', { name: '恢复本地草稿' }).click()
+  await expect(pageA.getByLabel('正文编辑器')).toContainText(localText)
+  await expect(pageA.getByText(`${localText.replace(/\s/g, '').length} 字`, { exact: true })).toBeVisible()
+  await expect(pageA.getByText('版本冲突', { exact: true })).toBeVisible()
 
   const contextC = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   const pageC = await contextC.newPage()
@@ -68,6 +79,9 @@ test('real Harness chapter read, save, recovery, conflict safety, and Workspace 
     pageA.getByRole('button', { name: '导出本地草稿' }).click(),
   ])
   expect(download.suggestedFilename()).toBe('CH-901-local-draft.md')
+  const recoveryExport = await download.path()
+  expect(recoveryExport).not.toBeNull()
+  expect(await readFile(recoveryExport!, 'utf8')).toContain(localText)
 
   await pageA.getByRole('button', { name: '重新读取服务器版本…' }).click()
   const confirm = pageA.getByRole('dialog')
@@ -75,6 +89,29 @@ test('real Harness chapter read, save, recovery, conflict safety, and Workspace 
   await confirm.getByRole('button', { name: '使用服务器版本' }).click()
   await expect(pageA.getByLabel('正文编辑器')).toContainText(serverText)
   expect(await pageA.evaluate(() => localStorage.getItem('writer-agent.api-draft.v1:e2e-fixture:CH-901'))).toBeNull()
+
+  const postCountBeforeQuotaFailure = revisionPostsA
+  await pageA.evaluate(() => {
+    const originalSetItem = Storage.prototype.setItem
+    Storage.prototype.setItem = function (this: Storage, key, value) {
+      if (key.startsWith('writer-agent.api-draft.v1:')) throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      return originalSetItem.call(this, key, value)
+    }
+  })
+  const volatileText = '本地存储空间不足时仍可导出的草稿。'
+  await pageA.getByLabel('正文编辑器').fill(volatileText)
+  await pageA.keyboard.press('Control+S')
+  await expect(pageA.getByText('保存失败', { exact: true })).toBeVisible()
+  await expect(pageA.getByRole('button', { name: '导出当前草稿' })).toBeVisible()
+  const [volatileDownload] = await Promise.all([
+    pageA.waitForEvent('download'),
+    pageA.getByRole('button', { name: '导出当前草稿' }).click(),
+  ])
+  const volatileExport = await volatileDownload.path()
+  expect(volatileExport).not.toBeNull()
+  expect(await readFile(volatileExport!, 'utf8')).toContain(volatileText)
+  expect(revisionPostsA).toBe(postCountBeforeQuotaFailure)
+  expect(pageA.getByRole('button', { name: '重试保存' })).toBeVisible()
 
   await contextA.close()
   await contextB.close()

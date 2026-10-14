@@ -142,6 +142,26 @@ describe('API workspace chapter workflow', () => {
     expect(attemptsAfterRetry).toBe(attemptsBeforeRetry)
   })
 
+  it('exports the in-memory Markdown when localStorage rejects a draft write', async () => {
+    const { result, fetchMock } = await setupApiController()
+    const draftMarkdown = '配额不足时仍可导出的完整中文草稿。\n\n> 引用也保留。'
+    const originalSetItem = Storage.prototype.setItem
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === localDraftKey) throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      return originalSetItem.call(this, key, value)
+    })
+
+    act(() => result.current.onChange(['配额不足时仍可导出的完整中文草稿。', '引用也保留。'], draftMarkdown))
+    expect(result.current.saveState).toMatchObject({ s: 'error', conflict: false })
+    expect(result.current.exportLocalDraft()).toBe(draftMarkdown)
+
+    let saved = true
+    await act(async () => { saved = await result.current.flushSave() })
+    expect(saved).toBe(false)
+    expect(fetchMock.mock.calls.some(([path, init]) => String(path).endsWith('/revisions') && init?.method === 'POST')).toBe(false)
+    expect(result.current.exportLocalDraft()).toBe(draftMarkdown)
+  })
+
   it('offers a stale local draft after reload without replacing the server Markdown', async () => {
     const staleMarkdown = '刷新前浏览器留下的中文草稿。'
     const { result, fetchMock } = await setupApiController({
@@ -152,6 +172,7 @@ describe('API workspace chapter workflow', () => {
     })
 
     expect(result.current.recoveryDraft).toMatchObject({ markdown: staleMarkdown, conflict: true })
+    expect(result.current.saveState).toEqual({ s: 'recovery' })
     expect(result.current.markdownByChapter[chapterId]).toBe(serverMarkdown)
     expect(fetchMock.mock.calls.some(([path, init]) => String(path).endsWith('/revisions') && init?.method === 'POST')).toBe(false)
 
