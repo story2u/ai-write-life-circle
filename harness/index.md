@@ -11,6 +11,7 @@
 | 理解意图/寻找表达 | [inspire](workflows/inspire.md) | intent、作者片段、references |
 | 接受或否决候选 | [accept](workflows/accept.md) | 指定提案、受影响文件、decisions |
 | 暂停/恢复 | [handoff](workflows/handoff.md) | current、未完成提案 |
+| 部署到 AWS | [deploy](workflows/deploy.md) | deploy/、.github/workflows、.env.example |
 
 数据字段见 [data-contract](data-contract.md)，需要新增档案时再读 templates/。
 默认只读 1 个工作流、相关索引和至多 5 个相关条目；证据不足时扩大并说明。全书审查分批，以章节覆盖清单记录进度，不能用局部检查宣称全书无误。
