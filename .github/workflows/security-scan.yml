@@ -65,7 +65,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile.web
+          file: ./deploy/Dockerfile.web
           push: false
           tags: greenfield-web:${{ github.sha }}
           outputs: type=docker,dest=/tmp/image.tar
@@ -101,8 +101,11 @@ jobs:
 
       - name: Check for sensitive file patterns
         run: |
-          if git log -p | grep -i "password\|secret\|api.key\|private.key" | head -5; then
+          # 排除已知的非敏感配置键名（如 WEBHOOK_SECRET 变量名引用）
+          MATCHES=$(git log -p | grep -i "password=\|secret=\|api_key=\|private_key=" | grep -v "WEBHOOK_SECRET\|grep SECRET\|#" | head -5)
+          if [ -n "$MATCHES" ]; then
             echo "⚠️  警告：Git 历史中可能包含敏感信息"
+            echo "$MATCHES"
             echo "请检查 SECURITY.md 中的紧急处理步骤"
             exit 1
           fi

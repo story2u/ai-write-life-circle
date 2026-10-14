@@ -43,7 +43,7 @@ echo "✅ 安装完成！"
 echo "=========================================="
 echo ""
 echo "查看 webhook 配置信息："
-sudo cat /etc/systemd/system/webhook.service | grep WEBHOOK_SECRET
+sudo systemctl cat webhook 2>/dev/null | grep -i "WEBHOOK" || true
 
 echo ""
 echo "查看服务日志："
