@@ -144,6 +144,57 @@ describe('V0.4 workspace and chapter APIs', () => {
     expect(events.at(-1)).toMatchObject({ failureType: 'conflict' })
   })
 
+  it('persists idempotency keys for no-op saves and rejects reuse with different content', async () => {
+    const { root, chapterPath, source } = await createChapterRepository()
+    const stateDirectory = join(root, 'state')
+    const handler = createApiHandler({
+      harnessRoot: root,
+      projectId: 'project-1',
+      stateDirectory,
+      resolveActor: async () => ({ id: 'author-1', role: 'author' }),
+    })
+    const detail = await (await handler(new Request('http://localhost/v1/projects/project-1/chapters/CH-001'))).json() as {
+      headRevision: { revisionId: string }
+    }
+    const save = (markdown: string) => handler(new Request('http://localhost/v1/projects/project-1/chapters/CH-001/revisions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Idempotency-Key': 'no-op-key' },
+      body: JSON.stringify({ baseRevisionId: detail.headRevision.revisionId, markdown }),
+    }))
+
+    const unchanged = await save('First paragraph.\n\nSecond paragraph.')
+    expect(unchanged.status).toBe(200)
+    expect((await unchanged.json()).revisionId).toBe(detail.headRevision.revisionId)
+
+    const changedReuse = await save('Different content must not reuse the key.')
+    expect(changedReuse.status).toBe(422)
+    expect(await changedReuse.json()).toMatchObject({ code: 'VALIDATION_FAILED' })
+
+    const replay = await save('First paragraph.\n\nSecond paragraph.')
+    expect(replay.status).toBe(200)
+    expect((await replay.json()).revisionId).toBe(detail.headRevision.revisionId)
+
+    const stored = JSON.parse(await readFile(join(stateDirectory, 'chapter-drafts', 'cHJvamVjdC0x', 'Q0gtMDAx.json'), 'utf8')) as {
+      revisions: Array<{ revisionId: string }>
+      noOpIdempotencyRecords: Array<{ idempotencyKey: string; requestHash: string; baseRevisionId: string; revision: { revisionId: string } }>
+    }
+    expect(stored.revisions).toEqual([])
+    expect(stored.noOpIdempotencyRecords).toMatchObject([{
+      idempotencyKey: 'no-op-key',
+      baseRevisionId: detail.headRevision.revisionId,
+      revision: { revisionId: detail.headRevision.revisionId },
+    }])
+    expect(await readFile(chapterPath, 'utf8')).toBe(source)
+    const events = (await readFile(join(stateDirectory, 'audit.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line) as { action: string; result?: string })
+    expect(events.map((event) => event.action)).toEqual([
+      'chapter.revision.save_requested', 'chapter.revision.saved',
+      'chapter.revision.save_requested', 'chapter.revision.save_failed',
+      'chapter.revision.save_requested', 'chapter.revision.saved',
+    ])
+    expect(events[1]).toMatchObject({ result: 'already_current' })
+    expect(events.at(-1)).toMatchObject({ result: 'idempotent_replay' })
+  })
+
   it('returns a conflict instead of masking an external source edit after a draft', async () => {
     const { root, chapterPath } = await createChapterRepository()
     const handler = createApiHandler({
@@ -231,16 +282,29 @@ describe('V0.4 workspace and chapter APIs', () => {
 
     const final = await (await handler(new Request('http://localhost/v1/projects/project-1/chapters/CH-001'))).json() as { headRevision: { revisionId: string; markdown: string } }
     expect(final.headRevision).toMatchObject({ revisionId: revisionD.revisionId, markdown: 'Draft D with **format**.' })
-    const history = await (await handler(new Request('http://localhost/v1/projects/project-1/chapters/CH-001/revisions'))).json() as { items: Array<{ revisionId: string }> }
+    const history = await (await handler(new Request('http://localhost/v1/projects/project-1/chapters/CH-001/revisions'))).json() as { items: Array<{ revisionId: string; parentRevisionId: string | null }> }
     expect(history.items.map((item) => item.revisionId)).toEqual([
       revisionD.revisionId,
       revisionC.revisionId,
-      revisionB.revisionId,
       committed.headRevision.revisionId,
+      revisionB.revisionId,
+      initial.headRevision.revisionId,
     ])
-    const state = JSON.parse(await readFile(join(stateDirectory, 'chapter-drafts', 'cHJvamVjdC0x', 'Q0gtMDAx.json'), 'utf8')) as { sourceHash: string; revisions: Array<{ revisionId: string }> }
+    expect(history.items.map((item) => item.parentRevisionId)).toEqual([
+      revisionC.revisionId,
+      committed.headRevision.revisionId,
+      revisionB.revisionId,
+      initial.headRevision.revisionId,
+      null,
+    ])
+    const state = JSON.parse(await readFile(join(stateDirectory, 'chapter-drafts', 'cHJvamVjdC0x', 'Q0gtMDAx.json'), 'utf8')) as {
+      sourceHash: string
+      sourceRevisionHistory: Array<{ revisionId: string }>
+      revisions: Array<{ revisionId: string }>
+    }
     const committedSourceHash = `sha256:${createHash('sha256').update(await readFile(chapterPath)).digest('hex')}`
     expect(state.sourceHash).toBe(committedSourceHash)
+    expect(state.sourceRevisionHistory.map((revision) => revision.revisionId)).toEqual([initial.headRevision.revisionId])
     expect(state.revisions.map((revision) => revision.revisionId)).toEqual([revisionB.revisionId, revisionC.revisionId, revisionD.revisionId])
   })
 

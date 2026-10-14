@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export * from './v04'
+export * from './v04.js'
 
 export const chapterSchema = z.object({
   id: z.string(), volume: z.string(), title: z.string(), meta: z.string(),

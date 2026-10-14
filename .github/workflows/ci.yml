@@ -29,6 +29,8 @@ jobs:
       - run: pnpm test
       - run: node scripts/check-knowledge-ids.mjs --fail
       - run: pnpm build
+      - name: Smoke test built API process
+        run: node scripts/smoke-built-api.mjs
       - name: Install Chromium
         run: pnpm --filter @writer-agent/web exec playwright install --with-deps chromium
       - run: pnpm test:e2e

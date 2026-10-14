@@ -51,6 +51,12 @@ const server = createServer(async (incoming, outgoing) => {
 })
 
 server.listen(port, '127.0.0.1', () => {
-  process.stdout.write(`Writer Agent API listening on http://127.0.0.1:${port}\n`)
+  const address = server.address()
+  const listeningPort = address && typeof address === 'object' ? address.port : port
+  process.stdout.write(`Writer Agent API listening on http://127.0.0.1:${listeningPort}\n`)
   process.stdout.write(`Harness root: ${repositoryRoot}\n`)
 })
+
+const shutdown = () => server.close(() => { process.exitCode = 0 })
+process.once('SIGINT', shutdown)
+process.once('SIGTERM', shutdown)
