@@ -263,11 +263,16 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
 
     const prior = saveQueuesRef.current.get(chapterId) ?? Promise.resolve(true)
     const attempt = prior.catch(() => false).then(async () => {
+      // A newer edit may already be queued when an earlier save discovers a
+      // revision conflict. Keep that edit locally until the author resolves it.
+      if (conflictedChaptersRef.current.has(chapterId)) return false
+
       if (adapter.mode === 'api') {
         const baseVersion = apiVersionsRef.current[chapterId]
         if (!baseVersion) throw new Error('缺少服务端章节版本，无法安全保存。')
         const baseRevisionId = apiSaveBaseRevisionRef.current[chapterId] ?? baseVersion.revisionId
         const contentHash = await hashMarkdown(markdown)
+        if (conflictedChaptersRef.current.has(chapterId)) return false
         const existingDraft = readLocalChapterDraft(initialWorkspace.projectId, chapterId)
         const draft: LocalChapterDraft = existingDraft
           && existingDraft.markdown === markdown
@@ -288,6 +293,9 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         } catch {
           throw new Error('浏览器无法保存本地恢复草稿；为避免请求结果丢失，本次尚未发送到服务器。')
         }
+        // Recheck at the transport boundary as async hashing above can overlap
+        // with a preceding queued save changing this chapter to conflicted.
+        if (conflictedChaptersRef.current.has(chapterId)) return false
         const result = await adapter.saveChapterRevision({
           projectId: initialWorkspace.projectId,
           chapterId,
@@ -354,7 +362,14 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
       return true
     }).catch((cause: unknown) => {
       const conflict = cause instanceof ChapterRevisionConflictError
-      if (conflict) conflictedChaptersRef.current.add(chapterId)
+      if (conflict) {
+        conflictedChaptersRef.current.add(chapterId)
+        const timer = saveTimersRef.current.get(chapterId)
+        if (timer !== undefined) {
+          window.clearTimeout(timer)
+          saveTimersRef.current.delete(chapterId)
+        }
+      }
       if (conflict || editVersionsRef.current.get(chapterId) === editVersion) {
         const message = cause instanceof Error ? cause.message : '保存失败。'
         setChapterSaveState(chapterId, { s: 'error', message, conflict })
@@ -378,6 +393,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     if (conflictedChaptersRef.current.has(chapterId)) return
     const timer = window.setTimeout(() => {
       saveTimersRef.current.delete(chapterId)
+      if (conflictedChaptersRef.current.has(chapterId)) return
       setChapterSaveState(chapterId, { s: 'saving' })
       void enqueueSave(chapterId, paragraphs, markdown, editVersion)
     }, 700)

@@ -142,6 +142,60 @@ describe('API workspace chapter workflow', () => {
     expect(attemptsAfterRetry).toBe(attemptsBeforeRetry)
   })
 
+  it('stops queued and scheduled saves after an earlier save conflicts', async () => {
+    let attempts = 0
+    let resolveFirstResponse: ((response: Response) => void) | undefined
+    let markFirstRequestStarted: (() => void) | undefined
+    const firstRequestStarted = new Promise<void>((resolve) => { markFirstRequestStarted = resolve })
+    const { result, fetchMock } = await setupApiController({
+      saveResponse: async (markdown) => {
+        attempts++
+        if (attempts === 1) {
+          markFirstRequestStarted?.()
+          return new Promise<Response>((resolve) => { resolveFirstResponse = resolve })
+        }
+        const savedHash = await hashMarkdown(markdown)
+        return apiResponse({ revisionId: 'draft:unexpected', parentRevisionId: 'source:blob-1', contentHash: savedHash, commitRef: null }, 201)
+      },
+    })
+    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout')
+    const markdownA = '第一个保存请求。'
+    const markdownB = '已经排队的第二个保存请求。'
+    const latestMarkdown = '冲突期间继续编辑的最新正文。'
+    let saveA!: Promise<boolean>
+    act(() => {
+      result.current.onChange([markdownA], markdownA)
+      saveA = result.current.flushSave()
+    })
+    await firstRequestStarted
+
+    let saveB!: Promise<boolean>
+    act(() => {
+      result.current.onChange([markdownB], markdownB)
+      saveB = result.current.flushSave()
+      result.current.onChange([latestMarkdown], latestMarkdown)
+    })
+    const pendingLatestSaveTimer = setTimeoutSpy.mock.results.at(-1)?.value as number | undefined
+    expect(pendingLatestSaveTimer).toBeDefined()
+
+    await act(async () => {
+      resolveFirstResponse?.(apiResponse({
+        type: 'about:blank', title: 'REVISION_CONFLICT', status: 409,
+        code: 'REVISION_CONFLICT', detail: '服务器版本已变化。',
+      }, 409))
+      await expect(saveA).resolves.toBe(false)
+      await expect(saveB).resolves.toBe(false)
+    })
+
+    const revisionRequests = fetchMock.mock.calls.filter(([path, init]) => String(path).endsWith('/revisions') && init?.method === 'POST')
+    expect(revisionRequests).toHaveLength(1)
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(pendingLatestSaveTimer)
+    expect(result.current.markdownByChapter[chapterId]).toBe(latestMarkdown)
+    expect(readLocalChapterDraft(projectId, chapterId)?.markdown).toBe(latestMarkdown)
+    expect(result.current.saveState).toMatchObject({ s: 'error', conflict: true })
+  })
+
   it('exports the in-memory Markdown when localStorage rejects a draft write', async () => {
     const { result, fetchMock } = await setupApiController()
     const draftMarkdown = '配额不足时仍可导出的完整中文草稿。\n\n> 引用也保留。'
