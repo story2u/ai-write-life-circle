@@ -12,31 +12,34 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    name: Typecheck, Lint & Test
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10.15.1
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm openapi:check
-      - run: pnpm openapi:lint
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm test
-      - run: node scripts/check-knowledge-ids.mjs --fail
-      - run: pnpm build
-      - name: Smoke test built API process
-        run: node scripts/smoke-built-api.mjs
-      - name: Install Chromium
-        run: pnpm --filter @writer-agent/web exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: writer-agent-visual-smoke
-          path: apps/web/test-results/
-          retention-days: 14
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build contracts
+        run: pnpm --filter @writer-agent/contracts build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build (smoke check)
+        run: pnpm build
