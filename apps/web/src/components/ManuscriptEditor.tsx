@@ -1,11 +1,13 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useEditor, EditorContent, Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import { Markdown } from '@tiptap/markdown'
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import type { Proposal } from '../types'
+import { findUnsupportedMarkdown, paragraphEntries, paragraphsFromDocument } from '../lib/manuscriptMarkdown'
 
 export type Annotation = { id: string; kind: Proposal['kind']; paraIndex: number; quote: string; active: boolean }
 export type Flash = { paraIndex: number; quote?: string; nonce: number } | null
@@ -13,25 +15,19 @@ export type Flash = { paraIndex: number; quote?: string; nonce: number } | null
 const key = new PluginKey('annotations')
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 export const toHTML = (paras: string[]) => paras.map((p) => `<p>${esc(p)}</p>`).join('')
-export const fromDoc = (doc: PMNode) => {
-  const out: string[] = []
-  doc.forEach((n) => out.push(n.textContent))
-  return out
-}
+export const fromDoc = paragraphsFromDocument
 
 /** Locate a paragraph (by index, falling back to quote search). Returns its doc position. */
 function locate(doc: PMNode, paraIndex: number, quote?: string): { pos: number; node: PMNode } | null {
   let hit: { pos: number; node: PMNode } | null = null
   let fallback: { pos: number; node: PMNode } | null = null
-  let i = 0
-  doc.forEach((node, pos) => {
-    if (i === paraIndex) fallback = { pos, node }
-    if (i === paraIndex && (!quote || node.textContent.includes(quote))) hit = { pos, node }
-    i++
+  paragraphEntries(doc).forEach(({ node, pos }, index) => {
+    if (index === paraIndex) fallback = { pos, node }
+    if (index === paraIndex && (!quote || node.textContent.includes(quote))) hit = { pos, node }
   })
   if (hit) return hit
   if (quote) {
-    doc.forEach((node, pos) => {
+    paragraphEntries(doc).forEach(({ node, pos }) => {
       if (!hit && node.textContent.includes(quote)) hit = { pos, node }
     })
     if (hit) return hit
@@ -64,15 +60,17 @@ function build(doc: PMNode, anns: Annotation[], flash: Flash): DecorationSet {
 type Props = {
   chapterId: string
   initial: string[]
+  initialMarkdown?: string
   annotations: Annotation[]
   flash: Flash
-  onChange: (paras: string[]) => void
+  onChange: (paras: string[], markdown: string) => void
   onSelectIssue: (id: string) => void
   onSelection: (text: string, paraIndex: number) => void
-  onReady: (e: Editor) => void
+  onReady: (e: Editor | null) => void
 }
 
-export default function ManuscriptEditor({ chapterId, initial, annotations, flash, onChange, onSelectIssue, onSelection, onReady }: Props) {
+export default function ManuscriptEditor({ chapterId, initial, initialMarkdown, annotations, flash, onChange, onSelectIssue, onSelection, onReady }: Props) {
+  const unsupportedMarkdown = useMemo(() => findUnsupportedMarkdown(initialMarkdown ?? ''), [initialMarkdown])
   const annRef = useRef(annotations)
   const flashRef = useRef(flash)
   const cb = useRef({ onChange, onSelectIssue, onSelection })
@@ -81,7 +79,8 @@ export default function ManuscriptEditor({ chapterId, initial, annotations, flas
   const editor = useEditor(
     {
       extensions: [
-        StarterKit.configure({ heading: false, codeBlock: false, code: false, blockquote: false, bulletList: false, orderedList: false, listItem: false, horizontalRule: false }),
+        StarterKit,
+        Markdown,
         Extension.create({
           name: 'annotations',
           addProseMirrorPlugins() {
@@ -101,21 +100,24 @@ export default function ManuscriptEditor({ chapterId, initial, annotations, flas
           },
         }),
       ],
-      content: toHTML(initial),
+      content: initialMarkdown ?? toHTML(initial),
+      contentType: initialMarkdown !== undefined ? 'markdown' : 'html',
       editorProps: { attributes: { class: 'manuscript font-prose outline-none', 'aria-label': '正文编辑器', spellcheck: 'false' } },
-      onUpdate: ({ editor }) => cb.current.onChange(fromDoc(editor.state.doc)),
+      onUpdate: ({ editor }) => cb.current.onChange(fromDoc(editor.state.doc), editor.getMarkdown()),
       onSelectionUpdate: ({ editor }) => {
         const { from, to } = editor.state.selection
         const text = editor.state.doc.textBetween(from, to, '\n')
-        cb.current.onSelection(text, editor.state.doc.resolve(from).index(0))
+        const paraIndex = paragraphEntries(editor.state.doc).findIndex(({ pos, node }) => from >= pos && from <= pos + node.nodeSize)
+        cb.current.onSelection(text, Math.max(0, paraIndex))
       },
     },
     [chapterId],
   )
 
   useEffect(() => {
-    if (editor) onReady(editor)
-  }, [editor, onReady])
+    if (unsupportedMarkdown.length > 0) onReady(null)
+    else if (editor) onReady(editor)
+  }, [editor, onReady, unsupportedMarkdown])
 
   // Annotation layer refresh — a meta-only transaction, document unchanged.
   useEffect(() => {
@@ -135,6 +137,15 @@ export default function ManuscriptEditor({ chapterId, initial, annotations, flas
     }, 60)
     return () => clearTimeout(t)
   }, [flash, editor])
+
+  if (unsupportedMarkdown.length > 0) {
+    return (
+      <section role="alert" className="rounded border p-4 text-sm" style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
+        <p>此章节包含当前编辑器无法保证无损往返的 Markdown，已切换为只读原文以保护内容。请保留原始 Markdown，待支持该格式后再编辑。</p>
+        <pre className="manuscript mt-3 whitespace-pre-wrap">{initialMarkdown}</pre>
+      </section>
+    )
+  }
 
   return <EditorContent editor={editor} />
 }

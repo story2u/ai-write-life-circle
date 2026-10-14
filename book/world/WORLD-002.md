@@ -18,4 +18,4 @@ unknown
 unknown
 
 ## 相关规则 IDs
-WORLD-001（proposed，P-001 第 4 项）, CHAR-001
+P-001 第 4 项（proposed，尚未分配 WORLD ID）, CHAR-001

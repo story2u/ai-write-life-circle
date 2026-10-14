@@ -4,12 +4,20 @@
   "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "dev": "pnpm --filter @writer-agent/contracts build && tsx watch src/dev-server.ts",
+    "build": "pnpm --filter @writer-agent/contracts build && tsc -p tsconfig.build.json",
+    "start": "node dist/dev-server.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --config vitest.config.ts",
+    "harness:rebuild": "tsx src/harness/cli.ts"
   },
   "dependencies": {
     "@writer-agent/contracts": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.7"
   }
 }

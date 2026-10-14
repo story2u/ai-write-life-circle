@@ -4,7 +4,8 @@ import type { AgentTask, Layout } from '../../types'
 import { ChapterRevisionConflictError, type WriterAgentAdapter } from '../../services/writerAgent'
 import { useWorkspaceActions } from './useWorkspaceActions'
 import { createId } from '../../lib/id'
-import { hashParagraphs } from '../../lib/sourceHash'
+import { hashMarkdown } from '../../lib/sourceHash'
+import { plainParagraphsToMarkdown } from '../../lib/manuscriptMarkdown'
 
 export const WORKSPACE_STORAGE_KEY = 'writer-agent.v2'
 
@@ -24,6 +25,7 @@ export type SaveState =
 
 type PersistedWorkspace = {
   doc: Document
+  markdownByChapter?: Record<string, string>
   proposals: Proposal[]
   decisions: Decision[]
   chapterVersions: Record<string, ChapterVersion>
@@ -57,6 +59,9 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   const preferences = useMemo(() => adapter.mode === 'demo' ? getDemoPreferences() : { layout: defaultLayout, dark: false }, [adapter.mode])
   const chapterIds = useMemo(() => new Set(initialWorkspace.chapters.map((chapter) => chapter.id)), [initialWorkspace])
   const [doc, setDoc] = useState(initialWorkspace.document)
+  const [markdownByChapter, setMarkdownByChapter] = useState(initialWorkspace.markdownByChapter ?? Object.fromEntries(
+    Object.entries(initialWorkspace.document).map(([chapterId, paragraphs]) => [chapterId, plainParagraphsToMarkdown(paragraphs)]),
+  ))
   const [proposals, setProposals] = useState(initialWorkspace.proposals)
   const [decisions, setDecisions] = useState(initialWorkspace.decisions)
   const [chapterVersions, setChapterVersions] = useState(initialWorkspace.chapterVersions)
@@ -73,6 +78,8 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
 
   const docRef = useRef(doc)
   docRef.current = doc
+  const markdownByChapterRef = useRef(markdownByChapter)
+  markdownByChapterRef.current = markdownByChapter
   const proposalsRef = useRef(proposals)
   proposalsRef.current = proposals
   const chapterVersionsRef = useRef(chapterVersions)
@@ -88,17 +95,17 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   const persist = useCallback(() => {
     if (adapter.mode !== 'demo' || typeof localStorage === 'undefined') return
     localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify({
-      doc, proposals, decisions, chapterVersions,
+      doc, markdownByChapter, proposals, decisions, chapterVersions,
       layout, chat, challenge, seq, current, dark,
     } satisfies PersistedWorkspace))
-  }, [adapter.mode, doc, proposals, decisions, chapterVersions, layout, chat, challenge, seq, current, dark])
+  }, [adapter.mode, doc, markdownByChapter, proposals, decisions, chapterVersions, layout, chat, challenge, seq, current, dark])
   useEffect(persist, [persist])
 
   const setChapterSaveState = useCallback((chapterId: string, state: SaveState) => {
     setSaveStates((states) => ({ ...states, [chapterId]: state }))
   }, [])
 
-  const enqueueSave = useCallback((chapterId: string, paragraphs: string[], editVersion: number): Promise<boolean> => {
+  const enqueueSave = useCallback((chapterId: string, paragraphs: string[], markdown: string, editVersion: number): Promise<boolean> => {
     const attemptKey = `${chapterId}:${editVersion}`
     const existingAttempt = saveAttemptsRef.current.get(attemptKey)
     if (existingAttempt) return existingAttempt
@@ -107,11 +114,12 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     const attempt = prior.catch(() => false).then(async () => {
       const baseVersion = chapterVersionsRef.current[chapterId]
       if (!baseVersion) throw new Error('缺少章节版本信息，无法安全保存。')
-      const sourceHash = await hashParagraphs(paragraphs)
+      const sourceHash = await hashMarkdown(markdown)
       const result = await actions.saveChapter({
         projectId: initialWorkspace.projectId,
         chapterId,
         paragraphs,
+        markdown,
         revision: baseVersion.revision,
         sourceHash,
       })
@@ -153,16 +161,20 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     const editVersion = editVersionsRef.current.get(chapterId) ?? 0
     if (editVersion === (savedEditVersionsRef.current.get(chapterId) ?? 0)) return true
     setChapterSaveState(chapterId, { s: 'saving' })
-    return enqueueSave(chapterId, docRef.current[chapterId] ?? [], editVersion)
+    return enqueueSave(chapterId, docRef.current[chapterId] ?? [], markdownByChapterRef.current[chapterId] ?? '', editVersion)
   }, [current, enqueueSave, setChapterSaveState])
 
-  const onChange = useCallback((paragraphs: string[]) => {
+  const onChange = useCallback((paragraphs: string[], changedMarkdown?: string) => {
     const chapterId = current
+    const markdown = changedMarkdown ?? plainParagraphsToMarkdown(paragraphs)
     const editVersion = (editVersionsRef.current.get(chapterId) ?? 0) + 1
     editVersionsRef.current.set(chapterId, editVersion)
     const nextDocument = { ...docRef.current, [chapterId]: paragraphs }
     docRef.current = nextDocument
     setDoc(nextDocument)
+    const nextMarkdown = { ...markdownByChapterRef.current, [chapterId]: markdown }
+    markdownByChapterRef.current = nextMarkdown
+    setMarkdownByChapter(nextMarkdown)
     setChapterSaveState(chapterId, { s: 'dirty' })
 
     const previousTimer = saveTimersRef.current.get(chapterId)
@@ -170,7 +182,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     const timer = window.setTimeout(() => {
       saveTimersRef.current.delete(chapterId)
       setChapterSaveState(chapterId, { s: 'saving' })
-      void enqueueSave(chapterId, paragraphs, editVersion)
+      void enqueueSave(chapterId, paragraphs, markdown, editVersion)
     }, 700)
     saveTimersRef.current.set(chapterId, timer)
   }, [current, enqueueSave, setChapterSaveState])
@@ -222,7 +234,8 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     const reviewRunId = createId()
     const paragraphs = docRef.current[chapterId] ?? []
     const baseVersion = chapterVersionsRef.current[chapterId]
-    const sourceHash = await hashParagraphs(paragraphs)
+    const markdown = markdownByChapterRef.current[chapterId] ?? plainParagraphsToMarkdown(paragraphs)
+    const sourceHash = await hashMarkdown(markdown)
     const steps = ['读取本章正文', '比对时间线', '检索人物档案', '核对伏笔库', '整理证据与分析']
     let index = 0
     setTask({ state: 'running', name: `连续性审查 · ${initialWorkspace.chapters.find((chapter) => chapter.id === chapterId)?.title}`, step: steps[0], progress: 8 })
@@ -243,6 +256,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         projectId: initialWorkspace.projectId,
         chapterId,
         paragraphs,
+        markdown,
         revision: baseVersion.revision,
         sourceHash,
         reviewRunId,
@@ -250,7 +264,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         sequence: seq,
       }).then(async (result) => {
         if (runId !== reviewGeneration.current) return
-        const liveHash = await hashParagraphs(docRef.current[chapterId] ?? [])
+        const liveHash = await hashMarkdown(markdownByChapterRef.current[chapterId] ?? '')
         const liveVersion = chapterVersionsRef.current[chapterId]
         if (liveHash !== sourceHash || liveVersion?.revision !== baseVersion.revision) {
           reviewInFlight.current = false
@@ -353,7 +367,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         toast('这条旧提案没有正文版本信息，请先重新审查后再采纳。')
         return
       }
-      const liveHash = await hashParagraphs(docRef.current[chapterId] ?? [])
+      const liveHash = await hashMarkdown(markdownByChapterRef.current[chapterId] ?? '')
       if (proposal.projectId !== initialWorkspace.projectId || proposal.sourceHash !== liveHash || proposal.chapterRevision !== chapterVersionsRef.current[chapterId]?.revision) {
         toast('这条提案对应的正文版本已变化，已阻止采纳。请重新审查后再决定。')
         return
@@ -406,7 +420,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     chapters: initialWorkspace.chapters,
     knowledge: initialWorkspace.knowledge,
     projectId: initialWorkspace.projectId,
-    doc, proposals, decisions, layout, setLayout, chat, challenge, setChallenge, seq,
+    doc, markdownByChapter, proposals, decisions, layout, setLayout, chat, challenge, setChallenge, seq,
     current, dark, setDark, task, saveState: saveStates[current] ?? { s: 'saved', at: Date.now() },
     flushSave, retrySave, onChange, switchChapter, runReview, cancelReview, decide,
     createProposal, sendChat, markChatSaved, requestChallenge,

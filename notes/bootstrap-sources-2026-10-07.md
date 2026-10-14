@@ -4,7 +4,7 @@ ID: SOURCE-BOOTSTRAP-001
 status: confirmed
 updated: 2026-10-07
 source: 作者本次请求；历史对话检索摘要；本次可见历史资料
-related: INTENT-001, WORLD-001, WORLD-002, WORLD-003, P-001
+related: INTENT-001, WORLD-001, WORLD-004, WORLD-005, P-002
 
 ## 证据范围
 

@@ -1,2 +1,12 @@
-// Backend runtime is intentionally not implemented in this initialization.
-export {}
+export { appendAuditRecord } from './audit/log.js'
+export { assertExpectedRevision, RevisionConflictError } from './concurrency/revision.js'
+export { createApiHandler } from './http.js'
+export { getHarnessChapter, listHarnessChapters } from './chapters/repository.js'
+export { FileChapterRevisionStore } from './chapters/revision-store.js'
+export { FileWorkspaceStateStore } from './workspace/state-store.js'
+export { FileIdAllocator, IdAllocationBlockedError } from './ids/allocator.js'
+export { parseHarnessMarkdown } from './harness/parser.js'
+export { rebuildHarnessProjection } from './harness/projection.js'
+export { readHarnessDocuments } from './harness/reader.js'
+export type * from './audit/log.js'
+export type * from './harness/types.js'

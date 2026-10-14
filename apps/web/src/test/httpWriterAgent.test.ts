@@ -35,7 +35,7 @@ describe('HTTP workspace adapter', () => {
     const adapter = createHttpWriterAgentAdapter()
 
     await expect(adapter.saveChapter({
-      projectId: 'novel-123', chapterId: 'chapter-1', paragraphs: ['本地草稿'], revision: 7, sourceHash,
+      projectId: 'novel-123', chapterId: 'chapter-1', paragraphs: ['本地草稿'], markdown: '本地草稿', revision: 7, sourceHash,
     })).rejects.toBeInstanceOf(ChapterRevisionConflictError)
   })
 })

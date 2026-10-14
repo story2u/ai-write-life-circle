@@ -6,8 +6,8 @@
 - Type: Figma Make
 - File key: `kWBOdcae5utBZ6VtBHHXui`
 - Entry node: `0:1`
-- Make UI showed Version 3 at the time of review; the MCP response does not expose a version field.
-- Last read: 2026-10-12 (Asia/Shanghai), using the official remote Figma MCP.
+- The public Make preview/source currently corresponds to the V0.3 prototype; the MCP response does not expose a version field. The V0.4 product documents are marked `draft-for-engineering`, not a final API contract.
+- Last read: 2026-10-14 (Asia/Shanghai), using the official remote Figma MCP.
 - Official remote endpoint: `https://mcp.figma.com/mcp`
 - The Make source is the authority for page structure, interactions, design tokens, typography, assets, and themes.
 
@@ -34,6 +34,37 @@ denial.
 were read through the `figma` remote MCP resource templates. They included the
 app entry, React components, source CSS, types, demo data, package metadata,
 and image resources. The implementation files are now under `apps/web`.
+
+## 2026-10-14 V0.4 product review
+
+The official remote MCP successfully returned `get_design_context` for node
+`0:1`. The review read `docs/README.md`, the product PRD, user journeys and
+feature matrix, feature documents, domain model, API spec, state machines,
+persistence and permissions, component contracts, screen map, acceptance
+criteria, traceability matrix, HANDOFF and implementation plan. It also read
+the relevant Make sources: `src/App.tsx`, `src/types.ts`, `src/kb/types.ts`,
+`src/kb/data.ts`, `src/kb/route.ts`, `src/reasoning/engine.ts`,
+`src/index.css`, and the related architecture/handoff resources.
+
+The API spec resource was returned with an in-body `…6290 tokens truncated…`
+marker; the author then supplied the complete proposed YAML in the task reply.
+The full text has not been saved as a repository OpenAPI file or run through an
+OpenAPI validator. Sprint 1's Workspace/Chapter Zod schemas were hand-aligned
+to the supplied operations and are the runtime source for that implemented
+subset. Operations marked `proposed` remain non-final. The Make
+`get_screenshot` and `get_variable_defs` tools report that they do not support
+Make files. A public browser preview was visible and showed the V0.3 workbench;
+its source-code panel requested sign-in. No screenshot pixel diff is claimed.
+The application draft endpoint is implemented. The author resolved OQ-016 by
+confirming the existing Harness conventions for chapter files; no chapter
+record exists yet because `manuscript/` contains no authored chapter. The API
+does not write Harness files.
+The initial API-spec truncation was a resource limit, not a file permission
+failure.
+
+The V0.4 PRD is a candidate product spec. Open questions affecting data safety
+and authorship are recorded in `docs/reviews/v0.4-contract-review.md`; they are
+not silently resolved by the implementation.
 
 The Make `get_screenshot` tool explicitly reports that it does not support Make
 files. A browser preview of the Make file was available and used for qualitative

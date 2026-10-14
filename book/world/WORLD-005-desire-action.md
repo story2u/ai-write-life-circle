@@ -1,10 +1,10 @@
 # 欲望与行动
 
-ID: WORLD-003
+ID: WORLD-005
 status: confirmed
 updated: 2026-10-07
 source: notes/bootstrap-sources-2026-10-07.md#SRC-001、SRC-002、SRC-004
-related: WORLD-001, WORLD-002, INTENT-001, P-001
+related: WORLD-001, WORLD-004, INTENT-001, P-002
 
 ## 规则陈述
 
@@ -27,7 +27,7 @@ related: WORLD-001, WORLD-002, INTENT-001, P-001
 
 ## 允许例外及依据
 
-少数高欲望精神体可推动改革且破坏格局，见 WORLD-002。完全无欲望生命是否存在、如何行动：unknown。
+少数高欲望精神体可推动改革且破坏格局，见 WORLD-004。完全无欲望生命是否存在、如何行动：unknown。
 
 ## 首次出现与变更影响
 
