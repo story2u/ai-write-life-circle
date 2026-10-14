@@ -14,7 +14,7 @@
 
 ## 使用方法
 
-参考根目录 [DEPLOY.md](../DEPLOY.md) 或详细工作流 [harness/workflows/deploy.md](../harness/workflows/deploy.md)
+参考根目录 [harness/deploy-guide.md](../harness/deploy-guide.md) 或详细工作流 [harness/workflows/deploy.md](../harness/workflows/deploy.md)
 
 ## 配置
 

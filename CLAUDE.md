@@ -23,10 +23,11 @@ git push origin main
 ## 📚 文档索引
 
 ### 理解项目
-- 项目概览：[AGENTS.md](AGENTS.md)
-- 项目说明：[README.md](README.md)
-- 整体架构：[harness/architecture/architecture.md](harness/architecture/architecture.md)
-- 前端架构：[harness/architecture/frontend-architecture.md](harness/architecture/frontend-architecture.md)
+- **项目概览**：[AGENTS.md](AGENTS.md)
+- **技术栈**：React 19 + TypeScript + Vite + Monorepo (pnpm)
+- **项目结构**：apps/（代码）+ packages/（共享）+ harness/（文档）
+- **整体架构**：[harness/architecture/architecture.md](harness/architecture/architecture.md)
+- **前端架构**：[harness/architecture/frontend-architecture.md](harness/architecture/frontend-architecture.md)
 
 ### 开发指南
 - 文档中心：[harness/README.md](harness/README.md)
@@ -34,9 +35,9 @@ git push origin main
 - 数据契约：[harness/data-contract.md](harness/data-contract.md)
 
 ### 部署运维
-- 部署指南：[DEPLOY.md](DEPLOY.md)
+- 部署指南：[harness/deploy-guide.md](harness/deploy-guide.md)
 - 部署工作流：[harness/workflows/deploy.md](harness/workflows/deploy.md)
-- 安全指南：[SECURITY.md](SECURITY.md)
+- 安全指南：[harness/security.md](harness/security.md)
 
 ### 设计规范
 - Figma 设计：[harness/design/figma.md](harness/design/figma.md)
@@ -52,10 +53,17 @@ git push origin main
 ## 📁 核心目录
 
 ```
-apps/web/          # React 前端（主要工作目录）
-harness/           # 文档中心
-deploy/            # 部署配置
-.github/workflows/ # CI/CD
+/
+├── apps/              # 应用代码
+│   ├── web/          # 前端应用（主要）
+│   └── api/          # 后端 API（未启用）
+├── packages/         # 共享包
+│   └── contracts/    # 类型定义
+├── harness/          # 文档中心
+├── deploy/           # 部署配置
+├── package.json      # Workspace 根配置
+├── pnpm-workspace.yaml  # Workspace 定义
+└── tsconfig.base.json   # TypeScript 基础配置
 ```
 
 ## 🔧 技术栈

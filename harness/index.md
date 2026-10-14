@@ -4,7 +4,7 @@
 
 | 用户意图 | 工作流 | 最小上下文 |
 | --- | --- | --- |
-| 部署到 AWS | [deploy](workflows/deploy.md) | deploy/、.github/workflows、.env.example |
+| 部署到 AWS | [deploy](workflows/deploy.md) | deploy/、.github/workflows、apps/web/.env.example |
 | 项目初始化 | [bootstrap](workflows/bootstrap.md) | 项目配置、依赖 |
 | 准备开发 | [prepare](workflows/prepare.md) | 开发环境、工具链 |
 | 数据处理 | [ingest](workflows/ingest.md) | 数据模型、API |

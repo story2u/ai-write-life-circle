@@ -26,6 +26,8 @@ print_info() {
 # 配置
 PROJECT_DIR="$HOME/greenfield-adventures"
 AWS_REGION="eu-north-1"
+AWS_ACCOUNT_ID="028610956878"
+ECR_REPOSITORY="greenfield-web"
 
 echo "=========================================="
 echo "Greenfield Adventures - EC2 部署"
@@ -90,7 +92,9 @@ WRITER_AGENT_MODE=demo
 
 # AWS ECR 镜像
 AWS_REGION=$AWS_REGION
-ECR_REGISTRY_ALIAS=$REGISTRY_ALIAS
+AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID
+ECR_REPOSITORY=$ECR_REPOSITORY
+ECR_IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest
 
 # 环境
 NODE_ENV=production
@@ -116,9 +120,26 @@ fi
 # 步骤 6: 登录 AWS ECR
 print_step "配置 AWS ECR 访问"
 print_info "登录 AWS ECR..."
-aws ecr-public get-login-password --region $AWS_REGION | \
-    docker login --username AWS --password-stdin public.ecr.aws 2>/dev/null || \
-    print_info "ECR 登录已配置"
+if aws ecr get-login-password --region $AWS_REGION | \
+    docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com; then
+    print_info "✓ ECR 登录成功"
+else
+    print_error "✗ ECR 登录失败"
+    print_info "请确保 EC2 实例已附加正确的 IAM 角色"
+    exit 1
+fi
+
+# 步骤 6.5: 拉取最新镜像
+print_step "拉取最新镜像"
+ECR_IMAGE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest"
+print_info "镜像: $ECR_IMAGE"
+if docker pull $ECR_IMAGE; then
+    print_info "✓ 镜像拉取成功"
+else
+    print_error "✗ 镜像拉取失败"
+    print_info "请确保 GitHub Actions 已成功构建并推送镜像"
+    exit 1
+fi
 
 # 步骤 7: 启动容器
 print_step "启动容器"

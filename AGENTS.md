@@ -10,6 +10,21 @@
 - **架构**：Monorepo (pnpm) + Docker 部署
 - **目标用户**：内容创作者、小说作者
 
+### 项目结构
+```
+/
+├── apps/              # 应用代码
+│   ├── web/          # 前端应用（主要）
+│   └── api/          # 后端 API（未启用）
+├── packages/         # 共享包
+│   └── contracts/    # 类型定义
+├── harness/          # 文档中心（架构、设计、工作流）
+├── deploy/           # 部署配置
+├── package.json      # Workspace 根配置
+├── pnpm-workspace.yaml  # Workspace 定义
+└── tsconfig.base.json   # TypeScript 基础配置
+```
+
 ### 核心功能
 1. 📝 章节编辑器（基于 TipTap）
 2. 🤖 AI 对话辅助
@@ -52,13 +67,13 @@
 
 ```
 1. 部署概览
-   → DEPLOY.md
+   → harness/deploy-guide.md
 
 2. 详细工作流
    → harness/workflows/deploy.md
 
 3. 安全指南
-   → SECURITY.md
+   → harness/security.md
 ```
 
 ### 工作流
@@ -125,9 +140,7 @@ greenfield-adventures/
 ├── .github/workflows/          # CI/CD
 ├── AGENTS.md                   # 📍 你在这里
 ├── CLAUDE.md                   # Claude Code 入口
-├── DEPLOY.md                   # 部署指南
-├── SECURITY.md                 # 安全指南
-└── README.md                   # 项目说明
+├── README.md                   # 项目说明（待更新）
 ```
 
 ## 🔧 技术栈
@@ -159,9 +172,9 @@ greenfield-adventures/
 4. 运行 `pnpm install && pnpm dev`
 
 ### 部署人员
-1. 阅读 `DEPLOY.md`
+1. 阅读 `harness/deploy-guide.md`
 2. 阅读 `harness/workflows/deploy.md`
-3. 阅读 `SECURITY.md`
+3. 阅读 `harness/security.md`
 4. 执行部署
 
 ### AI Agent
@@ -197,10 +210,10 @@ greenfield-adventures/
 → `harness/design/`
 
 ### 部署问题
-→ `DEPLOY.md` 或 `harness/workflows/deploy.md`
+→ `harness/deploy-guide.md` 或 `harness/workflows/deploy.md`
 
 ### 安全问题
-→ `SECURITY.md`
+→ `harness/security.md`
 
 ---
 

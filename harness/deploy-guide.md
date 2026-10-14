@@ -41,5 +41,6 @@ deploy/
 ## 安全
 
 - `.env` 文件不提交（已在 `.gitignore`）
+- 环境变量模板：`apps/web/.env.example`
 - 使用 IAM 角色而非长期凭证
-- 参考 [SECURITY.md](SECURITY.md)
+- 参考 [harness/security.md](harness/security.md)

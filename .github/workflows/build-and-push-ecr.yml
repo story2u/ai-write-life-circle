@@ -51,6 +51,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push image to Amazon ECR
+        id: build-image
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: greenfield-web
@@ -66,12 +67,16 @@ jobs:
             --tag $REGISTRY/$REPOSITORY:${{ github.ref_name }} \
             .
           
-          echo "IMAGE_URI=$REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_uri=$REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "registry=$REGISTRY" >> $GITHUB_OUTPUT
+          echo "repository=$REPOSITORY" >> $GITHUB_OUTPUT
 
       - name: Output image URI
         run: |
           echo "✓ Docker image pushed to ECR"
-          echo "Image URI: ${{ steps.login-ecr.outputs.registry }}/${{ env.REPOSITORY }}:${{ github.sha }}"
+          echo "Image URI: ${{ steps.build-image.outputs.image_uri }}"
+          echo "Registry: ${{ steps.build-image.outputs.registry }}"
+          echo "Repository: ${{ steps.build-image.outputs.repository }}"
 
   notify:
     runs-on: ubuntu-latest
@@ -82,10 +87,14 @@ jobs:
     steps:
       - name: Create deployment notification
         run: |
-          echo "✓ Docker image is ready for deployment"
-          echo "Image: ${{ needs.build-and-push.outputs.image_uri }}"
+          echo "✅ Docker image is ready for deployment"
           echo ""
-          echo "To deploy to EC2, run:"
-          echo "  ssh ubuntu@EC2_IP"
+          echo "📦 Image Details:"
+          echo "  Registry: ${{ needs.build-and-push.outputs.registry }}"
+          echo "  Repository: ${{ needs.build-and-push.outputs.repository }}"
+          echo "  Tag: ${{ github.sha }}"
+          echo ""
+          echo "🚀 To deploy to EC2:"
+          echo "  ssh ubuntu@YOUR_EC2_IP"
           echo "  cd ~/greenfield-adventures"
-          echo "  ./deploy-ec2.sh pull-image $IMAGE_URI"
+          echo "  ./deploy/deploy-simple.sh"
