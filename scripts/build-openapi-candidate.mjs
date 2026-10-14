@@ -79,6 +79,17 @@ source['x-source-provenance'] = {
   note: 'The Figma MCP resource response was truncated; the complete source copy was supplied in the author reply in this task and preserved under docs/contracts/source/.',
 }
 
+const notesExtension = JSON.parse(await readFile(new URL('../docs/contracts/notes-engineering-extension.json', import.meta.url), 'utf8'))
+Object.assign(source.paths, notesExtension.paths)
+Object.assign(source.components.schemas, notesExtension.schemas)
+source.components.schemas.Workspace.properties.capabilities = { $ref: '#/components/schemas/WorkspaceCapabilities' }
+source.tags ??= []
+source.tags.push({ name: 'Author Notes', description: 'Informal author application state, isolated from Harness facts.' })
+for (const code of ['NOTE_VERSION_CONFLICT', 'NEXT_WRITING_EXISTS', 'METHOD_NOT_ALLOWED']) {
+  if (Array.isArray(problemCodes) && !problemCodes.includes(code)) problemCodes.push(code)
+}
+source['x-notes-extension-provenance'] = notesExtension.provenance
+
 const generated = YAML.stringify(source, { indent: 2, lineWidth: 110 })
 if (process.argv.includes('--check')) {
   const existing = await readFile(candidatePath, 'utf8').catch(() => '')

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { capabilitiesSchema } from './notes.js'
 
 /** Runtime schemas for the Workspace and Chapter operations in Figma Make's proposed V0.4 contract. */
 export const actorV04Schema = z.object({
@@ -26,6 +27,7 @@ export const userWorkspaceStateV04Schema = z.object({
 export type UserWorkspaceStateV04 = z.infer<typeof userWorkspaceStateV04Schema>
 
 export const workspaceV04Schema = z.object({
+  capabilities: capabilitiesSchema.optional(),
   project: z.object({
     projectId: z.string().optional(),
     title: z.string().optional(),

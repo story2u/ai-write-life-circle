@@ -1,3 +1,4 @@
+import { capabilitiesSchema } from './notes.js'
 import { z } from 'zod'
 import { chapterRevisionSummaryV04Schema } from './v04.js'
 
@@ -115,6 +116,7 @@ export const challengeRoundSchema = z.object({
 export type ChallengeRound = z.infer<typeof challengeRoundSchema>
 
 export const workspaceSnapshotSchema = z.object({
+  capabilities: capabilitiesSchema.optional(),
   projectId: z.string(), projectTitle: z.string().optional(),
   chapters: z.array(chapterSchema), knowledge: z.array(knowledgeEntrySchema), document: documentSchema,
   markdownByChapter: markdownDocumentSchema.optional(),
@@ -169,3 +171,5 @@ export const workspaceStateSchema = z.object({
   challenge: z.array(challengeRoundSchema), sequence: z.number().int().nonnegative(),
 })
 export type WorkspaceState = z.infer<typeof workspaceStateSchema>
+
+export * from './notes.js'
