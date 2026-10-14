@@ -21,11 +21,11 @@ services:
       - greenfield-net
 
   web:
-    # 使用 ECR 上的镜像
-    # 在 GitHub Actions 中构建并推送到 AWS ECR
-    # 格式: public.ecr.aws/registry-alias/repository:tag
+    # 使用 GitHub Container Registry 镜像
+    # 在 GitHub Actions 中构建并推送
+    # 格式: ghcr.io/username/repository:tag
     # 或本地构建: docker build -f deploy/Dockerfile.web -t greenfield-web:latest .
-    image: ${ECR_IMAGE:-greenfield-web:latest}
+    image: ${GHCR_IMAGE:-ghcr.io/story2u/ai-write-life-circle:latest}
     container_name: greenfield-web
     ports:
       - "${WEB_PORT:-3000}:3000"

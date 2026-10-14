@@ -25,9 +25,9 @@ print_info() {
 
 # 配置
 PROJECT_DIR="$HOME/greenfield-adventures"
-AWS_REGION="eu-north-1"
-AWS_ACCOUNT_ID="028610956878"
-ECR_REPOSITORY="greenfield-web"
+GITHUB_USER="story2u"
+GITHUB_REPO="ai-write-life-circle"
+GHCR_IMAGE="ghcr.io/${GITHUB_USER}/${GITHUB_REPO}:latest"
 
 echo "=========================================="
 echo "Greenfield Adventures - EC2 部署"
@@ -55,16 +55,13 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 print_info "Docker Compose 版本: $(docker-compose --version)"
 
-# 步骤 3: 检查 AWS CLI
-print_step "检查 AWS CLI"
-if ! command -v aws &> /dev/null; then
-    print_info "安装 AWS CLI..."
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    unzip awscliv2.zip
-    sudo ./aws/install
-    rm -rf aws awscliv2.zip
+# 步骤 3: 检查 AWS CLI (可选，如需要其他 AWS 服务)
+print_step "检查 AWS CLI (可选)"
+if command -v aws &> /dev/null; then
+    print_info "AWS CLI 已安装: $(aws --version)"
+else
+    print_info "AWS CLI 未安装（本部署不需要）"
 fi
-print_info "AWS CLI 版本: $(aws --version)"
 
 # 步骤 4: 创建项目目录
 print_step "设置项目目录"
@@ -90,11 +87,8 @@ WEB_PORT=3000
 # Writer Agent 模式
 WRITER_AGENT_MODE=demo
 
-# AWS ECR 镜像
-AWS_REGION=$AWS_REGION
-AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID
-ECR_REPOSITORY=$ECR_REPOSITORY
-ECR_IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest
+# GitHub Container Registry 镜像
+GHCR_IMAGE=$GHCR_IMAGE
 
 # 环境
 NODE_ENV=production
@@ -117,27 +111,24 @@ else
     print_info ".env 文件已存在"
 fi
 
-# 步骤 6: 登录 AWS ECR
-print_step "配置 AWS ECR 访问"
-print_info "登录 AWS ECR..."
-if aws ecr get-login-password --region $AWS_REGION | \
-    docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com; then
-    print_info "✓ ECR 登录成功"
-else
-    print_error "✗ ECR 登录失败"
-    print_info "请确保 EC2 实例已附加正确的 IAM 角色"
-    exit 1
-fi
+# 步骤 6: 拉取 Docker 镜像
+print_step "拉取 Docker 镜像"
+print_info "镜像: $GHCR_IMAGE"
+print_info "从 GitHub Container Registry 拉取..."
 
-# 步骤 6.5: 拉取最新镜像
-print_step "拉取最新镜像"
-ECR_IMAGE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest"
-print_info "镜像: $ECR_IMAGE"
-if docker pull $ECR_IMAGE; then
+# GitHub Container Registry 是公开的，不需要认证
+# 如果镜像是私有的，需要先登录：
+# echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+
+if docker pull $GHCR_IMAGE; then
     print_info "✓ 镜像拉取成功"
 else
     print_error "✗ 镜像拉取失败"
-    print_info "请确保 GitHub Actions 已成功构建并推送镜像"
+    print_info "请确保："
+    print_info "  1. GitHub Actions 已成功构建并推送镜像"
+    print_info "  2. 镜像仓库是公开的，或者你已登录"
+    print_info ""
+    print_info "查看镜像: https://github.com/$GITHUB_USER/$GITHUB_REPO/pkgs/container/$GITHUB_REPO"
     exit 1
 fi
 
