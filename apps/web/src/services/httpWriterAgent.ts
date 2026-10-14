@@ -1,67 +1,52 @@
-import {
-  challengeResponseSchema,
-  chatResponseSchema,
-  runReviewResponseSchema,
-  saveChapterResponseSchema,
-  workspaceSnapshotSchema,
-  type ChallengeRequest,
-  type ChallengeResponse,
-  type ChatRequest,
-  type ChatResponse,
-  type RunReviewRequest,
-  type RunReviewResponse,
-  type SaveChapterRequest,
-  type SaveChapterResponse,
-  type WorkspaceSnapshot,
+import type {
+  ChallengeResponse,
+  ChatResponse,
+  RunReviewResponse,
+  SaveChapterResponse,
+  UserWorkspaceStateV04,
 } from '@writer-agent/contracts'
-import { ChapterRevisionConflictError, type WriterAgentAdapter } from './writerAgent'
+import type { ApiWriterAgentAdapter } from './writerAgent'
+import { getChapter, listChapters, saveChapterRevision } from './api/chapterApi'
+import { patchWorkspace, getWorkspace } from './api/workspaceApi'
+import { mapWorkspaceToStudio } from './mappers/workspaceMapper'
 
-async function readJson(response: Response): Promise<unknown> {
-  try { return await response.json() as unknown } catch { return null }
+function unavailable(feature: string): never {
+  throw new Error(`${feature} 尚未接入 V0.4 API；当前 API 模式不会回退到演示响应。`)
 }
 
-async function requestJson(path: string, init?: RequestInit): Promise<unknown> {
-  const response = await fetch(path, init)
-  const value = await readJson(response)
-  if (response.status === 409) {
-    const message = typeof value === 'object' && value !== null && 'message' in value && typeof value.message === 'string'
-      ? value.message
-      : undefined
-    throw new ChapterRevisionConflictError(message)
-  }
-  if (!response.ok) throw new Error(`API 请求失败 (${response.status})`)
-  return value
-}
-
-async function postJson(path: string, body: unknown): Promise<unknown> {
-  return requestJson(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
-
-/** HTTP adapter. API mode loads the project snapshot from the server and never falls back to demo fixtures. */
-export function createHttpWriterAgentAdapter(): WriterAgentAdapter {
+/** V0.4 HTTP adapter. Only implemented Workspace and Chapter endpoints are called. */
+export function createHttpWriterAgentAdapter(): ApiWriterAgentAdapter {
   return {
     mode: 'api',
-    async loadWorkspace(projectId: string): Promise<WorkspaceSnapshot> {
-      const value = await requestJson(`/api/projects/${encodeURIComponent(projectId)}/workspace`)
-      return workspaceSnapshotSchema.parse(value)
+    async loadWorkspace(projectId) {
+      const [workspace, chapters] = await Promise.all([getWorkspace(projectId), listChapters(projectId)])
+      if (workspace.project.projectId !== projectId) {
+        throw new Error('Workspace 响应的 projectId 与当前配置不一致。')
+      }
+      return mapWorkspaceToStudio(workspace, chapters)
     },
-    async saveChapter(input: SaveChapterRequest): Promise<SaveChapterResponse> {
-      const value = await postJson('/api/chapters', input)
-      return saveChapterResponseSchema.parse(value)
+    async loadChapter(projectId, chapterId) {
+      const detail = await getChapter(projectId, chapterId)
+      if (detail.chapterId !== chapterId) throw new Error('Chapter 响应的 chapterId 与请求不一致。')
+      return detail
     },
-    async runReview(input: RunReviewRequest): Promise<RunReviewResponse> {
-      const value = await postJson('/api/agent/reviews', input)
-      return runReviewResponseSchema.parse(value)
+    async saveChapterRevision(input) {
+      return saveChapterRevision(input.projectId, input.chapterId, input.revision, input.idempotencyKey)
     },
-    async sendMessage(input: ChatRequest): Promise<ChatResponse> {
-      return chatResponseSchema.parse(await postJson('/api/agent/chat', input))
+    async updateWorkspaceState(projectId: string, state: UserWorkspaceStateV04) {
+      return patchWorkspace(projectId, state)
     },
-    async challenge(input: ChallengeRequest): Promise<ChallengeResponse> {
-      return challengeResponseSchema.parse(await postJson('/api/agent/challenges', input))
+    async saveChapter(): Promise<SaveChapterResponse> {
+      return unavailable('旧版章节保存接口')
+    },
+    async runReview(): Promise<RunReviewResponse> {
+      return unavailable('Agent 审查')
+    },
+    async sendMessage(): Promise<ChatResponse> {
+      return unavailable('Agent 对话')
+    },
+    async challenge(): Promise<ChallengeResponse> {
+      return unavailable('创作推演')
     },
   }
 }

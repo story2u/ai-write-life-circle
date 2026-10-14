@@ -1,20 +1,49 @@
 import { z } from 'zod'
+import { chapterRevisionSummaryV04Schema } from './v04.js'
+
+export * from './v04.js'
 
 export const chapterSchema = z.object({
-  id: z.string(), volume: z.string(), title: z.string(), meta: z.string(),
+  id: z.string(), volume: z.string(), title: z.string(), meta: z.string(), wordCount: z.number().int().nonnegative().optional(),
 })
 export type Chapter = z.infer<typeof chapterSchema>
 
 /** Manuscript paragraphs are plain text; annotations never live in this value. */
 export const documentSchema = z.record(z.string(), z.array(z.string()))
 export type Document = z.infer<typeof documentSchema>
+export const markdownDocumentSchema = z.record(z.string(), z.string())
+export type MarkdownDocument = z.infer<typeof markdownDocumentSchema>
 
 export const sourceHashSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/)
-export const chapterVersionSchema = z.object({
+const demoChapterVersionSchema = z.object({
+  mode: z.literal('demo'),
   revision: z.number().int().nonnegative(),
   sourceHash: sourceHashSchema,
 })
+const apiChapterVersionSchema = chapterRevisionSummaryV04Schema.extend({
+  mode: z.literal('api'),
+  revisionId: z.string().min(1),
+  contentHash: sourceHashSchema,
+  parentRevisionId: z.string().nullable(),
+})
+export const chapterVersionSchema = z.discriminatedUnion('mode', [demoChapterVersionSchema, apiChapterVersionSchema])
 export type ChapterVersion = z.infer<typeof chapterVersionSchema>
+export type DemoChapterVersion = z.infer<typeof demoChapterVersionSchema>
+export type ApiChapterVersion = z.infer<typeof apiChapterVersionSchema>
+
+export const workspacePreferencesSchema = z.object({
+  lastView: z.enum(['write', 'kb', 'reasoning']).optional(),
+  lastChapterId: z.string().optional(),
+  layout: z.object({
+    leftOpen: z.boolean(),
+    rightOpen: z.boolean(),
+    leftW: z.number().int().min(200).max(360),
+    rightW: z.number().int().min(320).max(560),
+    focus: z.boolean(),
+  }),
+  theme: z.enum(['light', 'dark']),
+})
+export type WorkspacePreferences = z.infer<typeof workspacePreferencesSchema>
 
 /** Stable pointer to the exact source version used to support a proposal. */
 export const evidenceRefSchema = z.object({
@@ -86,20 +115,19 @@ export const challengeRoundSchema = z.object({
 export type ChallengeRound = z.infer<typeof challengeRoundSchema>
 
 export const workspaceSnapshotSchema = z.object({
-  projectId: z.string(),
+  projectId: z.string(), projectTitle: z.string().optional(),
   chapters: z.array(chapterSchema), knowledge: z.array(knowledgeEntrySchema), document: documentSchema,
+  markdownByChapter: markdownDocumentSchema.optional(),
+  preferences: workspacePreferencesSchema.optional(),
   chapterVersions: z.record(z.string(), chapterVersionSchema),
   proposals: z.array(proposalSchema), decisions: z.array(decisionSchema),
   chat: z.array(chatMessageSchema), challenge: z.array(challengeRoundSchema), sequence: z.number().int().nonnegative(),
   currentChapterId: z.string(),
-}).refine((workspace) => workspace.chapters.every((chapter) => workspace.chapterVersions[chapter.id] !== undefined), {
-  message: 'Every chapter must include its current revision and source hash.',
-  path: ['chapterVersions'],
 })
 export type WorkspaceSnapshot = z.infer<typeof workspaceSnapshotSchema>
 
 export const saveChapterRequestSchema = z.object({
-  projectId: z.string(), chapterId: z.string(), paragraphs: z.array(z.string()),
+  projectId: z.string(), chapterId: z.string(), paragraphs: z.array(z.string()), markdown: z.string().max(2 * 1024 * 1024),
   revision: z.number().int().nonnegative(), sourceHash: sourceHashSchema,
 })
 export type SaveChapterRequest = z.infer<typeof saveChapterRequestSchema>
@@ -112,7 +140,7 @@ export type SaveChapterResponse = z.infer<typeof saveChapterResponseSchema>
 export const reviewScopeSchema = z.enum(['timeline', 'characters', 'foreshadowing', 'worldbuilding'])
 export type ReviewScope = z.infer<typeof reviewScopeSchema>
 export const runReviewRequestSchema = z.object({
-  projectId: z.string(), chapterId: z.string(), paragraphs: z.array(z.string()),
+  projectId: z.string(), chapterId: z.string(), paragraphs: z.array(z.string()), markdown: z.string().max(2 * 1024 * 1024),
   revision: z.number().int().nonnegative(), sourceHash: sourceHashSchema, reviewRunId: z.string(),
   scope: z.array(reviewScopeSchema).min(1), sequence: z.number().int().nonnegative(),
 })

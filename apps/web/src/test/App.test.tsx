@@ -65,6 +65,27 @@ describe('Writer Agent studio', () => {
     }, { timeout: 3000 })
   })
 
+  it('keeps unsupported source Markdown read-only and preserves the exact raw text', async () => {
+    const adapter = createDemoWriterAgentAdapter({
+      chapters,
+      knowledge,
+      document: initialDoc,
+      markdownByChapter: { c12: '| 名称 | 内容 |\n| --- | --- |\n| 阿青 | 原文 |' },
+    })
+    let saveCount = 0
+    const saveChapter = adapter.saveChapter.bind(adapter)
+    adapter.saveChapter = async (input) => {
+      saveCount += 1
+      return saveChapter(input)
+    }
+    await renderStudio(adapter)
+
+    expect(screen.getByRole('alert')).toHaveTextContent('已切换为只读原文以保护内容')
+    expect(screen.getByRole('alert').querySelector('pre')?.textContent).toBe('| 名称 | 内容 |\n| --- | --- |\n| 阿青 | 原文 |')
+    expect(screen.queryByRole('textbox', { name: '正文编辑器' })).not.toBeInTheDocument()
+    expect(saveCount).toBe(0)
+  })
+
   it('waits for Ctrl+S persistence before showing its success toast', async () => {
     const user = userEvent.setup()
     const adapter = createDemoWriterAgentAdapter({ chapters, knowledge, document: initialDoc })

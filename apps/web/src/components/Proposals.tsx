@@ -86,7 +86,7 @@ export function ProposalDetail({ p, decisions, chapters, onClose, onDecide, onEv
   )
 }
 
-export function KnowledgeViewer({ entryId, knowledge, onClose, onPick }: { entryId: string | null; knowledge: KnowledgeEntry[]; onClose: () => void; onPick: (id: string | null) => void }) {
+export function KnowledgeViewer({ entryId, knowledge, onClose, onPick, unavailable = false }: { entryId: string | null; knowledge: KnowledgeEntry[]; onClose: () => void; onPick: (id: string | null) => void; unavailable?: boolean }) {
   const e = knowledge.find((k) => k.id === entryId)
   return (
     <Drawer onClose={onClose} width={400} title={e ? <span><span style={{ color: 'var(--ink-3)' }}>作品知识库 / {e.kind} / </span>{e.title}</span> : '作品知识库'}>
@@ -102,6 +102,10 @@ export function KnowledgeViewer({ entryId, knowledge, onClose, onPick }: { entry
           )}
           <Btn small className="mt-6" onClick={() => onPick(null)}>← 全部条目</Btn>
         </>
+      ) : unavailable ? (
+        <Empty title="知识库 API 尚未接入" desc="当前 API 模式只读取 Workspace 与章节。知识库查询仍待后续 Sprint 实现。" />
+      ) : knowledge.length === 0 ? (
+        <Empty title="暂无知识条目" desc="这里不会用演示资料填充真实 Harness。" />
       ) : (
         <div className="space-y-1">
           {knowledge.map((k) => (

@@ -4,18 +4,19 @@
   "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "dev": "vite --host 127.0.0.1",
+    "build": "pnpm --filter @writer-agent/contracts build && tsc --noEmit -p tsconfig.json && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src vite.config.ts playwright.config.ts e2e",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --config playwright.config.ts && pnpm --filter @writer-agent/api build && node e2e/run-api-e2e.mjs"
   },
   "dependencies": {
-    "@tiptap/core": "^3.31.4",
-    "@tiptap/pm": "^3.31.4",
-    "@tiptap/react": "^3.31.4",
-    "@tiptap/starter-kit": "^3.31.4",
+    "@tiptap/core": "^3.32.0",
+    "@tiptap/markdown": "^3.32.0",
+    "@tiptap/pm": "^3.32.0",
+    "@tiptap/react": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
     "@writer-agent/contracts": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

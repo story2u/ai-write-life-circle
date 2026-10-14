@@ -12,3 +12,6 @@ export async function hashText(text: string): Promise<string> {
   const hex = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
   return `sha256:${hex}`
 }
+
+/** Bind manuscript revisions to the serialized Markdown, including formatting and block structure. */
+export const hashMarkdown = hashText
