@@ -50,7 +50,7 @@ describe('workspace save and review version safety', () => {
 
   it('starts first-use Demo workspaces with the Agent panel collapsed', async () => {
     const { result } = await setupController()
-    expect(result.current.layout).toMatchObject({ leftOpen: true, rightOpen: false })
+    expect(result.current.layout).toMatchObject({ leftOpen: false, rightOpen: false })
   })
 
   it('restores an explicitly saved Demo layout preference', async () => {

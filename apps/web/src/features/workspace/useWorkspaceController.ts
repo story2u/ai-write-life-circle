@@ -47,7 +47,7 @@ type PersistedWorkspace = {
   dark: boolean
 }
 
-const defaultLayout: Layout = { leftOpen: true, rightOpen: false, leftW: 248, rightW: 380, focus: false }
+const defaultLayout: Layout = { leftOpen: false, rightOpen: false, leftW: 280, rightW: 360, focus: false }
 
 function getDemoPreferences() {
   if (typeof localStorage === 'undefined') return { layout: defaultLayout, layoutCustomized: false, dark: false }

@@ -9,7 +9,7 @@ const defaultWorkspaceState: UserWorkspaceStateV04 = {
   kbRecent: [],
 }
 
-const defaultLayout = { leftOpen: true, rightOpen: false, leftW: 280, rightW: 400, focus: false }
+const defaultLayout = { leftOpen: false, rightOpen: false, leftW: 280, rightW: 400, focus: false }
 
 function safeKey(value: string): string {
   return Buffer.from(value, 'utf8').toString('base64url')

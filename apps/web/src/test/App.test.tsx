@@ -8,7 +8,7 @@ import type { WriterAgentAdapter } from '../services/writerAgent'
 
 async function renderStudio(adapter?: WriterAgentAdapter) {
   const result = render(<App adapter={adapter} />)
-  await screen.findByText('WRITER AGENT')
+  await screen.findByRole('tab', { name: '写作' })
   return result
 }
 
@@ -18,51 +18,44 @@ describe('Writer Agent studio', () => {
     localStorage.clear()
   })
 
-  it('renders the source workbench and an editable TipTap chapter', async () => {
+  it('renders the VNext manuscript and reveals chapters only on request', async () => {
+    const user = userEvent.setup()
     await renderStudio()
-
-    expect(screen.getByText('WRITER AGENT')).toBeInTheDocument()
-    expect(screen.getByRole('tree', { name: '章节目录' })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveAttribute('contenteditable', 'true')
+    expect(screen.queryByRole('navigation', { name: '书的地图' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '目录与本章相关' }))
+    expect(screen.getByRole('navigation', { name: '书的地图' })).toBeInTheDocument()
+  })
+
+  it('keeps development and old four-tab navigation out of the author interface', async () => {
+    await renderStudio()
+    expect(screen.queryByRole('button', { name: '开发说明' })).not.toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: '审查' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Agent 面板/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '书' })).toBeInTheDocument()
   })
 
-  it('keeps design notes available only through the development entry', async () => {
+  it('runs the demo thinking challenge workflow and keeps the author in control', async () => {
     const user = userEvent.setup()
     await renderStudio()
-    if (import.meta.env.DEV) {
-      await user.click(screen.getByRole('button', { name: '开发说明' }))
-      expect(await screen.findByRole('heading', { name: '设计说明' })).toBeInTheDocument()
-    } else {
-      expect(screen.queryByRole('button', { name: '开发说明' })).not.toBeInTheDocument()
-    }
+    await user.click(screen.getByRole('tab', { name: '思考' }))
+    await user.type(await screen.findByRole('textbox', { name: '你的想法' }), '测试作者意图')
+    await user.click(screen.getByRole('button', { name: '开始思考' }))
+    await user.click(await screen.findByRole('button', { name: '理解对了，挑战它' }))
+    expect(screen.getByText('挑战 · 不是答案')).toBeInTheDocument()
+    expect(screen.getAllByText('原型 · 模拟').length).toBeGreaterThan(0)
   })
 
-  it('runs the demo challenge workflow and keeps the author in control', async () => {
+  it('supports author correction of a clearly labeled demo understanding', async () => {
     const user = userEvent.setup()
     await renderStudio()
-
-    await user.click(screen.getByRole('button', { name: /Agent 面板/ }))
-    await user.click(screen.getByRole('tab', { name: '推演' }))
-    await user.click(screen.getByRole('button', { name: /开始推演/ }))
-
-    await waitFor(() => expect(screen.getByText('作者意图 · 第 1 轮')).toBeInTheDocument())
-    expect(screen.getByText('推演只做质疑与启发，不生成正文。')).toBeInTheDocument()
-    expect(screen.getByText('演示数据')).toBeInTheDocument()
-  })
-
-  it('sends chat through the demo adapter and labels the reply', async () => {
-    const user = userEvent.setup()
-    await renderStudio()
-
-    await user.click(screen.getByRole('button', { name: /Agent 面板/ }))
-    await user.click(screen.getByRole('tab', { name: '对话' }))
-    await user.type(screen.getByRole('textbox', { name: '发送给 Agent' }), '沈砚在想什么？')
-    await user.click(screen.getByRole('button', { name: '发送' }))
-
-    await waitFor(() => expect(screen.getByText(/我目前只能基于已建档的资料回答/)).toBeInTheDocument())
-    expect(screen.getByText('演示数据')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: '思考' }))
+    await user.type(await screen.findByRole('textbox', { name: '你的想法' }), '测试想法')
+    await user.click(screen.getByRole('button', { name: '开始思考' }))
+    await user.click(await screen.findByRole('button', { name: '不对，我来纠正' }))
+    await user.type(screen.getByRole('textbox', { name: '纠正 AI 的理解' }), '作者的纠正')
+    await user.click(screen.getByRole('button', { name: '提交修正' }))
+    expect(screen.getByText('我重新理解为')).toBeInTheDocument()
+    expect(screen.getByText('你的纠正')).toBeInTheDocument()
   })
 
   it('saves TipTap edits in demo mode', async () => {
@@ -125,23 +118,17 @@ describe('Writer Agent studio', () => {
     await screen.findByText('已保存', { exact: true })
   })
 
-  it('records an accepted proposal without changing chapter prose', async () => {
+  it('records a demo story judgment without changing chapter prose', async () => {
     const user = userEvent.setup()
     await renderStudio()
     const editor = screen.getByRole('textbox', { name: '正文编辑器' })
-    const originalText = editor.textContent
-
-    await user.click(screen.getByRole('button', { name: /Agent 面板/ }))
-    await user.click(screen.getAllByRole('button', { name: /开始审查/ }).at(-1)!)
-    await waitFor(() => expect(screen.getByText('时间线冲突：沈砚离京的季节')).toBeInTheDocument(), { timeout: 5000 })
-    expect(screen.getByRole('tab', { name: '审查' })).toBeInTheDocument()
-    expect(screen.queryByText(/审查完成：/)).not.toBeInTheDocument()
-    await user.click(screen.getByText('时间线冲突：沈砚离京的季节'))
-    await user.click(screen.getByRole('button', { name: '采纳建议' }))
-    await user.click(screen.getByRole('button', { name: '采纳所选方案' }))
-
-    expect(editor.textContent).toBe(originalText)
-    expect(screen.getAllByText('已采纳，待作者处理')).toHaveLength(2)
+    const original = editor.textContent
+    await user.click(screen.getByRole('button', { name: '注记' }))
+    await user.click(await screen.findByText('离京的季节与第 7 章不一致'))
+    await user.click(screen.getByRole('button', { name: '进入冲突对照' }))
+    await user.click(screen.getByRole('radio', { name: /这是有意为之/ }))
+    await user.click(screen.getByRole('button', { name: '确定' }))
+    expect(screen.getByRole('textbox', { name: '正文编辑器' }).textContent).toBe(original)
   })
 
   it('switches the Figma light/dark theme token scope', async () => {

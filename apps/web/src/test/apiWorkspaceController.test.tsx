@@ -74,12 +74,12 @@ describe('API workspace chapter workflow', () => {
 
   it('uses the collapsed Agent panel default when the API has no saved layout', async () => {
     const { result } = await setupApiController()
-    expect(result.current.layout).toMatchObject({ leftOpen: true, rightOpen: false })
+    expect(result.current.layout).toMatchObject({ leftOpen: false, rightOpen: false })
   })
 
   it('restores an explicit API workspace layout without replacing it with defaults', async () => {
     const { result } = await setupApiController({ workspaceLayout: { leftOpen: false, rightOpen: true, rightW: 460 } })
-    expect(result.current.layout).toMatchObject({ leftOpen: false, rightOpen: true, leftW: 248, rightW: 460, focus: false })
+    expect(result.current.layout).toMatchObject({ leftOpen: false, rightOpen: true, leftW: 280, rightW: 460, focus: false })
   })
 
   it('saves raw Markdown using the current revisionId and clears only the confirmed local draft', async () => {

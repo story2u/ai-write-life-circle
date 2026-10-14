@@ -1,103 +1,202 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&family=Noto+Sans+SC:wght@400;500&display=swap');
 @import 'tailwindcss';
 
-/* Design tokens mirrored from the Figma Make source. */
+/*
+ * Writer Agent VNext tokens.
+ * Names from V0.3 are kept (bg / surface / line / ink / accent / ai …) so engineering mappings stay valid.
+ * VNext additions: --paper, --line-soft, --conflict(-soft), --scrim, prose metrics.
+ * Semantic rule: --danger is reserved for data-safety states (save failure, 409, discard). Story conflicts use --conflict.
+ */
 :root {
-  --bg: #f7f6f3;
-  --surface: #ffffff;
-  --surface-2: #f1efea;
-  --line: #e6e3dc;
-  --ink: #1f1d1a;
-  --ink-2: #5c5852;
-  --ink-3: #9a958c;
-  --accent: #4a5bd4;
+  --bg: #f6f4ef;          /* canvas behind everything */
+  --paper: #fbfaf7;       /* the writing page */
+  --surface: #ffffff;     /* drawers, popovers */
+  --surface-2: #efece5;   /* quiet fill: hover, selected, quotes */
+  --line: #e3dfd6;
+  --line-soft: #ece8e0;
+  --ink: #23211d;
+  --ink-2: #5f5a52;
+  --ink-3: #6f6b64;     /* meets 4.5:1 on --paper for small UI text */
+  --ink-4: #b5b0a6;     /* decorative only (dots, rules) — never text */
+  --accent: #3f4fbf;
   --accent-soft: #eceefb;
-  --warn: #b7791f;
-  --warn-soft: #fbf3e4;
-  --danger: #b4443a;
-  --danger-soft: #f9ebe9;
-  --ok: #3f7d58;
-  --ok-soft: #e9f3ec;
-  --shadow: 0 1px 2px rgba(30, 25, 15, 0.04), 0 4px 16px rgba(30, 25, 15, 0.05);
+  --ai: #6e539c;
+  --ai-soft: #f2eef8;
+  --conflict: #a8561c;
+  --conflict-soft: #f8ede3;
+  --warn: #8a6414;
+  --warn-soft: #f8f0dd;
+  --danger: #b03a2e;
+  --danger-soft: #f9e9e6;
+  --ok: #3b7553;
+  --ok-soft: #e7f1ea;
+  --scrim: rgba(28, 24, 18, 0.22);
+  --shadow: 0 1px 2px rgba(30, 25, 15, 0.04), 0 8px 28px rgba(30, 25, 15, 0.07);
 }
+/* Dark is tuned for long night sessions: warm low-glare ink, no pure black, no pure white. */
 .dark {
-  --bg: #161614;
-  --surface: #1d1c1a;
-  --surface-2: #252421;
-  --line: #2f2d2a;
-  --ink: #e9e6df;
-  --ink-2: #aaa59c;
-  --ink-3: #6f6b64;
-  --accent: #8b97f0;
-  --accent-soft: #252846;
-  --warn: #d9a54a;
-  --warn-soft: #2e2618;
-  --danger: #e07a6f;
-  --danger-soft: #33201d;
-  --ok: #6fb98b;
-  --ok-soft: #1c2b21;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --bg: #171614;
+  --paper: #1c1b18;
+  --surface: #22211e;
+  --surface-2: #2a2925;
+  --line: #34322d;
+  --line-soft: #2c2a26;
+  --ink: #ddd6c9;
+  --ink-2: #aaa395;
+  --ink-3: #8e877b;
+  --ink-4: #4f4b44;
+  --accent: #9aa4ee;
+  --accent-soft: #262a45;
+  --ai: #b9a5e0;
+  --ai-soft: #2a2536;
+  --conflict: #dc9a63;
+  --conflict-soft: #33261b;
+  --warn: #d4ad5c;
+  --warn-soft: #2f2817;
+  --danger: #ec8a7e;
+  --danger-soft: #3a201c;
+  --ok: #7cc095;
+  --ok-soft: #1d2b22;
+  --scrim: rgba(0, 0, 0, 0.45);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.35);
 }
+
+@theme inline {
+  --color-paper: var(--bg);
+  --color-page: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ai: var(--ai);
+  --color-ai-soft: var(--ai-soft);
+  --color-conflict: var(--conflict);
+  --color-conflict-soft: var(--conflict-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-scrim: var(--scrim);
+  --shadow-soft: var(--shadow);
+
+  /* Type scale. UI stays small and calm; prose is the protagonist. */
+  --text-micro: 11px;
+  --text-micro--line-height: 16px;
+  --text-ui-sm: 12px;
+  --text-ui-sm--line-height: 18px;
+  --text-ui: 13px;
+  --text-ui--line-height: 20px;
+  --text-ui-lg: 15px;
+  --text-ui-lg--line-height: 24px;
+  --text-read: 16px;
+  --text-read--line-height: 30px;
+  --text-title: 26px;
+  --text-title--line-height: 38px;
+  --text-display: 32px;
+  --text-display--line-height: 44px;
+
+  --font-ui: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-prose: 'Noto Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+
+  /* Widths */
+  --container-page: 44rem;   /* minus 6rem padding ≈ 33 CJK chars at 18px */
+  --container-drawer: 22.5rem;
+  --container-nav: 17.5rem;
+}
+
+html, body, #root { height: 100%; }
 body {
-  font-family: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-ui);
   background: var(--bg);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s;
 }
-.font-prose {
-  font-family: 'Noto Serif SC', 'Songti SC', serif;
-}
-@keyframes pulse-dot {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-.dot { animation: pulse-dot 1.2s infinite; }
+.font-prose { font-family: var(--font-prose); }
 
-/* Manuscript */
+/* Manuscript: 18px / 1.9, first-line indent, no boxes. */
+.manuscript { caret-color: var(--accent); min-height: 40vh; color: var(--ink); }
 .manuscript p {
-  font-size: 17px;
-  line-height: 2.05;
+  font-size: 18px;
+  line-height: 1.9;
   letter-spacing: 0.02em;
   text-indent: 2em;
-  margin: 0 -8px 24px;
-  padding: 0 8px;
-  border-radius: 6px;
+  margin: 0 0 0.9em;
   position: relative;
-  transition: background 0.25s;
+  border-radius: 4px;
+  transition: background 0.3s;
 }
-.manuscript p.is-empty:first-child::after,
-.manuscript:has(> p:only-child:empty)::before { content: none; }
-.manuscript { caret-color: var(--accent); min-height: 50vh; }
-.ann-para::before {
-  content: '';
+.manuscript[contenteditable='false'] { caret-color: transparent; }
+
+/* Margin mark: a 6px dot outside the right edge of the paragraph. Never a number. */
+.margin-dot {
   position: absolute;
-  left: -20px;
-  top: 14px;
-  width: 7px;
-  height: 7px;
+  right: -2.25rem;
+  top: 0.8em;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  text-indent: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 99px;
+}
+.margin-dot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
   border-radius: 99px;
   background: var(--c);
+  opacity: 0.75;
+  transition: transform 0.15s, opacity 0.15s;
 }
-.ann-fact { --c: var(--danger); --b: var(--danger-soft); }
-.ann-suggestion { --c: var(--accent); --b: var(--accent-soft); }
-.ann-research { --c: var(--ok); --b: var(--ok-soft); }
-.ann-active { background: var(--b); }
-.ann-mark { cursor: pointer; text-decoration: underline wavy; text-underline-offset: 5px; text-decoration-thickness: 1px; }
-.ann-mark-fact { text-decoration-color: var(--danger); }
-.ann-mark-suggestion { text-decoration-color: var(--accent); text-decoration-style: dotted; }
-.ann-mark-research { text-decoration-color: var(--ok); text-decoration-style: dotted; }
-@keyframes flash { 0%, 60% { background: var(--warn-soft); box-shadow: 0 0 0 2px var(--warn); } 100% { background: transparent; box-shadow: none; } }
-.ann-flash { animation: flash 2s ease-out; }
+.margin-dot:hover::after, .margin-dot.is-active::after { transform: scale(1.5); opacity: 1; }
+.margin-dot:hover { background: var(--surface-2); }
+.tone-conflict { --c: var(--conflict); --b: var(--conflict-soft); }
+.tone-ai { --c: var(--ai); --b: var(--ai-soft); }
+.tone-quiet { --c: var(--ink-4); --b: var(--surface-2); }
+.ann-active { background: var(--b); box-shadow: 0 0 0 6px var(--b); }
+.ann-quote { text-decoration: underline; text-decoration-color: var(--c); text-underline-offset: 6px; text-decoration-thickness: 1px; }
+@media (max-width: 767px) { .margin-dot { right: -1.5rem; } }
 
-@keyframes slide-in { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
-.slide-in { animation: slide-in 0.18s ease-out; }
+@keyframes flash { 0%, 50% { background: var(--warn-soft); box-shadow: 0 0 0 6px var(--warn-soft); } 100% { background: transparent; box-shadow: 0 0 0 6px transparent; } }
+.ann-flash { animation: flash 2.2s ease-out; }
+
+@keyframes slide-r { from { transform: translateX(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes slide-l { from { transform: translateX(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes fade-up { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
-.fade-up { animation: fade-up 0.18s ease-out; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.slide-r { animation: slide-r 0.2s ease-out; }
+.slide-l { animation: slide-l 0.2s ease-out; }
+.fade-up { animation: fade-up 0.22s ease-out; }
+.fade { animation: fade 0.3s ease-out; }
+@keyframes pulse-dot { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+.dot { animation: pulse-dot 1.2s infinite; }
+@keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+.skeleton { background: linear-gradient(90deg, var(--surface-2) 0, var(--line-soft) 50%, var(--surface-2) 100%); background-size: 400px 100%; animation: shimmer 1.3s infinite linear; border-radius: 4px; }
 
-.btn { transition: background 0.12s, opacity 0.12s, transform 0.06s; }
-.btn:active { transform: translateY(1px); }
+.btn { transition: background 0.12s, color 0.12s, opacity 0.12s; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.scroll { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+
+/* Chrome recedes while typing; returns on pointer movement. */
+.chrome { transition: opacity 0.4s; }
+.is-typing .chrome { opacity: 0.08; }
+.is-typing .chrome:hover, .is-typing .chrome:focus-within { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
 .ghost:hover { background: var(--surface-2); }
-.scroll::-webkit-scrollbar { width: 8px; }
-.scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }

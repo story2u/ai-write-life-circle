@@ -109,7 +109,7 @@ describe('V0.4 HTTP adapter', () => {
   it('persists only Workspace preferences and does not call unimplemented Agent endpoints', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(workspace.userState), { status: 200 }))
     const adapter = createHttpWriterAgentAdapter()
-    const state = { lastChapterId: 'CH-001', theme: 'dark' as const, layout: { leftOpen: true, rightOpen: false, leftW: 248, rightW: 380, focus: false } }
+    const state = { lastChapterId: 'CH-001', theme: 'dark' as const, layout: { leftOpen: false, rightOpen: false, leftW: 248, rightW: 380, focus: false } }
 
     await adapter.updateWorkspaceState('novel-123', state)
     expect(fetchMock).toHaveBeenCalledWith('/v1/projects/novel-123/workspace', expect.objectContaining({ method: 'PATCH' }))

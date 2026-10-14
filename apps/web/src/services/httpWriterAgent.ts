@@ -1,3 +1,4 @@
+import { httpNotesAdapter } from './api/notesApi'
 import type {
   ChallengeResponse,
   ChatResponse,
@@ -18,6 +19,7 @@ function unavailable(feature: string): never {
 export function createHttpWriterAgentAdapter(): ApiWriterAgentAdapter {
   return {
     mode: 'api',
+    notes: httpNotesAdapter,
     async loadWorkspace(projectId) {
       const [workspace, chapters] = await Promise.all([getWorkspace(projectId), listChapters(projectId)])
       if (workspace.project.projectId !== projectId) {

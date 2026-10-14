@@ -1,3 +1,4 @@
+import type { NotesAdapter } from './api/notesApi'
 import type {
   ChallengeRequest,
   ChallengeResponse,
@@ -53,6 +54,7 @@ export class ApiProblemError extends Error {
 
 /** Replace this adapter without changing the studio components. */
 type WriterAgentAdapterBase = {
+  notes?: NotesAdapter
   loadWorkspace(projectId: string): Promise<WorkspaceSnapshot>
   saveChapter(input: SaveChapterRequest): Promise<SaveChapterResponse>
   runReview(input: RunReviewRequest): Promise<RunReviewResponse>

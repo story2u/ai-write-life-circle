@@ -17,42 +17,42 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 export const toHTML = (paras: string[]) => paras.map((p) => `<p>${esc(p)}</p>`).join('')
 export const fromDoc = paragraphsFromDocument
 
-/** Locate a paragraph (by index, falling back to quote search). Returns its doc position. */
+/** Quote anchors must be unique; never silently jump to the first similar paragraph. */
 function locate(doc: PMNode, paraIndex: number, quote?: string): { pos: number; node: PMNode } | null {
-  let hit: { pos: number; node: PMNode } | null = null
-  let fallback: { pos: number; node: PMNode } | null = null
-  paragraphEntries(doc).forEach(({ node, pos }, index) => {
-    if (index === paraIndex) fallback = { pos, node }
-    if (index === paraIndex && (!quote || node.textContent.includes(quote))) hit = { pos, node }
-  })
-  if (hit) return hit
-  if (quote) {
-    paragraphEntries(doc).forEach(({ node, pos }) => {
-      if (!hit && node.textContent.includes(quote)) hit = { pos, node }
-    })
-    if (hit) return hit
-    return null
-  }
-  return fallback
+  const entries = paragraphEntries(doc)
+  if (!quote) return entries[paraIndex] ?? null
+  const matches = entries.filter(({ node }) => node.textContent.includes(quote))
+  return matches.length === 1 && matches[0].node.textContent.split(quote).length === 2 ? matches[0] : null
 }
 
-function build(doc: PMNode, anns: Annotation[], flash: Flash): DecorationSet {
+function build(doc: PMNode, anns: Annotation[], flash: Flash, onSelect: (id: string) => void): DecorationSet {
   const decos: Decoration[] = []
+  const seen = new Set<number>()
   for (const a of anns) {
     const loc = locate(doc, a.paraIndex, a.quote)
     if (!loc) continue
-    decos.push(Decoration.node(loc.pos, loc.pos + loc.node.nodeSize, { class: `ann-para ann-${a.kind}${a.active ? ' ann-active' : ''}` }))
-    const off = loc.node.textContent.indexOf(a.quote)
-    if (off >= 0) {
-      const from = loc.pos + 1 + off
-      decos.push(Decoration.inline(from, from + a.quote.length, { class: `ann-mark ann-mark-${a.kind}`, 'data-issue': a.id, title: '点击查看 Agent 分析' }))
+    const tone = a.kind === 'fact' ? 'conflict' : a.kind === 'suggestion' ? 'ai' : 'quiet'
+    if (!seen.has(loc.pos)) {
+      seen.add(loc.pos)
+      decos.push(Decoration.widget(loc.pos + 1, () => {
+        const mark = document.createElement('span')
+        mark.className = `margin-dot tone-${tone}${a.active ? ' is-active' : ''}`
+        mark.contentEditable = 'false'; mark.tabIndex = 0
+        mark.setAttribute('role', 'button'); mark.setAttribute('aria-label', '查看本段注记')
+        mark.addEventListener('mousedown', (event) => { event.preventDefault(); onSelect(a.id) })
+        mark.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(a.id) } })
+        return mark
+      }, { key: `${a.id}-${a.active}`, side: -1, ignoreSelection: true }))
+    }
+    if (a.active) {
+      decos.push(Decoration.node(loc.pos, loc.pos + loc.node.nodeSize, { class: `ann-active tone-${tone}` }))
+      const off = loc.node.textContent.indexOf(a.quote)
+      if (off >= 0) decos.push(Decoration.inline(loc.pos + 1 + off, loc.pos + 1 + off + a.quote.length, { class: `ann-quote tone-${tone}` }))
     }
   }
   if (flash) {
     const loc = locate(doc, flash.paraIndex, flash.quote)
-    if (loc) {
-      decos.push(Decoration.node(loc.pos, loc.pos + loc.node.nodeSize, { class: 'ann-flash' }))
-    }
+    if (loc) decos.push(Decoration.node(loc.pos, loc.pos + loc.node.nodeSize, { class: 'ann-flash' }))
   }
   return DecorationSet.create(doc, decos)
 }
@@ -88,7 +88,7 @@ export default function ManuscriptEditor({ chapterId, initial, initialMarkdown, 
               new Plugin({
                 key,
                 props: {
-                  decorations: (state) => build(state.doc, annRef.current, flashRef.current),
+                  decorations: (state) => build(state.doc, annRef.current, flashRef.current, (id) => cb.current.onSelectIssue(id)),
                   handleClick: (_view, _pos, ev) => {
                     const el = (ev.target as HTMLElement).closest('[data-issue]')
                     if (el) cb.current.onSelectIssue(el.getAttribute('data-issue')!)
