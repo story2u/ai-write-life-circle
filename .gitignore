@@ -14,3 +14,8 @@ coverage/
 .dev.vars
 apps/web/playwright-report/
 apps/web/test-results/
+# >>> Comet managed project state >>>
+!/.comet/
+/.comet/*
+!/.comet/config.yaml
+# <<< Comet managed project state <<<

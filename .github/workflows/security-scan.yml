@@ -1,0 +1,153 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每周一次扫描
+    - cron: '0 0 * * 0'
+
+jobs:
+  detect-secrets:
+    runs-on: ubuntu-latest
+    name: Detect Secrets
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+  git-secrets:
+    runs-on: ubuntu-latest
+    name: Git Secrets
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-secrets
+        run: |
+          git clone https://github.com/awslabs/git-secrets.git
+          cd git-secrets
+          sudo make install
+          cd ..
+          rm -rf git-secrets
+
+      - name: Configure git-secrets
+        run: |
+          git secrets --install
+          git secrets --register-aws
+
+      - name: Scan repository
+        run: git secrets --scan
+
+  docker-scan:
+    runs-on: ubuntu-latest
+    name: Docker Image Scan
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.web
+          push: false
+          tags: greenfield-web:${{ github.sha }}
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          input: '/tmp/image.tar'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  check-env-files:
+    runs-on: ubuntu-latest
+    name: Check for .env Files
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for .env files
+        run: |
+          if find . -name ".env" -o -name ".env.*" | grep -v ".env.example"; then
+            echo "❌ 发现 .env 文件被追踪！"
+            exit 1
+          else
+            echo "✓ 未发现 .env 文件"
+          fi
+
+      - name: Check for sensitive file patterns
+        run: |
+          if git log -p | grep -i "password\|secret\|api.key\|private.key" | head -5; then
+            echo "⚠️  警告：Git 历史中可能包含敏感信息"
+            echo "请检查 SECURITY.md 中的紧急处理步骤"
+            exit 1
+          fi
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint and Type Check
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.15.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint || true
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    name: Dependency Check
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate || echo "Some vulnerabilities found"
+        continue-on-error: true
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v3
+        with:
+          name: npm-audit
+          path: npm-audit.json
+        continue-on-error: true
