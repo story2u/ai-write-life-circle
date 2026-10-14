@@ -144,15 +144,16 @@ describe('V0.4 workspace and chapter APIs', () => {
     expect(events.at(-1)).toMatchObject({ failureType: 'conflict' })
   })
 
-  it('persists idempotency keys for no-op saves and rejects reuse with different content', async () => {
+  it('persists no-op idempotency keys across API reinitialization and rejects reuse with different content', async () => {
     const { root, chapterPath, source } = await createChapterRepository()
     const stateDirectory = join(root, 'state')
-    const handler = createApiHandler({
+    const createHandler = () => createApiHandler({
       harnessRoot: root,
       projectId: 'project-1',
       stateDirectory,
       resolveActor: async () => ({ id: 'author-1', role: 'author' }),
     })
+    let handler = createHandler()
     const detail = await (await handler(new Request('http://localhost/v1/projects/project-1/chapters/CH-001'))).json() as {
       headRevision: { revisionId: string }
     }
@@ -166,13 +167,15 @@ describe('V0.4 workspace and chapter APIs', () => {
     expect(unchanged.status).toBe(200)
     expect((await unchanged.json()).revisionId).toBe(detail.headRevision.revisionId)
 
-    const changedReuse = await save('Different content must not reuse the key.')
-    expect(changedReuse.status).toBe(422)
-    expect(await changedReuse.json()).toMatchObject({ code: 'VALIDATION_FAILED' })
-
+    // Simulate a service restart: the new handler must reload the persisted key.
+    handler = createHandler()
     const replay = await save('First paragraph.\n\nSecond paragraph.')
     expect(replay.status).toBe(200)
     expect((await replay.json()).revisionId).toBe(detail.headRevision.revisionId)
+
+    const changedReuse = await save('Different content must not reuse the key.')
+    expect(changedReuse.status).toBe(422)
+    expect(await changedReuse.json()).toMatchObject({ code: 'VALIDATION_FAILED' })
 
     const stored = JSON.parse(await readFile(join(stateDirectory, 'chapter-drafts', 'cHJvamVjdC0x', 'Q0gtMDAx.json'), 'utf8')) as {
       revisions: Array<{ revisionId: string }>
@@ -188,11 +191,11 @@ describe('V0.4 workspace and chapter APIs', () => {
     const events = (await readFile(join(stateDirectory, 'audit.jsonl'), 'utf8')).trim().split('\n').map((line) => JSON.parse(line) as { action: string; result?: string })
     expect(events.map((event) => event.action)).toEqual([
       'chapter.revision.save_requested', 'chapter.revision.saved',
-      'chapter.revision.save_requested', 'chapter.revision.save_failed',
       'chapter.revision.save_requested', 'chapter.revision.saved',
+      'chapter.revision.save_requested', 'chapter.revision.save_failed',
     ])
     expect(events[1]).toMatchObject({ result: 'already_current' })
-    expect(events.at(-1)).toMatchObject({ result: 'idempotent_replay' })
+    expect(events[3]).toMatchObject({ result: 'idempotent_replay' })
   })
 
   it('returns a conflict instead of masking an external source edit after a draft', async () => {
