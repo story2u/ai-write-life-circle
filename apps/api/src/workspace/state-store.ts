@@ -5,10 +5,11 @@ import { readJsonFile, withFileLock, writeJsonAtomically } from '../storage/atom
 
 const defaultWorkspaceState: UserWorkspaceStateV04 = {
   lastView: 'write',
-  layout: { leftOpen: true, rightOpen: true, leftW: 280, rightW: 400, focus: false },
   theme: 'light',
   kbRecent: [],
 }
+
+const defaultLayout = { leftOpen: true, rightOpen: false, leftW: 280, rightW: 400, focus: false }
 
 function safeKey(value: string): string {
   return Buffer.from(value, 'utf8').toString('base64url')
@@ -33,7 +34,7 @@ export class FileWorkspaceStateStore {
       const next = userWorkspaceStateV04Schema.parse({
         ...current,
         ...patch,
-        layout: patch.layout ? { ...current.layout, ...patch.layout } : current.layout,
+        layout: patch.layout ? { ...defaultLayout, ...current.layout, ...patch.layout } : current.layout,
       })
       await mkdir(this.stateDirectory, { recursive: true })
       await writeJsonAtomically(path, next)

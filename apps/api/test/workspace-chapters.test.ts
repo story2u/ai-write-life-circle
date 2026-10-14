@@ -31,11 +31,13 @@ describe('V0.4 workspace and chapter APIs', () => {
 
     const first = await handler(new Request('http://localhost/v1/projects/project-1/workspace'))
     expect(first.status).toBe(200)
-    expect(await first.json()).toMatchObject({
+    const firstWorkspace = await first.json() as { userState: { layout?: unknown } }
+    expect(firstWorkspace).toMatchObject({
       project: { projectId: 'project-1' },
       userState: { lastView: 'write', theme: 'light' },
       counts: {},
     })
+    expect(firstWorkspace.userState.layout).toBeUndefined()
 
     const saved = await handler(new Request('http://localhost/v1/projects/project-1/workspace', {
       method: 'PATCH',
@@ -46,8 +48,17 @@ describe('V0.4 workspace and chapter APIs', () => {
 
     const restored = await handler(new Request('http://localhost/v1/projects/project-1/workspace'))
     expect(await restored.json()).toMatchObject({
-      userState: { lastView: 'kb', theme: 'dark', layout: { focus: true, leftW: 280 } },
+      userState: { lastView: 'kb', theme: 'dark', layout: { focus: true, leftOpen: true, rightOpen: false, leftW: 280, rightW: 400 } },
     })
+
+    const explicitlyOpened = await handler(new Request('http://localhost/v1/projects/project-1/workspace', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ layout: { rightOpen: true } }),
+    }))
+    expect(explicitlyOpened.status).toBe(200)
+    const openedWorkspace = await handler(new Request('http://localhost/v1/projects/project-1/workspace'))
+    expect(await openedWorkspace.json()).toMatchObject({ userState: { layout: { rightOpen: true, leftOpen: true, leftW: 280, rightW: 400, focus: true } } })
   })
 
   it('saves immutable chapter drafts outside Harness, enforces author access and detects stale revisions', async () => {

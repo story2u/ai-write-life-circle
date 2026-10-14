@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import type { Evidence } from '../types'
 import ChapterNavigator from '../components/ChapterNavigator'
@@ -7,7 +7,6 @@ import ReviewPanel from '../components/ReviewPanel'
 import AgentChat from '../components/AgentChat'
 import ChallengePanel from '../components/ChallengePanel'
 import { DecisionHistory, KnowledgeViewer, ProposalDetail } from '../components/Proposals'
-import DesignNotes from '../components/DesignNotes'
 import { Btn, ConfirmDialog, Empty, Kbd, Toasts } from '../components/ui'
 import type { WorkspaceSnapshot } from '@writer-agent/contracts'
 import type { WriterAgentAdapter } from '../services/writerAgent'
@@ -16,6 +15,8 @@ import { useWorkspaceController, WORKSPACE_STORAGE_KEY, type WorkspaceConfirmAct
 import { createId } from '../lib/id'
 
 type Tab = '审查' | '对话' | '推演' | '决策'
+
+const DevDesignNotes = import.meta.env.DEV ? lazy(() => import('../components/DesignNotes')) : null
 
 function Resizer({ onDrag, side }: { onDrag: (dx: number) => void; side: 'left' | 'right' }) {
   const down = (e: React.MouseEvent) => {
@@ -187,7 +188,6 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
     () => chProposals.filter((p) => p.anchor && (p.status === 'pending' || p.status === 'adopted')).map((p) => ({ id: p.id, kind: p.kind, paraIndex: p.anchor!.paraIndex, quote: p.anchor!.quote, active: p.id === activeId })),
     [chProposals, activeId],
   )
-  const pendingByChapter = proposals.reduce<Record<string, number>>((m, p) => { if (p.status === 'pending') m[p.chapterId ?? '_'] = (m[p.chapterId ?? '_'] ?? 0) + 1; return m }, {})
   const detail = proposals.find((p) => p.id === detailId)
   const ed = editorRef.current
   const editorText = editorChapterRef.current === current && ed && !ed.isDestroyed ? ed.getText() : undefined
@@ -223,11 +223,8 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
       <div className="flex h-screen flex-col overflow-hidden" style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
         {!layout.focus && (
           <div className="flex h-9 shrink-0 items-center gap-1 border-b px-3 text-xs" style={{ borderColor: 'var(--line)', color: 'var(--ink-3)' }}>
-            {(['app', 'spec'] as const).map((v) => (
-              <button key={v} type="button" onClick={() => setView(v)} className="btn ghost rounded px-2 py-1" style={{ color: view === v ? 'var(--ink)' : undefined }}>
-                {v === 'app' ? '写作工作台' : '设计说明'}
-              </button>
-            ))}
+            <button type="button" onClick={() => setView('app')} className="btn ghost rounded px-2 py-1" style={{ color: view === 'app' ? 'var(--ink)' : undefined }}>写作工作台</button>
+            {import.meta.env.DEV && <button type="button" onClick={() => setView('spec')} className="btn ghost rounded px-2 py-1" style={{ color: view === 'spec' ? 'var(--ink)' : undefined }}>开发说明</button>}
             <div className="ml-auto flex items-center gap-1">
               {view === 'app' && !layout.leftOpen && <Btn small onClick={() => setLayout((l) => ({ ...l, leftOpen: true }))}>显示导航</Btn>}
               {view === 'app' && !layout.rightOpen && <Btn small onClick={() => setLayout((l) => ({ ...l, rightOpen: true }))}>Agent 面板 <Kbd>⌘\</Kbd></Btn>}
@@ -236,14 +233,14 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
             </div>
           </div>
         )}
-        {view === 'spec' ? (
-          <div className="scroll flex-1 overflow-auto"><DesignNotes /></div>
+        {view === 'spec' && DevDesignNotes ? (
+          <div className="scroll flex-1 overflow-auto"><Suspense fallback={<WorkspaceLoadNotice message="正在加载开发说明…" />}><DevDesignNotes /></Suspense></div>
         ) : (
           <div className="relative flex min-h-0 flex-1">
             {showLeft && (
               <>
                 <aside className={`shrink-0 border-r ${veryNarrow ? 'absolute inset-y-0 left-0 z-30' : ''}`} style={{ width: layout.leftW, borderColor: 'var(--line)', boxShadow: veryNarrow ? 'var(--shadow)' : undefined }}>
-                  <ChapterNavigator chapters={chapters} doc={doc} current={current} onPick={switchChapter} pendingByChapter={pendingByChapter}
+                  <ChapterNavigator chapters={chapters} doc={doc} current={current} onPick={switchChapter}
                     projectTitle={workspace.projectTitle} adapterMode={adapter.mode}
                     onCollapse={() => setLayout((l) => ({ ...l, leftOpen: false }))}
                     onNav={(k) => { if (k === 'knowledge') setKb({ open: true, id: null }); else { setLayout((l) => ({ ...l, rightOpen: true })); setTab(k === 'decisions' ? '决策' : '对话') } }} />
@@ -269,7 +266,7 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
               </div>
               <div ref={scrollRef} className="scroll relative min-h-0 flex-1 overflow-auto">
                 {chapters.length === 0 ? (
-                  <Empty title="当前 Harness 尚无正式章节" desc="创建符合 Harness 约定、带稳定 CH-* ID 的 Markdown 章节后，这里会显示真实正文。本工作台不会自动创建或填充小说正文。" />
+                  <Empty title="作品资料中还没有正式章节" desc="将作者撰写的 Markdown 章节按项目约定加入作品资料后，这里会显示原文。工作台不会自动生成或填充正文。" />
                 ) : chapterLoadState.status === 'loading' || chapterLoadState.status === 'idle' ? (
                   <Empty title="正在读取章节原文…" desc="编辑器将在服务端返回 Markdown 与版本标识后开放。" />
                 ) : chapterLoadState.status === 'error' ? (
@@ -333,7 +330,7 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
                     {(['审查', '对话', '推演', '决策'] as Tab[]).map((t) => (
                       <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className="btn rounded-md px-2.5 py-1 text-[13px]"
                         style={tab === t ? { background: 'var(--surface)', boxShadow: 'var(--shadow)' } : { color: 'var(--ink-3)' }}>
-                        {t}{t === '审查' && (pendingByChapter[current] ?? 0) > 0 && <span className="ml-1 text-[11px]" style={{ color: 'var(--warn)' }}>{pendingByChapter[current]}</span>}
+                        {t}
                       </button>
                     ))}
                     <button type="button" onClick={() => setLayout((l) => ({ ...l, rightOpen: false }))} className="btn ghost ml-auto rounded px-2 text-sm" style={{ color: 'var(--ink-3)' }} title="折叠 ⌘\" aria-label="折叠 Agent 面板">⟩</button>

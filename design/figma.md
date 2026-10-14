@@ -66,6 +66,24 @@ The V0.4 PRD is a candidate product spec. Open questions affecting data safety
 and authorship are recorded in `docs/reviews/v0.4-contract-review.md`; they are
 not silently resolved by the implementation.
 
+## 2026-10-14 Claude product/UX remediation review
+
+The official remote MCP `get_design_context` was used again for the same Make
+file and node (`0:1`). The current Make docs/source still describe the V0.3
+three-column workbench and four Agent tabs; they do not expose a newer approved
+information architecture. This review has no Make version identifier.
+`get_screenshot` returned that Make files are unsupported. The browser preview
+was not used as a pixel-comparison source during this remediation, so visual
+parity for the updated default state is not claimed.
+
+The safe interim frontend adjustment is limited to collapsing the right Agent
+panel on first use when no saved layout exists, while preserving saved layout,
+chapter navigation, theme and focus-mode behavior. The new product design brief
+is `design/writer-agent-ux-vnext-handoff.md`; it is a request for Figma work,
+not an approved design or a claim that Figma was updated. The evidence-based
+status of the ten review items is recorded in
+`docs/reviews/claude-product-ux-remediation.md`.
+
 The Make `get_screenshot` tool explicitly reports that it does not support Make
 files. A browser preview of the Make file was available and used for qualitative
 desktop comparison; automated/pixel-diff screenshot comparison is not available

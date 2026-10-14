@@ -24,13 +24,26 @@ describe('Writer Agent studio', () => {
     expect(screen.getByText('WRITER AGENT')).toBeInTheDocument()
     expect(screen.getByRole('tree', { name: '章节目录' })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: '正文编辑器' })).toHaveAttribute('contenteditable', 'true')
-    expect(screen.getByRole('tab', { name: '审查' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '审查' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Agent 面板/ })).toBeInTheDocument()
+  })
+
+  it('keeps design notes available only through the development entry', async () => {
+    const user = userEvent.setup()
+    await renderStudio()
+    if (import.meta.env.DEV) {
+      await user.click(screen.getByRole('button', { name: '开发说明' }))
+      expect(await screen.findByRole('heading', { name: '设计说明' })).toBeInTheDocument()
+    } else {
+      expect(screen.queryByRole('button', { name: '开发说明' })).not.toBeInTheDocument()
+    }
   })
 
   it('runs the demo challenge workflow and keeps the author in control', async () => {
     const user = userEvent.setup()
     await renderStudio()
 
+    await user.click(screen.getByRole('button', { name: /Agent 面板/ }))
     await user.click(screen.getByRole('tab', { name: '推演' }))
     await user.click(screen.getByRole('button', { name: /开始推演/ }))
 
@@ -43,6 +56,7 @@ describe('Writer Agent studio', () => {
     const user = userEvent.setup()
     await renderStudio()
 
+    await user.click(screen.getByRole('button', { name: /Agent 面板/ }))
     await user.click(screen.getByRole('tab', { name: '对话' }))
     await user.type(screen.getByRole('textbox', { name: '发送给 Agent' }), '沈砚在想什么？')
     await user.click(screen.getByRole('button', { name: '发送' }))
@@ -117,8 +131,11 @@ describe('Writer Agent studio', () => {
     const editor = screen.getByRole('textbox', { name: '正文编辑器' })
     const originalText = editor.textContent
 
+    await user.click(screen.getByRole('button', { name: /Agent 面板/ }))
     await user.click(screen.getAllByRole('button', { name: /开始审查/ }).at(-1)!)
     await waitFor(() => expect(screen.getByText('时间线冲突：沈砚离京的季节')).toBeInTheDocument(), { timeout: 5000 })
+    expect(screen.getByRole('tab', { name: '审查' })).toBeInTheDocument()
+    expect(screen.queryByText(/审查完成：/)).not.toBeInTheDocument()
     await user.click(screen.getByText('时间线冲突：沈砚离京的季节'))
     await user.click(screen.getByRole('button', { name: '采纳建议' }))
     await user.click(screen.getByRole('button', { name: '采纳所选方案' }))

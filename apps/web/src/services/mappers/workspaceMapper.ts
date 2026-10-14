@@ -1,6 +1,6 @@
 import { workspaceSnapshotSchema, type Chapter, type WorkspaceSnapshot, type WorkspaceV04, type ChapterListV04 } from '@writer-agent/contracts'
 
-const defaultLayout = { leftOpen: true, rightOpen: true, leftW: 248, rightW: 380, focus: false }
+const defaultLayout = { leftOpen: true, rightOpen: false, leftW: 248, rightW: 380, focus: false }
 
 /** Convert V0.4 workspace and chapter-tree DTOs into the existing UI model. */
 export function mapWorkspaceToStudio(workspace: WorkspaceV04, chapterList: ChapterListV04): WorkspaceSnapshot {
@@ -29,7 +29,7 @@ export function mapWorkspaceToStudio(workspace: WorkspaceV04, chapterList: Chapt
 
   return workspaceSnapshotSchema.parse({
     projectId: workspace.project.projectId ?? '',
-    projectTitle: workspace.project.title?.trim() || '本地 Harness 作品',
+    projectTitle: workspace.project.title?.trim() || '本地作品',
     chapters,
     knowledge: [],
     // Chapter bodies are fetched on selection, never inferred from Demo data.
@@ -38,7 +38,7 @@ export function mapWorkspaceToStudio(workspace: WorkspaceV04, chapterList: Chapt
     preferences: {
       ...(workspace.userState.lastView ? { lastView: workspace.userState.lastView } : {}),
       ...(savedChapter ? { lastChapterId: savedChapter } : {}),
-      layout: { ...defaultLayout, ...storedLayout },
+      ...(storedLayout ? { layout: { ...defaultLayout, ...storedLayout } } : {}),
       theme: workspace.userState.theme ?? 'light',
     },
     chapterVersions: {},

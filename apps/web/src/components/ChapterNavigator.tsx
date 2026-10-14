@@ -2,9 +2,9 @@ import type { Chapter, Document } from '@writer-agent/contracts'
 
 const count = (ps: string[] = []) => ps.join('').replace(/\s/g, '').length
 
-export default function ChapterNavigator({ chapters, doc, current, onPick, pendingByChapter, onNav, onCollapse, projectTitle, adapterMode }: {
+export default function ChapterNavigator({ chapters, doc, current, onPick, onNav, onCollapse, projectTitle, adapterMode }: {
   chapters: Chapter[]
-  doc: Document; current: string; onPick: (id: string) => void; pendingByChapter: Record<string, number>
+  doc: Document; current: string; onPick: (id: string) => void
   onNav: (n: string) => void; onCollapse: () => void
   projectTitle: string; adapterMode: 'demo' | 'api'
 }) {
@@ -17,7 +17,7 @@ export default function ChapterNavigator({ chapters, doc, current, onPick, pendi
         <div className="min-w-0 flex-1">
           <div className="text-[11px] tracking-widest" style={{ color: 'var(--ink-3)' }}>WRITER AGENT</div>
           <div className="font-prose mt-1 text-[17px] font-semibold">{projectTitle}</div>
-          <div className="mt-1 text-xs" style={{ color: 'var(--ink-3)' }}>{adapterMode === 'demo' ? '长篇 · 演示稿' : 'Harness · 应用草稿'} {total.toLocaleString()} 字</div>
+          <div className="mt-1 text-xs" style={{ color: 'var(--ink-3)' }}>{adapterMode === 'demo' ? '长篇 · 演示稿' : '作品原文 · 未提交草稿'} {total.toLocaleString()} 字</div>
         </div>
         <button type="button" onClick={onCollapse} className="btn ghost rounded px-1.5 text-sm" style={{ color: 'var(--ink-3)' }} title="折叠导航 ⌘⇧\" aria-label="折叠导航">⟨</button>
       </div>
@@ -26,13 +26,7 @@ export default function ChapterNavigator({ chapters, doc, current, onPick, pendi
         {nav.map(([k, n]) => (
           <button key={k} type="button" onClick={() => onNav(k)} className="btn ghost flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-[13px]" style={{ color: 'var(--ink-2)' }}>
             {n}
-            {k === 'decisions' && Object.values(pendingByChapter).reduce((a, b) => a + b, 0) > 0 && (
-              <span className="rounded px-1.5 text-[11px]" style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}>{Object.values(pendingByChapter).reduce((a, b) => a + b, 0)}</span>
-            )}
           </button>
-        ))}
-        {['创作总览', '故事结构'].map((n) => (
-          <div key={n} className="flex items-center justify-between px-3 py-1.5 text-[13px]" style={{ color: 'var(--ink-3)' }}>{n}<span className="text-[10.5px]">下一阶段</span></div>
         ))}
       </nav>
       <div className="scroll mt-5 min-h-0 flex-1 overflow-auto px-2 pb-4" role="tree" aria-label="章节目录">
@@ -47,7 +41,6 @@ export default function ChapterNavigator({ chapters, doc, current, onPick, pendi
                 style={c.id === current ? { background: 'var(--accent-soft)', color: 'var(--accent)' } : { color: 'var(--ink-2)' }}
               >
                 <span className="min-w-0 flex-1 truncate">{c.title}</span>
-                {pendingByChapter[c.id] > 0 && <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--warn)' }} title={`${pendingByChapter[c.id]} 项待确认`} />}
                 <span className="font-sans text-[10.5px]" style={{ color: 'var(--ink-3)' }}>{doc[c.id] ? count(doc[c.id]) : c.wordCount ?? 0}</span>
               </button>
             ))}

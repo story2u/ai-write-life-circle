@@ -40,7 +40,7 @@ export const workspacePreferencesSchema = z.object({
     leftW: z.number().int().min(200).max(360),
     rightW: z.number().int().min(320).max(560),
     focus: z.boolean(),
-  }),
+  }).optional(),
   theme: z.enum(['light', 'dark']),
 })
 export type WorkspacePreferences = z.infer<typeof workspacePreferencesSchema>

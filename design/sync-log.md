@@ -1,5 +1,35 @@
 # Figma synchronization log
 
+## 2026-10-14 — Product/UX review remediation brief
+
+- Re-read the current Figma Make context for key `kWBOdcae5utBZ6VtBHHXui`, node
+  `0:1`, through the official remote MCP. The Make resources still describe the
+  V0.3 three-column workbench and four Agent tabs; no version identifier was
+  exposed. `get_screenshot` reports that Make files are unsupported, so no
+  pixel-level design comparison is claimed.
+- Created `design/writer-agent-ux-vnext-handoff.md` as a design task for Figma.
+  It describes candidate information architectures, resume entry, Note vs
+  Canon Change, anchored evidence, chapter-related knowledge, story conflict
+  comparison, history and Chinese long-form visual states. It is not a claim
+  that Figma has implemented these designs.
+- Implemented only low-risk interim frontend changes: first-use right panel
+  collapsed while saved preferences are retained; removed pending-count
+  badges and review-completion/cancel toasts; kept save/error/conflict alerts;
+  hid design notes in production; removed unavailable navigation placeholders;
+  clarified empty-workspace copy.
+- No changes were made to `manuscript/`, `book/`, `inbox/`, `proposals/`, or
+  `decisions/`. No Note API, Agent Runtime, knowledge API, new visual tokens, or
+  new product navigation was implemented.
+- Verification: frozen install, typecheck, lint, API/Web unit tests (65 total), build,
+  Playwright at 1440px (Light/Dark/Focus and open-on-demand panel), API/Harness E2E,
+  OpenAPI check/lint, and Harness projection rebuild passed. Redocly retains 32
+  existing warnings; Vite retains the existing ~854 kB chunk advisory. The
+  rebuild found 44 Markdown docs, 7 knowledge docs, 2 proposals, 0 formal
+  chapters, and no ID collisions. No files under `manuscript/`, `book/`,
+  `inbox/`, `proposals/`, or `decisions/` changed. Local screenshots were
+  inspected; Figma pixel comparison remains unavailable. The production JS
+  bundle excludes the developer design-notes module and labels.
+
 ## 2026-10-14 — OQ-016 chapter source convention
 
 - Author decision: “沿用现有 Harness 习惯”. This resolves OQ-016 using the
