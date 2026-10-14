@@ -31,7 +31,8 @@ describe('demo adapter', () => {
     const paragraphs = ['作者明确保存的段落。']
     const markdown = plainParagraphsToMarkdown(paragraphs)
     const response = await adapter.saveChapter({
-      projectId: 'demo-project', chapterId: 'c14', paragraphs, markdown, revision: workspace.chapterVersions.c14.revision,
+      projectId: 'demo-project', chapterId: 'c14', paragraphs, markdown,
+      revision: workspace.chapterVersions.c14.mode === 'demo' ? workspace.chapterVersions.c14.revision : 0,
       sourceHash: await hashMarkdown(markdown),
     })
     expect(response.revision).toBe(1)

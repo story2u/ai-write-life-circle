@@ -29,6 +29,13 @@ import { plainParagraphsToMarkdown } from '../lib/manuscriptMarkdown'
 
 const STORAGE_KEY = 'writer-agent.v2'
 
+function readLegacyDemoVersion(value: unknown): { revision: number; sourceHash: string } | null {
+  if (typeof value !== 'object' || value === null || !('revision' in value) || !('sourceHash' in value)) return null
+  return typeof value.revision === 'number' && Number.isInteger(value.revision) && value.revision >= 0 && typeof value.sourceHash === 'string'
+    ? { revision: value.revision, sourceHash: value.sourceHash }
+    : null
+}
+
 type StoredWorkspace = {
   doc?: Record<string, string[]>
   markdownByChapter?: Record<string, string>
@@ -38,7 +45,7 @@ type StoredWorkspace = {
   challenge?: ChallengeRound[]
   seq?: number
   current?: string
-  chapterVersions?: Record<string, { revision: number; sourceHash: string }>
+  chapterVersions?: Record<string, ChapterVersion>
 }
 
 function readStoredWorkspace(): StoredWorkspace {
@@ -56,7 +63,9 @@ function readStoredWorkspace(): StoredWorkspace {
     const chapterVersions = saved.chapterVersions && typeof saved.chapterVersions === 'object'
       ? Object.fromEntries(Object.entries(saved.chapterVersions).flatMap(([id, version]) => {
         const parsed = chapterVersionSchema.safeParse(version)
-        return parsed.success ? [[id, parsed.data]] : []
+        if (parsed.success && parsed.data.mode === 'demo') return [[id, parsed.data]]
+        const legacy = readLegacyDemoVersion(version)
+        return legacy ? [[id, { mode: 'demo' as const, ...legacy }]] : []
       }))
       : undefined
     return {
@@ -95,8 +104,9 @@ export function createDemoWriterAgentAdapter(seed: WriterAgentSeed): WriterAgent
       for (const chapter of seed.chapters) {
         const markdown = markdownByChapter[chapter.id] ?? plainParagraphsToMarkdown(document[chapter.id] ?? [])
         const savedVersion = stored.chapterVersions?.[chapter.id]
-        chapterVersions[chapter.id] = {
-          revision: savedVersion?.revision ?? 0,
+      chapterVersions[chapter.id] = {
+          mode: 'demo',
+          revision: savedVersion?.mode === 'demo' ? savedVersion.revision : 0,
           sourceHash: await hashMarkdown(markdown),
         }
       }
@@ -104,6 +114,7 @@ export function createDemoWriterAgentAdapter(seed: WriterAgentSeed): WriterAgent
       const defaultChapterId = chapterIds.has('c12') ? 'c12' : seed.chapters[0]?.id
       const snapshot = workspaceSnapshotSchema.parse({
         projectId,
+        projectTitle: '雨落江宁',
         chapters: seed.chapters,
         knowledge: seed.knowledge,
         document,
@@ -123,12 +134,12 @@ export function createDemoWriterAgentAdapter(seed: WriterAgentSeed): WriterAgent
     async saveChapter(input: SaveChapterRequest): Promise<SaveChapterResponse> {
       const versions = versionsByProject.get(input.projectId)
       const current = versions?.get(input.chapterId)
-      if (!current) throw new Error('演示工作区尚未加载，无法保存章节。')
-      if (current.revision !== input.revision) throw new ChapterRevisionConflictError()
+      if (!current || current.mode !== 'demo') throw new Error('演示工作区尚未加载，无法保存章节。')
+      if (current.mode !== 'demo' || current.revision !== input.revision) throw new ChapterRevisionConflictError()
 
       const actualHash = await hashMarkdown(input.markdown)
       if (actualHash !== input.sourceHash) throw new Error('保存内容版本与提交的校验值不一致。')
-      const version = { revision: current.revision + 1, sourceHash: actualHash }
+      const version = { mode: 'demo' as const, revision: current.revision + 1, sourceHash: actualHash }
       versions?.set(input.chapterId, version)
       const snapshot = snapshotsByProject.get(input.projectId)
       if (snapshot) {
@@ -154,8 +165,8 @@ export function createDemoWriterAgentAdapter(seed: WriterAgentSeed): WriterAgent
               sourceId: `${evidence.chapterId}#${evidence.paraIndex}`,
               chapterId: evidence.chapterId,
               paraIndex: evidence.paraIndex,
-              sourceHash: version?.sourceHash,
-              revision: version?.revision,
+              sourceHash: version?.mode === 'demo' ? version.sourceHash : undefined,
+              revision: version?.mode === 'demo' ? version.revision : undefined,
             }
           }
           if (evidence.type === 'knowledge') {

@@ -95,7 +95,9 @@ state directory. Neither chapter nor workspace writes touch `book/`,
   `pnpm build` include the API package.
 
 No Agent runtime, LLM provider, proposal workflow, or production database is
-implemented in this Sprint 1 slice. The current web adapter still uses the
-V0.2/V0.3 client contract; a DTO adapter and screen-level integration remain
-follow-up work. See `docs/reviews/v0.4-contract-review.md` for open decisions
-and contract limits.
+implemented in Sprint 1 or Sprint 2. The web adapter now uses the implemented
+V0.4 Workspace and Chapter routes, with typed DTO mapping and local recovery
+for chapter drafts. Knowledge, review, chat, challenge, proposal, and reasoning
+routes remain unavailable in API mode. See
+`docs/reviews/v0.4-contract-review.md` for open contract decisions and
+`docs/reviews/v0.4-sprint2-frontend-integration.md` for the integration scope.

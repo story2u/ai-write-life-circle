@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.15.1",
   "scripts": {
     "dev": "pnpm --filter @writer-agent/web dev",
+    "dev:local": "node scripts/dev-local-stack.mjs",
     "build": "pnpm --filter @writer-agent/api build && pnpm --filter @writer-agent/web build",
     "typecheck": "pnpm --filter @writer-agent/contracts typecheck && pnpm --filter @writer-agent/api typecheck && pnpm --filter @writer-agent/web typecheck",
     "lint": "pnpm --filter @writer-agent/web lint && ./apps/web/node_modules/.bin/eslint --config apps/web/eslint.config.js apps/api/src apps/api/test packages/contracts/src",

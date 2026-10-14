@@ -8,7 +8,7 @@ import AgentChat from '../components/AgentChat'
 import ChallengePanel from '../components/ChallengePanel'
 import { DecisionHistory, KnowledgeViewer, ProposalDetail } from '../components/Proposals'
 import DesignNotes from '../components/DesignNotes'
-import { Btn, ConfirmDialog, Kbd, Toasts } from '../components/ui'
+import { Btn, ConfirmDialog, Empty, Kbd, Toasts } from '../components/ui'
 import type { WorkspaceSnapshot } from '@writer-agent/contracts'
 import type { WriterAgentAdapter } from '../services/writerAgent'
 import { createWriterAgentAdapter } from '../services/adapterFactory'
@@ -43,7 +43,9 @@ export default function App({ adapter: providedAdapter }: { adapter?: WriterAgen
     setLoad({ status: 'loading' })
     void (async () => {
       const adapter = providedAdapter ?? await createWriterAgentAdapter()
-      const projectId = import.meta.env.VITE_WRITER_AGENT_PROJECT_ID || (adapter.mode === 'demo' ? 'demo-writer-agent' : 'default')
+      const configuredProjectId = import.meta.env.VITE_WRITER_AGENT_PROJECT_ID?.trim()
+      if (adapter.mode === 'api' && !configuredProjectId) throw new Error('API 模式缺少 VITE_WRITER_AGENT_PROJECT_ID；请使用仓库提供的本地联调命令或配置项目 ID。')
+      const projectId = configuredProjectId || 'demo-writer-agent'
       const workspace = await adapter.loadWorkspace(projectId)
       if (active) setLoad({ status: 'ready', adapter, workspace })
     })().catch((cause: unknown) => {
@@ -82,13 +84,9 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
   const [winW, setWinW] = useState(window.innerWidth)
 
   const editorRef = useRef<Editor | null>(null)
+  const editorChapterRef = useRef<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [, force] = useState(0)
-  const handleEditorReady = useCallback((editor: Editor | null) => {
-    editorRef.current = editor
-    editor?.on('transaction', () => force((n) => n + 1))
-    force((n) => n + 1)
-  }, [])
 
   const toast = useCallback((text: string) => {
     const id = createId()
@@ -98,7 +96,14 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
   const workspace = useWorkspaceController({ adapter, initialWorkspace, toast, requestConfirm: setConfirm })
   const { doc, markdownByChapter, proposals, decisions, layout, setLayout, chat, challenge, setChallenge, current, dark, setDark,
     task, saveState, flushSave, retrySave, onChange, runReview: runWorkspaceReview, cancelReview, decide, createProposal,
-    sendChat, markChatSaved, requestChallenge } = workspace
+    sendChat, markChatSaved, requestChallenge, chapterLoadState, editorGeneration, recoveryDraft,
+    restoreLocalDraft, reloadServerVersion, retryLoadChapter, exportLocalDraft } = workspace
+  const handleEditorReady = useCallback((editor: Editor | null) => {
+    editorRef.current = editor
+    editorChapterRef.current = editor ? current : null
+    editor?.on('transaction', () => force((n) => n + 1))
+    force((n) => n + 1)
+  }, [current])
 
   useEffect(() => {
     const r = () => setWinW(window.innerWidth)
@@ -176,16 +181,19 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
   })
 
   // ---------- Derived ----------
-  const chapter = chapters.find((c) => c.id === current)!
+  const chapter = chapters.find((c) => c.id === current) ?? { id: '', volume: '', title: '', meta: '', wordCount: 0 }
   const chProposals = useMemo(() => proposals.filter((p) => p.chapterId === current && p.origin === '审查'), [proposals, current])
   const annotations: Annotation[] = useMemo(
     () => chProposals.filter((p) => p.anchor && (p.status === 'pending' || p.status === 'adopted')).map((p) => ({ id: p.id, kind: p.kind, paraIndex: p.anchor!.paraIndex, quote: p.anchor!.quote, active: p.id === activeId })),
     [chProposals, activeId],
   )
   const pendingByChapter = proposals.reduce<Record<string, number>>((m, p) => { if (p.status === 'pending') m[p.chapterId ?? '_'] = (m[p.chapterId ?? '_'] ?? 0) + 1; return m }, {})
-  const words = (doc[current] ?? []).join('').replace(/\s/g, '').length
   const detail = proposals.find((p) => p.id === detailId)
   const ed = editorRef.current
+  const editorText = editorChapterRef.current === current && ed && !ed.isDestroyed ? ed.getText() : undefined
+  const words = editorText !== undefined
+    ? editorText.replace(/\s/g, '').length
+    : doc[current] ? doc[current].join('').replace(/\s/g, '').length : chapter.wordCount ?? 0
 
   const narrow = winW < 1180
   const veryNarrow = winW < 900
@@ -197,6 +205,18 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
     title: '重置演示数据？', desc: '将清空本地保存的正文修改、提案、决策记录与对话，恢复初始演示状态。此操作无法撤销。', confirmText: '重置', danger: true,
     run: () => { localStorage.removeItem(WORKSPACE_STORAGE_KEY); location.reload() },
   })
+
+  const downloadLocalDraft = () => {
+    const markdown = exportLocalDraft()
+    if (markdown === null) return
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${current || 'chapter'}-local-draft.md`
+    anchor.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 0)
+  }
 
   return (
     <div className={dark ? 'dark' : ''}>
@@ -224,6 +244,7 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
               <>
                 <aside className={`shrink-0 border-r ${veryNarrow ? 'absolute inset-y-0 left-0 z-30' : ''}`} style={{ width: layout.leftW, borderColor: 'var(--line)', boxShadow: veryNarrow ? 'var(--shadow)' : undefined }}>
                   <ChapterNavigator chapters={chapters} doc={doc} current={current} onPick={switchChapter} pendingByChapter={pendingByChapter}
+                    projectTitle={workspace.projectTitle} adapterMode={adapter.mode}
                     onCollapse={() => setLayout((l) => ({ ...l, leftOpen: false }))}
                     onNav={(k) => { if (k === 'knowledge') setKb({ open: true, id: null }); else { setLayout((l) => ({ ...l, rightOpen: true })); setTab(k === 'decisions' ? '决策' : '对话') } }} />
                 </aside>
@@ -233,29 +254,67 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
 
             <main className="flex min-w-0 flex-1 flex-col" style={{ background: 'var(--surface)' }}>
               <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4 text-xs" style={{ borderColor: layout.focus ? 'transparent' : 'var(--line)', color: 'var(--ink-3)' }}>
-                <span className="truncate">{chapter.volume} / <span style={{ color: 'var(--ink)' }}>{chapter.title}</span></span>
+                <span className="truncate">{chapter.id ? <>{chapter.volume} / <span style={{ color: 'var(--ink)' }}>{chapter.title}</span></> : '暂无章节'}</span>
                 <span className="ml-auto flex shrink-0 items-center gap-1">
                   <Btn small disabled={!ed?.can().undo()} onClick={() => ed?.chain().focus().undo().run()} title="撤销 ⌘Z">撤销</Btn>
                   <Btn small disabled={!ed?.can().redo()} onClick={() => ed?.chain().focus().redo().run()} title="重做 ⌘⇧Z">重做</Btn>
                   <span className="mx-2 tabular-nums">{words.toLocaleString()} 字</span>
                   <span className="w-[92px] text-right" title={saveState.s === 'error' ? saveState.message : undefined} aria-live="polite">
-                    {saveState.s === 'saving' ? '保存中…' : saveState.s === 'dirty' ? '有未保存修改' : saveState.s === 'error' ? (saveState.conflict ? '版本冲突' : '保存失败') : `已保存 ${new Date(saveState.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`}
+                    {saveState.s === 'saving' ? '保存中…' : saveState.s === 'dirty' ? '有未保存修改' : saveState.s === 'recovery' ? '有待恢复草稿' : saveState.s === 'error' ? (saveState.conflict ? '版本冲突' : '保存失败') : `已保存 ${new Date(saveState.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`}
                   </span>
                   {saveState.s === 'error' && !saveState.conflict && <button type="button" className="btn ghost rounded px-1" onClick={() => void retrySave()} aria-label="重试保存">重试</button>}
+                  {adapter.mode === 'api' && saveState.s === 'error' && !saveState.conflict && exportLocalDraft() !== null && <button type="button" className="btn ghost rounded px-1" onClick={downloadLocalDraft}>导出当前草稿</button>}
                   <Btn small variant={layout.focus ? 'outline' : 'ghost'} onClick={() => setLayout((l) => ({ ...l, focus: !l.focus }))} title="⌘⇧F">{layout.focus ? '退出专注' : '专注'}</Btn>
                 </span>
               </div>
               <div ref={scrollRef} className="scroll relative min-h-0 flex-1 overflow-auto">
-                <article className="mx-auto max-w-[680px] px-8 py-14">
-                  <h1 className="font-prose text-[28px] font-semibold">{chapter.title.replace(/第 (\d+) 章 /, '第$1章　')}</h1>
-                  <div className="mt-2 mb-10 text-xs" style={{ color: 'var(--ink-3)' }}>{chapter.meta}</div>
-                  <ManuscriptEditor
-                    key={current} chapterId={current} initial={doc[current] ?? ['']} initialMarkdown={markdownByChapter[current]} annotations={annotations} flash={flash}
-                    onChange={onChange} onSelectIssue={selectIssue}
-                    onSelection={(t) => setSelection(t.trim())}
-                    onReady={handleEditorReady}
-                  />
-                </article>
+                {chapters.length === 0 ? (
+                  <Empty title="当前 Harness 尚无正式章节" desc="创建符合 Harness 约定、带稳定 CH-* ID 的 Markdown 章节后，这里会显示真实正文。本工作台不会自动创建或填充小说正文。" />
+                ) : chapterLoadState.status === 'loading' || chapterLoadState.status === 'idle' ? (
+                  <Empty title="正在读取章节原文…" desc="编辑器将在服务端返回 Markdown 与版本标识后开放。" />
+                ) : chapterLoadState.status === 'error' ? (
+                  <Empty title="章节加载失败" desc={chapterLoadState.message} action={
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Btn variant="outline" onClick={() => retryLoadChapter()}>重试读取</Btn>
+                      {exportLocalDraft() !== null && <Btn onClick={downloadLocalDraft}>导出本地草稿</Btn>}
+                    </div>
+                  } />
+                ) : recoveryDraft ? (
+                  <section role="alert" aria-label="本地草稿恢复" className="mx-auto mt-10 max-w-[680px] rounded-lg border p-4" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+                    <div className="text-[13px] font-medium">发现尚未确认保存的本地草稿</div>
+                    <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'var(--ink-2)' }}>
+                      {recoveryDraft.conflict
+                        ? '本地草稿基于较旧的服务器版本。服务器正文未被覆盖；先导出草稿，再选择如何继续。'
+                        : '服务器版本与本地草稿不同。服务器正文未被覆盖；请选择恢复草稿或使用服务器版本。'}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Btn variant="primary" onClick={() => void restoreLocalDraft()}>恢复本地草稿</Btn>
+                      <Btn variant="outline" onClick={downloadLocalDraft}>导出本地草稿</Btn>
+                      <Btn onClick={() => reloadServerVersion()}>使用服务器版本…</Btn>
+                    </div>
+                  </section>
+                ) : (
+                  <article className="mx-auto max-w-[680px] px-8 py-14">
+                    <h1 className="font-prose text-[28px] font-semibold">{chapter.title.replace(/第 (\d+) 章 /, '第$1章　')}</h1>
+                    <div className="mt-2 mb-10 text-xs" style={{ color: 'var(--ink-3)' }}>{chapter.meta}</div>
+                    {saveState.s === 'error' && saveState.conflict && (
+                      <section role="alert" className="mb-5 rounded-lg border p-4 text-[12px]" style={{ borderColor: 'var(--danger)', background: 'var(--danger-soft)', color: 'var(--ink-2)' }}>
+                        <div className="font-medium" style={{ color: 'var(--danger)' }}>检测到版本冲突</div>
+                        <p className="mt-1">{saveState.message} 本地正文仍保留在编辑器和浏览器恢复草稿中，没有自动重试覆盖。</p>
+                        <div className="mt-3 flex gap-2">
+                          <Btn small variant="outline" onClick={downloadLocalDraft}>导出本地草稿</Btn>
+                          <Btn small onClick={() => reloadServerVersion()}>重新读取服务器版本…</Btn>
+                        </div>
+                      </section>
+                    )}
+                    <ManuscriptEditor
+                      key={`${current}:${editorGeneration}`} chapterId={current} initial={doc[current] ?? ['']} initialMarkdown={markdownByChapter[current]} annotations={annotations} flash={flash}
+                      onChange={onChange} onSelectIssue={selectIssue}
+                      onSelection={(t) => setSelection(t.trim())}
+                      onReady={handleEditorReady}
+                    />
+                  </article>
+                )}
               </div>
               {returnTo && (
                 <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 -translate-x-1/2">
@@ -279,25 +338,33 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
                     ))}
                     <button type="button" onClick={() => setLayout((l) => ({ ...l, rightOpen: false }))} className="btn ghost ml-auto rounded px-2 text-sm" style={{ color: 'var(--ink-3)' }} title="折叠 ⌘\" aria-label="折叠 Agent 面板">⟩</button>
                   </div>
-                  {tab === '审查' && <ReviewPanel task={task} proposals={chProposals} activeId={activeId} onSelect={selectIssue} onDecide={decide} onOpenDetail={setDetailId} onEvidence={openEvidence} onRun={runReview} onCancel={cancelReview} />}
-                  {tab === '对话' && (
-                    <AgentChat messages={chat} selection={selection} clearSelection={() => setSelection('')} onEvidence={openEvidence} onSend={sendChat}
-                      onCommand={(c, arg) => { if (c === 'review') runReview(); else { setChallengeSeed(arg || selection || undefined); setTab('推演') } }}
-                      onSave={(m) => {
-                        const id = createProposal({ kind: 'suggestion', origin: '对话', title: `对话：${m.text.slice(0, 18)}…`, chapterId: current, analysis: { facts: [], inferences: [m.text], suggestion: '由讨论保存，待你确认是否纳入创作计划。' }, evidence: m.cites ?? [], impact: [chapter.title], options: [] })
-                        markChatSaved(m, id)
-                      }} />
+                  {adapter.mode === 'api' ? (
+                    <div className="flex min-h-0 flex-1 items-center justify-center px-5">
+                      <Empty title="Agent 功能尚未接入" desc="当前已连接真实 Workspace 与章节草稿 API。审查、对话、推演和提案仍是独立待实现功能；此模式不会调用演示数据或未实现接口。" />
+                    </div>
+                  ) : (
+                    <>
+                      {tab === '审查' && <ReviewPanel task={task} proposals={chProposals} activeId={activeId} onSelect={selectIssue} onDecide={decide} onOpenDetail={setDetailId} onEvidence={openEvidence} onRun={runReview} onCancel={cancelReview} />}
+                      {tab === '对话' && (
+                        <AgentChat messages={chat} selection={selection} clearSelection={() => setSelection('')} onEvidence={openEvidence} onSend={sendChat}
+                          onCommand={(c, arg) => { if (c === 'review') runReview(); else { setChallengeSeed(arg || selection || undefined); setTab('推演') } }}
+                          onSave={(m) => {
+                            const id = createProposal({ kind: 'suggestion', origin: '对话', title: `对话：${m.text.slice(0, 18)}…`, chapterId: current, analysis: { facts: [], inferences: [m.text], suggestion: '由讨论保存，待你确认是否纳入创作计划。' }, evidence: m.cites ?? [], impact: [chapter.title], options: [] })
+                            markChatSaved(m, id)
+                          }} />
+                      )}
+                      {tab === '推演' && (
+                        <ChallengePanel key={challengeSeed} rounds={challenge} onChangeRounds={setChallenge} onChallenge={requestChallenge} seed={challengeSeed}
+                          onSave={(rs, conclusion) => createProposal({
+                            kind: 'suggestion', origin: '推演', title: `推演：${rs[0].intent.slice(0, 18)}`,
+                            analysis: { facts: [`作者结论：${conclusion}`], inferences: rs.flatMap((r) => r.understanding.filter((u) => u.speculative).map((u) => u.text)), suggestion: rs.at(-1)!.questions.join(' / ') },
+                            evidence: [], impact: ['世界观设定', '人物动机'],
+                            options: [{ id: 'a', label: '纳入世界观设定', detail: '确认后由你在知识库中建档' }, { id: 'b', label: '仅作为创作笔记', detail: '不成为作品事实' }],
+                          })} />
+                      )}
+                      {tab === '决策' && <DecisionHistory proposals={proposals} decisions={decisions} onOpen={setDetailId} />}
+                    </>
                   )}
-                  {tab === '推演' && (
-                    <ChallengePanel key={challengeSeed} rounds={challenge} onChangeRounds={setChallenge} onChallenge={requestChallenge} seed={challengeSeed}
-                      onSave={(rs, conclusion) => createProposal({
-                        kind: 'suggestion', origin: '推演', title: `推演：${rs[0].intent.slice(0, 18)}`,
-                        analysis: { facts: [`作者结论：${conclusion}`], inferences: rs.flatMap((r) => r.understanding.filter((u) => u.speculative).map((u) => u.text)), suggestion: rs.at(-1)!.questions.join(' / ') },
-                        evidence: [], impact: ['世界观设定', '人物动机'],
-                        options: [{ id: 'a', label: '纳入世界观设定', detail: '确认后由你在知识库中建档' }, { id: 'b', label: '仅作为创作笔记', detail: '不成为作品事实' }],
-                      })} />
-                  )}
-                  {tab === '决策' && <DecisionHistory proposals={proposals} decisions={decisions} onOpen={setDetailId} />}
                 </aside>
               </>
             )}
@@ -305,7 +372,7 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
         )}
       </div>
       {detail && <ProposalDetail key={detail.id + detail.status} p={detail} decisions={decisions.filter((d) => d.proposalId === detail.id)} chapters={chapters} onClose={() => setDetailId(null)} onDecide={decide} onEvidence={openEvidence} />}
-      {kb.open && <KnowledgeViewer entryId={kb.id} knowledge={knowledge} onClose={() => setKb({ open: false, id: null })} onPick={(id) => setKb({ open: true, id })} />}
+      {kb.open && <KnowledgeViewer entryId={kb.id} knowledge={knowledge} unavailable={adapter.mode === 'api'} onClose={() => setKb({ open: false, id: null })} onPick={(id) => setKb({ open: true, id })} />}
       {confirm && <ConfirmDialog {...confirm} onCancel={() => setConfirm(null)} onConfirm={() => { confirm.run(); setConfirm(null) }} />}
       <Toasts items={toasts} />
     </div>
