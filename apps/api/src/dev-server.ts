@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url'
 import { createApiHandler } from './http.js'
 
 const sourceDirectory = fileURLToPath(new URL('.', import.meta.url))
+if (process.env.NODE_ENV === 'production') {
+  throw new Error('The local demo-identity API server is development-only and must not run in production.')
+}
 const repositoryRoot = resolve(process.env.WRITER_AGENT_HARNESS_ROOT ?? resolve(sourceDirectory, '../../..'))
 const projectId = process.env.WRITER_AGENT_PROJECT_ID ?? 'local'
 const port = Number(process.env.WRITER_AGENT_API_PORT ?? 8787)
@@ -14,6 +17,7 @@ const handler = createApiHandler({
   harnessRoot: repositoryRoot,
   projectId,
   stateDirectory,
+  environment: 'development',
   // The dev server binds to loopback and derives this local-only identity itself.
   // Replace it with the selected authentication adapter before any shared deployment.
   resolveActor: async () => ({ id: 'local-author', role: 'author' }),

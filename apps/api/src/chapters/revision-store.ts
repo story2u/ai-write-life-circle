@@ -13,19 +13,23 @@ type StoredDraftRevision = ChapterRevisionSummaryV04 & {
   createdAt?: string
   createdBy: ActorV04
   commitRef: null
-  paragraphs: string[]
+  markdown: string
   idempotencyKey?: string
   requestHash: string
 }
 
 type ChapterDraftState = {
   sourceHash: string
+  sourceRevision?: StoredDraftRevision
+  /** The app draft whose exact content the author later committed to Harness. */
+  adoptedDraftRevisionId?: string
   revisions: StoredDraftRevision[]
 }
 
 export type SavedDraftRevision = {
   revision: ChapterRevisionSummaryV04
   status: 200 | 201
+  result: 'created' | 'idempotent_replay' | 'already_current'
 }
 
 export class IdempotencyKeyReuseError extends Error {
@@ -41,12 +45,12 @@ function safeKey(value: string): string {
   return Buffer.from(value, 'utf8').toString('base64url')
 }
 
-function contentHash(paragraphs: string[]): string {
-  return `sha256:${createHash('sha256').update(JSON.stringify(paragraphs)).digest('hex')}`
+function contentHash(markdown: string): string {
+  return `sha256:${createHash('sha256').update(markdown, 'utf8').digest('hex')}`
 }
 
-function countWords(paragraphs: string[]): number {
-  return Array.from(paragraphs.join('').replace(/\s+/g, '')).length
+function countWords(markdown: string): number {
+  return Array.from(markdown.replace(/\s+/g, '')).length
 }
 
 function publicSummary(revision: StoredDraftRevision): ChapterRevisionSummaryV04 {
@@ -68,16 +72,15 @@ export class FileChapterRevisionStore {
     return join(this.stateDirectory, 'chapter-drafts', safeKey(projectId), `${safeKey(chapterId)}.json`)
   }
 
-  private sourceRevision(chapter: ChapterSource): StoredDraftRevision {
-    const paragraphs = chapter.paragraphs
+  private sourceRevision(chapter: ChapterSource, parentRevisionId: string | null = null): StoredDraftRevision {
     return {
       revisionId: chapter.sourceRevisionId,
-      parentRevisionId: null,
-      contentHash: contentHash(paragraphs),
-      wordCount: countWords(paragraphs),
+      parentRevisionId,
+      contentHash: contentHash(chapter.markdown),
+      wordCount: countWords(chapter.markdown),
       createdBy: { type: 'system', id: 'harness-reader', label: 'Harness 源文件' },
       commitRef: null,
-      paragraphs,
+      markdown: chapter.markdown,
       requestHash: '',
     }
   }
@@ -86,29 +89,55 @@ export class FileChapterRevisionStore {
     return readJsonFile<ChapterDraftState | null>(this.filePath(projectId, chapterId), null)
   }
 
-  private async assertSourceVersion(chapter: ChapterSource, state: ChapterDraftState | null): Promise<void> {
-    if (!state || state.sourceHash === chapter.sourceHash) return
+  private async reconcileSourceVersion(projectId: string, chapter: ChapterSource, state: ChapterDraftState | null): Promise<ChapterDraftState | null> {
+    if (!state) return null
+    if (state.sourceHash === chapter.sourceHash) return state
     const latestDraft = state.revisions.at(-1)
-    // The author may have committed the latest app draft to the Harness. Exact
-    // content equality is enough to rebase the app state; a divergent edit is
-    // returned as a conflict and never overwritten.
-    if (latestDraft?.contentHash === contentHash(chapter.paragraphs)) return
+    // An exact content match means the author committed the current app draft to
+    // Harness. Persist the new source baseline and keep the prior draft in the
+    // immutable history. Divergent edits remain a conflict.
+    if (latestDraft?.contentHash === contentHash(chapter.markdown)) {
+      const nextState: ChapterDraftState = {
+        ...state,
+        sourceHash: chapter.sourceHash,
+        sourceRevision: this.sourceRevision(chapter, latestDraft.revisionId),
+        adoptedDraftRevisionId: latestDraft.revisionId,
+      }
+      await writeJsonAtomically(this.filePath(projectId, chapter.chapterId), nextState)
+      return nextState
+    }
     const current = this.sourceRevision(chapter)
     throw new RevisionConflictError(state.revisions.at(-1)?.revisionId ?? null, current.revisionId)
   }
 
-  async getHead(projectId: string, chapter: ChapterSource): Promise<ChapterRevisionSummaryV04 & { paragraphs: string[] }> {
-    const state = await this.loadState(projectId, chapter.chapterId)
-    await this.assertSourceVersion(chapter, state)
-    const revision = state?.revisions.at(-1) ?? this.sourceRevision(chapter)
-    return { ...publicSummary(revision), paragraphs: [...revision.paragraphs] }
+  private async withCoordinatedState<T>(projectId: string, chapter: ChapterSource, callback: (state: ChapterDraftState | null) => Promise<T>): Promise<T> {
+    const path = this.filePath(projectId, chapter.chapterId)
+    return withFileLock(`${path}.lock`, async () => {
+      const loaded = await this.loadState(projectId, chapter.chapterId)
+      const state = await this.reconcileSourceVersion(projectId, chapter, loaded)
+      return callback(state)
+    })
+  }
+
+  private headRevision(chapter: ChapterSource, state: ChapterDraftState | null): StoredDraftRevision {
+    const latestDraft = state?.revisions.at(-1)
+    if (latestDraft && state?.adoptedDraftRevisionId === latestDraft.revisionId && state.sourceRevision) return state.sourceRevision
+    return latestDraft ?? state?.sourceRevision ?? this.sourceRevision(chapter)
+  }
+
+  async getHead(projectId: string, chapter: ChapterSource): Promise<ChapterRevisionSummaryV04 & { markdown: string }> {
+    return this.withCoordinatedState(projectId, chapter, async (state) => {
+      const revision = this.headRevision(chapter, state)
+      return { ...publicSummary(revision), markdown: revision.markdown }
+    })
   }
 
   async list(projectId: string, chapter: ChapterSource): Promise<ChapterRevisionSummaryV04[]> {
-    const state = await this.loadState(projectId, chapter.chapterId)
-    await this.assertSourceVersion(chapter, state)
-    const revisions = [this.sourceRevision(chapter), ...(state?.revisions ?? [])]
-    return revisions.slice().reverse().map(publicSummary)
+    return this.withCoordinatedState(projectId, chapter, async (state) => {
+      const source = state?.sourceRevision ?? this.sourceRevision(chapter)
+      const revisions = [source, ...(state?.revisions ?? [])]
+      return revisions.slice().reverse().map(publicSummary)
+    })
   }
 
   async save(
@@ -119,39 +148,41 @@ export class FileChapterRevisionStore {
     idempotencyKey?: string,
   ): Promise<SavedDraftRevision> {
     const path = this.filePath(projectId, chapter.chapterId)
-    const requestHash = contentHash(request.paragraphs)
+    const requestHash = contentHash(request.markdown)
     return withFileLock(`${path}.lock`, async () => {
-      const state = await this.loadState(projectId, chapter.chapterId)
-      await this.assertSourceVersion(chapter, state)
+      const loaded = await this.loadState(projectId, chapter.chapterId)
+      const state = await this.reconcileSourceVersion(projectId, chapter, loaded)
 
       const priorByKey = idempotencyKey ? state?.revisions.find((revision) => revision.idempotencyKey === idempotencyKey) : undefined
       if (priorByKey) {
         if (priorByKey.requestHash !== requestHash || priorByKey.parentRevisionId !== request.baseRevisionId) throw new IdempotencyKeyReuseError()
-        return { revision: publicSummary(priorByKey), status: 200 }
+        return { revision: publicSummary(priorByKey), status: 200, result: 'idempotent_replay' }
       }
 
-      const head = state?.revisions.at(-1) ?? this.sourceRevision(chapter)
+      const head = this.headRevision(chapter, state)
       assertExpectedRevision(head.revisionId, request.baseRevisionId)
-      if (head.contentHash === requestHash) return { revision: publicSummary(head), status: 200 }
+      if (head.contentHash === requestHash) return { revision: publicSummary(head), status: 200, result: 'already_current' }
 
       const revision: StoredDraftRevision = {
         revisionId: `draft:${randomUUID()}`,
         parentRevisionId: head.revisionId,
         contentHash: requestHash,
-        wordCount: countWords(request.paragraphs),
+        wordCount: countWords(request.markdown),
         createdAt: this.now().toISOString(),
         createdBy: actor,
         commitRef: null,
-        paragraphs: [...request.paragraphs],
+        markdown: request.markdown,
         ...(idempotencyKey ? { idempotencyKey } : {}),
         requestHash,
       }
       const nextState: ChapterDraftState = {
         sourceHash: chapter.sourceHash,
+        sourceRevision: state?.sourceRevision ?? this.sourceRevision(chapter),
+        ...(state?.adoptedDraftRevisionId ? { adoptedDraftRevisionId: state.adoptedDraftRevisionId } : {}),
         revisions: [...(state?.revisions ?? []), revision],
       }
       await writeJsonAtomically(path, nextState)
-      return { revision: publicSummary(revision), status: 201 }
+      return { revision: publicSummary(revision), status: 201, result: 'created' }
     })
   }
 }

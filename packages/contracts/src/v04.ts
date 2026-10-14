@@ -79,7 +79,7 @@ export type ChapterRevisionSummaryV04 = z.infer<typeof chapterRevisionSummaryV04
 
 export const chapterRevisionCreateV04Schema = z.object({
   baseRevisionId: z.string().nullable(),
-  paragraphs: z.array(z.string()),
+  markdown: z.string().max(2 * 1024 * 1024),
   clientSavedAt: z.string().datetime().optional(),
   trigger: z.enum(['autosave', 'manual', 'chapter_switch', 'pre_review']).optional(),
 })
@@ -90,7 +90,7 @@ export const chapterDetailV04Schema = z.object({
   volumeId: z.string().optional(),
   title: z.string(),
   meta: z.string().optional(),
-  headRevision: chapterRevisionSummaryV04Schema.extend({ paragraphs: z.array(z.string()) }),
+  headRevision: chapterRevisionSummaryV04Schema.extend({ markdown: z.string() }),
 })
 export type ChapterDetailV04 = z.infer<typeof chapterDetailV04Schema>
 

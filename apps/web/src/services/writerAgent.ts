@@ -4,6 +4,7 @@ import type {
   ChatRequest,
   ChatResponse,
   Document,
+  MarkdownDocument,
   KnowledgeEntry,
   Chapter,
   RunReviewResponse,
@@ -17,6 +18,7 @@ export type WriterAgentSeed = {
   chapters: Chapter[]
   knowledge: KnowledgeEntry[]
   document: Document
+  markdownByChapter?: MarkdownDocument
 }
 
 export class ChapterRevisionConflictError extends Error {

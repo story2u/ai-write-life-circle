@@ -13,9 +13,12 @@ export type AuditRecord = {
   beforeHash: string | null
   afterHash: string | null
   requestId: string
+  correlationId: string
+  result?: string
+  failureType?: 'validation' | 'conflict' | 'permission' | 'storage' | 'not_found'
 }
 
-export type NewAuditRecord = Omit<AuditRecord, 'auditId' | 'at'> & { at?: string }
+export type NewAuditRecord = Omit<AuditRecord, 'auditId' | 'at' | 'correlationId'> & { at?: string; correlationId?: string }
 
 /** Append-only application audit log. The configured directory must be outside Harness source folders. */
 export async function appendAuditRecord(stateDirectory: string, input: NewAuditRecord): Promise<AuditRecord> {
@@ -23,6 +26,7 @@ export async function appendAuditRecord(stateDirectory: string, input: NewAuditR
     ...input,
     auditId: randomUUID(),
     at: input.at ?? new Date().toISOString(),
+    correlationId: input.correlationId ?? input.requestId,
   }
   await mkdir(stateDirectory, { recursive: true })
   await appendFile(join(stateDirectory, 'audit.jsonl'), `${JSON.stringify(record)}\n`, { encoding: 'utf8', flag: 'a' })

@@ -26,7 +26,7 @@ export type HarnessDocument = {
   sections: ParsedSection[]
   /** Exact decoded file contents, retained for provenance and faithful display. */
   markdown: string
-  /** Body after the recognized leading key-value header; used only for parsed sections. */
+  /** Exact body after the recognized leading key-value header, including original line endings. */
   bodyMarkdown: string
   sha256: string
   gitBlobHash: string

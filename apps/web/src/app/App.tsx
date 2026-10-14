@@ -84,9 +84,9 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
   const editorRef = useRef<Editor | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [, force] = useState(0)
-  const handleEditorReady = useCallback((editor: Editor) => {
+  const handleEditorReady = useCallback((editor: Editor | null) => {
     editorRef.current = editor
-    editor.on('transaction', () => force((n) => n + 1))
+    editor?.on('transaction', () => force((n) => n + 1))
     force((n) => n + 1)
   }, [])
 
@@ -96,7 +96,7 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2400)
   }, [])
   const workspace = useWorkspaceController({ adapter, initialWorkspace, toast, requestConfirm: setConfirm })
-  const { doc, proposals, decisions, layout, setLayout, chat, challenge, setChallenge, current, dark, setDark,
+  const { doc, markdownByChapter, proposals, decisions, layout, setLayout, chat, challenge, setChallenge, current, dark, setDark,
     task, saveState, flushSave, retrySave, onChange, runReview: runWorkspaceReview, cancelReview, decide, createProposal,
     sendChat, markChatSaved, requestChallenge } = workspace
 
@@ -250,7 +250,7 @@ function WriterStudio({ adapter, initialWorkspace }: { adapter: WriterAgentAdapt
                   <h1 className="font-prose text-[28px] font-semibold">{chapter.title.replace(/第 (\d+) 章 /, '第$1章　')}</h1>
                   <div className="mt-2 mb-10 text-xs" style={{ color: 'var(--ink-3)' }}>{chapter.meta}</div>
                   <ManuscriptEditor
-                    key={current} chapterId={current} initial={doc[current] ?? ['']} annotations={annotations} flash={flash}
+                    key={current} chapterId={current} initial={doc[current] ?? ['']} initialMarkdown={markdownByChapter[current]} annotations={annotations} flash={flash}
                     onChange={onChange} onSelectIssue={selectIssue}
                     onSelection={(t) => setSelection(t.trim())}
                     onReady={handleEditorReady}

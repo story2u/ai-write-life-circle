@@ -3,7 +3,8 @@ import type { RunReviewRequest, RunReviewResponse } from '@writer-agent/contract
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDemoWriterAgentAdapter } from '../mocks/demoWriterAgent'
 import { chapters, initialDoc, knowledge } from '../mocks/demoData'
-import { hashParagraphs } from '../lib/sourceHash'
+import { hashMarkdown } from '../lib/sourceHash'
+import { plainParagraphsToMarkdown } from '../lib/manuscriptMarkdown'
 import { useWorkspaceController } from '../features/workspace/useWorkspaceController'
 
 const projectId = 'demo-project'
@@ -106,7 +107,7 @@ describe('workspace save and review version safety', () => {
     act(() => result.current.cancelReview())
 
     await act(async () => {
-      resolveSave({ projectId, chapterId: 'c12', revision: 1, sourceHash: await hashParagraphs(['保存完成前取消审查。']), savedAt: Date.now() })
+      resolveSave({ projectId, chapterId: 'c12', revision: 1, sourceHash: await hashMarkdown(plainParagraphsToMarkdown(['保存完成前取消审查。'])), savedAt: Date.now() })
       await review
     })
 
@@ -168,7 +169,7 @@ describe('workspace save and review version safety', () => {
 
   it('binds the review request to the exact chapter revision hash', async () => {
     const { initialWorkspace } = await setupController()
-    const hash = await hashParagraphs(initialWorkspace.document.c12)
+    const hash = await hashMarkdown(initialWorkspace.markdownByChapter?.c12 ?? plainParagraphsToMarkdown(initialWorkspace.document.c12))
     expect(initialWorkspace.chapterVersions.c12.sourceHash).toBe(hash)
     expect(initialWorkspace.chapterVersions.c12.revision).toBe(0)
   })

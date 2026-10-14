@@ -12,10 +12,11 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@tiptap/core": "^3.31.4",
-    "@tiptap/pm": "^3.31.4",
-    "@tiptap/react": "^3.31.4",
-    "@tiptap/starter-kit": "^3.31.4",
+    "@tiptap/core": "^3.32.0",
+    "@tiptap/markdown": "^3.32.0",
+    "@tiptap/pm": "^3.32.0",
+    "@tiptap/react": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
     "@writer-agent/contracts": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

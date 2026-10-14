@@ -47,6 +47,19 @@ describe('Harness Markdown reader', () => {
     expect(document.markdown).toContain('Unknown stays text.')
   })
 
+  it('preserves manuscript Markdown body byte-for-byte across Chinese text, blank lines, quotes, lists, hard breaks and special characters', () => {
+    const body = '中文普通段落。\r\n\r\n> 引用段落\r\n> 第二行\r\n\r\n- 列表一\r\n- 列表二\r\n\r\n硬换行第一行  \r\n硬换行第二行\\\r\n硬换行第三行\r\n\r\n符号：<>& * _ [链接](https://example.invalid/?a=1&b=2) `code`'
+    const document = parseHarnessMarkdown({
+      path: 'manuscript/CH-001.md',
+      markdown: `# Chapter\r\nID: CH-001\r\n\r\n${body}`,
+      sha256: 'sha256:test',
+      gitBlobHash: 'git-test',
+    })
+
+    expect(document.bodyMarkdown).toBe(body)
+    expect(document.markdown).toBe(`# Chapter\r\nID: CH-001\r\n\r\n${body}`)
+  })
+
   it('computes Git blob and SHA-256 hashes and skips symlinks', async () => {
     const root = await temporaryDirectory()
     await mkdir(join(root, 'book', 'world'), { recursive: true })

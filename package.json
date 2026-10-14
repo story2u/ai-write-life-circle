@@ -9,8 +9,17 @@
     "typecheck": "pnpm --filter @writer-agent/contracts typecheck && pnpm --filter @writer-agent/api typecheck && pnpm --filter @writer-agent/web typecheck",
     "lint": "pnpm --filter @writer-agent/web lint && ./apps/web/node_modules/.bin/eslint --config apps/web/eslint.config.js apps/api/src apps/api/test packages/contracts/src",
     "test": "pnpm --filter @writer-agent/api test && pnpm --filter @writer-agent/web test",
+    "openapi:generate": "node scripts/build-openapi-candidate.mjs",
+    "openapi:check": "node scripts/build-openapi-candidate.mjs --check",
+    "openapi:lint": "pnpm exec redocly lint docs/contracts/api-spec-v0.4.0-proposed.yaml",
     "dev:api": "pnpm --filter @writer-agent/api dev",
     "harness:rebuild": "pnpm --filter @writer-agent/api harness:rebuild",
     "test:e2e": "pnpm --filter @writer-agent/web test:e2e"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.63.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "yaml": "2.9.1"
   }
 }

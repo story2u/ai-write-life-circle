@@ -27,6 +27,16 @@ function splitMarkdownSections(markdown: string): ParsedSection[] {
   return sections
 }
 
+function offsetAfterLines(markdown: string, lineCount: number): number {
+  let offset = 0
+  for (let index = 0; index < lineCount; index += 1) {
+    const newline = markdown.indexOf('\n', offset)
+    if (newline < 0) return markdown.length
+    offset = newline + 1
+  }
+  return offset
+}
+
 function parseSourceReferences(rawSource: string | null, knownPaths: ReadonlySet<string>, hashes: ReadonlyMap<string, string>): HarnessSourceReference[] {
   if (!rawSource?.trim()) return []
 
@@ -90,7 +100,9 @@ export function parseHarnessMarkdown(input: {
     cursor += 1
   }
 
-  const bodyMarkdown = lines.slice(cursor).join('\n').trim()
+  // Keep the original body bytes (including blank lines and CRLF) for the
+  // manuscript editor boundary. `sections` remains a normalized read-only view.
+  const bodyMarkdown = input.markdown.slice(offsetAfterLines(input.markdown, cursor))
   const declaredId = metadata.ID?.trim() ?? metadata.id?.trim() ?? null
   const fileId = input.path.split('/').at(-1)?.match(/^([A-Z][A-Z0-9]*-\d{1,6})(?:[-_.]|$)/)?.[1] ?? null
   const stableId = declaredId && stableIdPattern.test(declaredId) ? declaredId : (fileId && stableIdPattern.test(fileId) ? fileId : null)

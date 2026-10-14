@@ -9,7 +9,7 @@ export type ChapterSource = {
   volumeId?: string
   meta?: string
   order?: number
-  paragraphs: string[]
+  markdown: string
   sourceHash: string
   sourceRevisionId: string
 }
@@ -24,7 +24,6 @@ function toChapterSources(projection: HarnessWorkspaceProjection): ChapterSource
     }
     const title = document.title ?? document.metadata.title
     if (!title?.trim()) throw new InvalidChapterSourceError(document.stableId!, 'a level-one Markdown title is required')
-    const paragraphs = document.bodyMarkdown.split(/\r?\n\s*\r?\n/).map((paragraph) => paragraph.trim()).filter(Boolean)
     const rawOrder = document.metadata.order
     const order = rawOrder === undefined ? undefined : Number(rawOrder)
     if (rawOrder !== undefined && (!/^\d+$/.test(rawOrder) || !Number.isSafeInteger(order) || order === undefined || order < 1)) {
@@ -36,7 +35,7 @@ function toChapterSources(projection: HarnessWorkspaceProjection): ChapterSource
       volumeId: document.metadata.volumeId || undefined,
       meta: document.metadata.meta || undefined,
       order,
-      paragraphs,
+      markdown: document.bodyMarkdown,
       sourceHash: document.sha256,
       sourceRevisionId: `source:${document.gitBlobHash}`,
     }]
@@ -105,7 +104,7 @@ export function listHarnessChapters(projection: HarnessWorkspaceProjection): Cha
         title: chapter.title,
         ...(chapter.meta ? { meta: chapter.meta } : {}),
         ...(chapter.order !== undefined ? { order: chapter.order } : {}),
-        wordCount: countWords(chapter.paragraphs),
+        wordCount: countWords(chapter.markdown),
       })),
     })),
   })
@@ -139,8 +138,8 @@ export async function getHarnessChapter(
   })
 }
 
-export function countWords(paragraphs: string[]): number {
-  return Array.from(paragraphs.join('').replace(/\s+/g, '')).length
+export function countWords(markdown: string): number {
+  return Array.from(markdown.replace(/\s+/g, '')).length
 }
 
 export { toChapterSources }

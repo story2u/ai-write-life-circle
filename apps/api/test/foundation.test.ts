@@ -56,6 +56,7 @@ describe('API shell and compare-and-swap guard', () => {
     const handler = createApiHandler({
       harnessRoot: '/unused',
       projectId: 'project-1',
+      environment: 'development',
       resolveActor: async () => null,
     })
     const health = await handler(new Request('http://localhost/healthz'))
@@ -66,6 +67,31 @@ describe('API shell and compare-and-swap guard', () => {
     expect(await health.json()).toMatchObject({ status: 'ok' })
     expect(denied.status).toBe(401)
     expect(missing.status).toBe(404)
+  })
+
+  it('does not expose the internal Harness projection route in production or add formal knowledge writes', async () => {
+    const handler = createApiHandler({
+      harnessRoot: '/unused',
+      projectId: 'project-1',
+      environment: 'production',
+      resolveActor: async () => ({ id: 'author-1', role: 'author' }),
+    })
+    const projection = await handler(new Request('http://localhost/internal/projects/project-1/harness-projection'))
+    const knowledgeWrite = await handler(new Request('http://localhost/v1/projects/project-1/knowledge/entries', { method: 'POST' }))
+
+    expect(projection.status).toBe(404)
+    expect(knowledgeWrite.status).toBe(404)
+  })
+
+  it('fails closed for the internal Harness projection when the runtime environment is not explicitly development', async () => {
+    const handler = createApiHandler({
+      harnessRoot: '/unused',
+      projectId: 'project-1',
+      environment: 'test',
+      resolveActor: async () => ({ id: 'author-1', role: 'author' }),
+    })
+    const response = await handler(new Request('http://localhost/internal/projects/project-1/harness-projection'))
+    expect(response.status).toBe(404)
   })
 
   it('returns 409 instead of accepting a stale revision head', () => {
