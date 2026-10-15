@@ -74,7 +74,7 @@ describe('author notes application state', () => {
     expect(response.status).toBe(500)
   })
   it('matches runtime schemas to OpenAPI requests, responses and errors', async () => {
-    const spec = YAML.parse(await readFile(fileURLToPath(new URL('../../../docs/contracts/api-spec-v0.4.0-proposed.yaml', import.meta.url)), 'utf8'))
+    const spec = YAML.parse(await readFile(fileURLToPath(new URL('../../../harness/contracts/api-spec-v0.4.0-proposed.yaml', import.meta.url)), 'utf8'))
     const ajv = new Ajv2020({ strict: false, allErrors: true }); addFormats(ajv); ajv.addSchema(spec, 'https://writer.test/notes')
     const valid = (schema: string, body: unknown) => { const check = ajv.compile({ $ref: `https://writer.test/notes#/components/schemas/${schema}` }); expect(check(body), JSON.stringify(check.errors)).toBe(true) }
     const f = await fixture(); valid('NoteCreate', noteCreateSchema.parse(input))

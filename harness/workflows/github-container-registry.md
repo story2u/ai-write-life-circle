@@ -72,7 +72,7 @@ git push origin main
 ```bash
 ssh ubuntu@16.170.155.138
 cd ~/greenfield-adventures
-./deploy/deploy-simple.sh
+./scripts/deploy/deploy-simple.sh
 ```
 
 ## 🔍 验证镜像
@@ -225,7 +225,7 @@ curl -X DELETE \
 
 检查清单：
 - [ ] 工作流文件语法正确
-- [ ] Dockerfile 路径正确 (`deploy/Dockerfile.web`)
+- [ ] Dockerfile 路径正确 (`scripts/deploy/Dockerfile.web`)
 - [ ] 仓库有 Actions 权限（Settings → Actions → General → Workflow permissions）
 
 ### Q5: EC2 拉取镜像很慢？
@@ -252,6 +252,6 @@ GitHub Container Registry 使用全球 CDN，通常很快。如果慢：
 现在你的部署流程完全不依赖 AWS 权限配置，只需：
 
 1. 推送代码 → GitHub Actions 自动构建
-2. 在 EC2 上运行 `./deploy/deploy-simple.sh`
+2. 在 EC2 上运行 `./scripts/deploy/deploy-simple.sh`
 
 就这么简单！

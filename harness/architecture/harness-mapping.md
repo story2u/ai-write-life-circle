@@ -40,7 +40,7 @@
 - 前缀：`CHAR`（人物）、`THREAD`（情节线）、`WORLD`（世界规则）、`EVENT`（事件）、`CH`（章节）、`P`（提案）、`REF`（案例），另有 `INTENT-001`。
 - **ID 不复用，改名保持 ID**（`harness/data-contract.md`）。
 - 分配：新建实体从各前缀的末号 +1 递增；不因删除/改名而回收旧号。
-- 当前冲突：`WORLD-001/002/003`、`P-001` 存在同号异义（见 `docs/reviews/knowledge-id-mapping.md`），**待作者裁决前不重编号**。
+- 当前冲突：`WORLD-001/002/003`、`P-001` 存在同号异义（见 `harness/reviews/knowledge-id-mapping.md`），**待作者裁决前不重编号**。
 
 ## 4. 元数据格式（重要：非 YAML front-matter）
 

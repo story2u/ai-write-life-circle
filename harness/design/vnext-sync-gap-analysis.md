@@ -37,7 +37,7 @@
 
 ## 源码解阻与实施决定（同日后续）
 
-作者提供 `/Users/bruce/git/story/Writer Agent UI_UX Design` 导出。已读取 App、CSS、全部目标组件、VNext model、agent、relevance、demo 与交接文档。资源清单增加各文件 SHA-256；API 新来源单独保存在 `docs/contracts/source/api-spec-vnext-export-2026-10-14.yaml`，不覆盖旧来源。
+作者提供 `/Users/bruce/git/story/Writer Agent UI_UX Design` 导出。已读取 App、CSS、全部目标组件、VNext model、agent、relevance、demo 与交接文档。资源清单增加各文件 SHA-256；API 新来源单独保存在 `harness/contracts/source/api-spec-vnext-export-2026-10-14.yaml`，不覆盖旧来源。
 
 - **MODIFY**：CSS 直接对齐 VNext 全套 tokens，稿纸 44rem / 18px / 1.9；顶栏 48px，写作/书/思考；默认双侧收起，沿用旧 layout 显式偏好。
 - **MODIFY**：保留原 `useWorkspaceController` 与 Markdown 编辑/恢复/409 管线；仅替换 shell 与注记装饰层，禁止使用 Make 的段落数组保存逻辑。

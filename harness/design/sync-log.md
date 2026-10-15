@@ -53,12 +53,12 @@
 ## 2026-10-14 — V0.4 product and contract review
 
 - Source: Writer Agent UI/UX Design, Figma Make, key `kWBOdcae5utBZ6VtBHHXui`, node `0:1`; read through the registered official remote Figma MCP.
-- Read the PRD, journeys, feature matrix, feature specs, domain/API/state/persistence/permission contracts, component contracts, screen map, acceptance criteria, traceability, HANDOFF, implementation plan, and the relevant Make source modules and CSS tokens. See `docs/figma.md` and `docs/reviews/v0.4-contract-review.md` for the source inventory and findings.
+- Read the PRD, journeys, feature matrix, feature specs, domain/API/state/persistence/permission contracts, component contracts, screen map, acceptance criteria, traceability, HANDOFF, implementation plan, and the relevant Make source modules and CSS tokens. See `docs/figma.md` and `harness/reviews/v0.4-contract-review.md` for the source inventory and findings.
 - The V0.4 API spec resource was truncated in MCP output (`…6290 tokens truncated…`); the author then supplied the full proposed YAML in the task reply. The full YAML is not checked in or automatically OpenAPI-validated. `packages/contracts/src/v04.ts` is the hand-aligned Zod runtime contract for the implemented Workspace/Chapter subset, and its TypeScript types are inferred. Operations marked `proposed` remain non-final.
 - The visible preview/source remains the V0.3 prototype baseline, while the V0.4 PRD is marked `draft-for-engineering`. No UI implementation changed in this Sprint 1 data/API pass; current app-to-API and product-contract differences are documented for follow-up. Make screenshot and variable-definition tools explicitly do not support Make files, so no pixel diff is claimed.
 - Implemented a read-only Harness reader and projection, key-value metadata parser, source hashes, duplicate-ID reporting, app-state ID reservation and audit, Workspace GET/PATCH, Chapter list/detail/revision-history, and author-only immutable application draft saves with CAS, idempotency, and external-change conflict detection. App state stays outside Harness; these APIs do not invoke Git.
 - The author approved the ID mapping and OQ-015 save strategy during the initial V0.4 review. This branch updates affected IDs, file names, indexes and references while preserving setting text/status; `manuscript/` prose was not changed. At that point the repository had no formal chapters and OQ-016 was awaiting the author's answer; the subsequent author decision is recorded above.
-- No `.figma/make` runtime was added. The review and remaining product questions are in `docs/reviews/v0.4-contract-review.md`.
+- No `.figma/make` runtime was added. The review and remaining product questions are in `harness/reviews/v0.4-contract-review.md`.
 - Verification: `pnpm typecheck`, `pnpm lint`, `pnpm test` (35 unit tests: 13 API + 22 web), `pnpm build`, and `pnpm test:e2e` (3 Chromium tests at 1440px: light, dark, focus) passed. `node scripts/check-knowledge-ids.mjs --fail` passed with no collisions. `pnpm harness:rebuild` reported 44 Markdown documents, 7 knowledge documents, 2 proposals, and 0 formal chapters; `manuscript/README.md` remains unmapped. A local API smoke check passed for `/healthz` and Workspace GET. Vite reports a 779 kB main bundle advisory. Browser layout checks are not a pixel diff; the Make screenshot endpoint is unsupported.
 
 ## 2026-10-12 — MCP route repair and V0.2 source sync
@@ -82,4 +82,11 @@
 - 定稿变更、知识、研究和自动注记仍是隔离 Demo 原型；API 不返回模拟发现。
 - 合入当前 main 的部署与文档迁移。正式作品档案相对 main 无变更；设计与架构主文档位于 harness，旧请求路径提供兼容入口。
 - 视觉覆盖四种宽度、两主题、抽屉与 Focus。导出源码临时参考与实现的主要稿纸几何、字体 metrics 和纸色一致；没有 Figma 服务端截图像素差分。
-- 完整测试、限制和后续事项见 ../../docs/reviews/vnext-figma-fullstack-sync.md。
+- 完整测试、限制和后续事项见 [实施报告](../reviews/vnext-figma-fullstack-sync.md)。
+
+## 2026-10-15 — 根目录收敛
+
+- 根目录业务目录由 apps/packages/scripts/harness/deploy/docs/design 七个收敛为 apps/packages/scripts/harness 四个。
+- docs 的契约、报告和 ADR 迁入 harness；删除 docs/frontend-architecture.md 与 design/vnext-sync-gap-analysis.md 两个兼容跳转入口。部署工具迁入 scripts/deploy。
+- 同步生成器、契约测试、CI、Compose 挂载路径、文档索引与 Comet 产物目录。来源 YAML 保持原内容；不改未提交的架构说明、正文或正式设定。
+- 验证：76 项单元测试、类型检查、Lint、构建、OpenAPI 可复现与校验、Harness 重建、文档链接、Shell 语法及 Compose 配置检查通过；32 条 OpenAPI 既有警告和构建大包提醒仍在。

@@ -36,9 +36,15 @@
 | [accept.md](workflows/accept.md) | 接受变更 |
 | [handoff.md](workflows/handoff.md) | 交接工作 |
 
-### 4. 数据契约
+### 4. 契约与验证记录
 
-[data-contract.md](data-contract.md) - API 和数据模型定义
+- [data-contract.md](data-contract.md)：领域数据说明
+- [API 契约](contracts/README.md)：来源快照、工程扩展与可复现生成
+- [工程决策](architecture/adr/ADR-0002-vnext-author-notes.md)：作者笔记边界
+- [VNext 实施报告](reviews/vnext-figma-fullstack-sync.md)：交付范围、验证与未覆盖项
+- [UX 整改记录](reviews/claude-product-ux-remediation.md)：历史审查证据
+
+项目文档统一维护在本目录；开发及部署工具位于根目录的 `scripts/`。
 
 ## 🎯 使用原则
 

@@ -20,8 +20,8 @@
 
 ```bash
 cd /Users/bruce/git/story/ai-write-life-circle
-chmod +x deploy/setup-github-oidc.sh
-./deploy/setup-github-oidc.sh
+chmod +x scripts/deploy/setup-github-oidc.sh
+./scripts/deploy/setup-github-oidc.sh
 ```
 
 ### 步骤 2: 按提示输入信息

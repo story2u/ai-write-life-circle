@@ -6,8 +6,8 @@
 
 ## 最小上下文
 
-- `deploy/docker-compose.yml` - 容器配置
-- `deploy/Dockerfile.web` - 镜像定义
+- `scripts/deploy/docker-compose.yml` - 容器配置
+- `scripts/deploy/Dockerfile.web` - 镜像定义
 - `.github/workflows/build-and-push-ecr.yml` - 自动构建流程
 - `.env.example` - 环境变量模板
 
@@ -43,8 +43,8 @@ git clone <repo-url> ~/greenfield-adventures
 cd ~/greenfield-adventures
 
 # 部署
-chmod +x deploy/deploy-simple.sh
-./deploy/deploy-simple.sh
+chmod +x scripts/deploy/deploy-simple.sh
+./scripts/deploy/deploy-simple.sh
 ```
 
 脚本自动：
@@ -75,13 +75,13 @@ NODE_ENV=production
 
 ```bash
 # 查看状态
-docker-compose -f deploy/docker-compose.yml ps
+docker-compose -f scripts/deploy/docker-compose.yml ps
 
 # 查看日志
-docker-compose -f deploy/docker-compose.yml logs -f
+docker-compose -f scripts/deploy/docker-compose.yml logs -f
 
 # 重启
-docker-compose -f deploy/docker-compose.yml restart
+docker-compose -f scripts/deploy/docker-compose.yml restart
 ```
 
 ## 故障排除
@@ -113,7 +113,7 @@ docker-compose -f deploy/docker-compose.yml restart
 
 ## 相关文件
 
-- 核心脚本：`deploy/deploy-simple.sh`
-- 容器编排：`deploy/docker-compose.yml`
-- 镜像定义：`deploy/Dockerfile.web`
+- 核心脚本：`scripts/deploy/deploy-simple.sh`
+- 容器编排：`scripts/deploy/docker-compose.yml`
+- 镜像定义：`scripts/deploy/Dockerfile.web`
 - 自动构建：`.github/workflows/build-and-push-ecr.yml`

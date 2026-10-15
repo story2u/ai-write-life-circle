@@ -54,7 +54,7 @@ Figma Make：[`Writer Agent UI/UX Design`](https://www.figma.com/make/kWBOdcae5u
 
 ## B 组：等待 Figma Make 新设计
 
-以下项目的目标流程与字段仅是可评审的设计输入，不代表已确认产品决策或已实现功能。详细任务、组件状态和验收场景见 [`design/writer-agent-ux-vnext-handoff.md`](../../design/writer-agent-ux-vnext-handoff.md)。
+以下项目的目标流程与字段仅是可评审的设计输入，不代表已确认产品决策或已实现功能。详细任务、组件状态和验收场景见 [`design/writer-agent-ux-vnext-handoff.md`](../design/writer-agent-ux-vnext-handoff.md)。
 
 - 注记 / 思考辅助空间与正式 IA。
 - 续写入口和空项目引导。

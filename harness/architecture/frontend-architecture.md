@@ -32,4 +32,4 @@ Markdown 是保存源，纯文本段落只用于展示与定位。保留原始 M
 
 ## 验证
 
-隔离 Harness fixture 和临时状态目录验证真实保存、恢复、409、内存导出、笔记持久化与并发。视觉 E2E 覆盖四种宽度和两种主题；完整结果见 [实施报告](../../docs/reviews/vnext-figma-fullstack-sync.md)。
+隔离 Harness fixture 和临时状态目录验证真实保存、恢复、409、内存导出、笔记持久化与并发。视觉 E2E 覆盖四种宽度和两种主题；完整结果见 [实施报告](../reviews/vnext-figma-fullstack-sync.md)。

@@ -26,8 +26,8 @@ echo "=========================================="
 echo "Step 2: 安装 Webhook 服务"
 echo "=========================================="
 
-chmod +x deploy/setup-webhook.sh
-./deploy/setup-webhook.sh
+chmod +x scripts/deploy/setup-webhook.sh
+./scripts/deploy/setup-webhook.sh
 
 echo ""
 echo "=========================================="

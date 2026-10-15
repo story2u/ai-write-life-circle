@@ -11,17 +11,17 @@ git push origin main
 # 2. 在 EC2 上部署
 ssh ubuntu@EC2_IP
 cd ~/greenfield-adventures
-./deploy/deploy-simple.sh
+./scripts/deploy/deploy-simple.sh
 ```
 
 ## 详细工作流
 
-参考 [harness/workflows/deploy.md](harness/workflows/deploy.md)
+参考 [harness/workflows/deploy.md](workflows/deploy.md)
 
 ## 文件结构
 
 ```
-deploy/
+scripts/deploy/
 ├── deploy-simple.sh         # 部署脚本
 ├── docker-compose.yml       # 容器编排
 └── Dockerfile.web          # 镜像定义
@@ -36,11 +36,11 @@ deploy/
 2. 创建 AWS ECR 仓库（greenfield-web）
 3. 添加 GitHub Secret（AWS_ROLE_TO_ASSUME）
 
-详见 [harness/workflows/deploy.md](harness/workflows/deploy.md)
+详见 [harness/workflows/deploy.md](workflows/deploy.md)
 
 ## 安全
 
 - `.env` 文件不提交（已在 `.gitignore`）
 - 环境变量模板：`apps/web/.env.example`
 - 使用 IAM 角色而非长期凭证
-- 参考 [harness/security.md](harness/security.md)
+- 参考 [harness/security.md](security.md)

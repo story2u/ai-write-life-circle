@@ -6,8 +6,8 @@ on:
     paths:
       - 'apps/api/**'
       - 'packages/**'
-      - 'deploy/Dockerfile.api'
-      - 'deploy/docker-compose.prod.yml'
+      - 'scripts/deploy/Dockerfile.api'
+      - 'scripts/deploy/docker-compose.prod.yml'
       - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 
@@ -53,7 +53,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: deploy/Dockerfile.api
+          file: scripts/deploy/Dockerfile.api
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -92,9 +92,9 @@ jobs:
             docker network create greenfield-net 2>/dev/null || true
 
             # 重启 API 容器
-            docker compose -f deploy/docker-compose.prod.yml down api 2>/dev/null || true
+            docker compose -f scripts/deploy/docker-compose.prod.yml down api 2>/dev/null || true
             API_IMAGE=ghcr.io/${{ github.repository }}-api:latest \
-              docker compose -f deploy/docker-compose.prod.yml up -d api
+              docker compose -f scripts/deploy/docker-compose.prod.yml up -d api
 
             echo "✅ API 部署完成"
             docker ps | grep greenfield-api || true

@@ -2,7 +2,7 @@ schema: comet.project.v1
 default_workflow: native
 ambient_resume: true
 native:
-  artifact_root: docs
+  artifact_root: harness
   language: en
   clarification_mode: batch
   archive_confirmation: automatic

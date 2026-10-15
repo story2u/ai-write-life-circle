@@ -84,7 +84,7 @@ const extension = {
   },
   schemas,
 }
-const path = new URL('../docs/contracts/notes-engineering-extension.json', import.meta.url)
+const path = new URL('../harness/contracts/notes-engineering-extension.json', import.meta.url)
 const text = `${JSON.stringify(extension, null, 2)}\n`
 if (process.argv.includes('--check')) {
   if ((await readFile(path, 'utf8').catch(() => '')) !== text)
