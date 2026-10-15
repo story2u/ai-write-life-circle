@@ -13,7 +13,7 @@ const files={
  'manuscript/CH-02.md':'#\u3000Wide title\nID: CH-02\n\nFixture\n',
  'manuscript/README.md':'# Template\n\nNo stable ID.\n',
  'book/index.md':'# Index\n\nNot canon.\n',
- 'book/WORLD-001.md':'# World\nID: WORLD-001\nsource: inbox/a.md#SRC-1； inbox/missing.md; external;\nstatus: confirmed（部分）\nrelated: CH-001, INTENT-001, CH-001\n\n## Rule\n\nunknown\n',
+ 'book/WORLD-001.md':'# World\nID: WORLD-001\nsource: inbox/a.md#SRC-1； inbox/missing.md; external; see\u00a0inbox/a.md#SRC-2\u00a0text;\nstatus: confirmed（部分）\nrelated: CH-001, INTENT-001, CH-001\n\n## Rule\n\nunknown\n',
  'inbox/a.md':'# Input\n\nUTF-8 source.\n',
  'proposals/P-001.md':'# Candidate\n\nCandidate text only.\n',
  'proposals/P-001-copy.md':'# Duplicate\nID: P-001\n\nNever select a winner.\n'

@@ -63,7 +63,7 @@
     "manuscript/CH-02.md": "#　Wide title\nID: CH-02\n\nFixture\n",
     "manuscript/README.md": "# Template\n\nNo stable ID.\n",
     "book/index.md": "# Index\n\nNot canon.\n",
-    "book/WORLD-001.md": "# World\nID: WORLD-001\nsource: inbox/a.md#SRC-1； inbox/missing.md; external;\nstatus: confirmed（部分）\nrelated: CH-001, INTENT-001, CH-001\n\n## Rule\n\nunknown\n",
+    "book/WORLD-001.md": "# World\nID: WORLD-001\nsource: inbox/a.md#SRC-1； inbox/missing.md; external; see inbox/a.md#SRC-2 text;\nstatus: confirmed（部分）\nrelated: CH-001, INTENT-001, CH-001\n\n## Rule\n\nunknown\n",
     "inbox/a.md": "# Input\n\nUTF-8 source.\n",
     "proposals/P-001.md": "# Candidate\n\nCandidate text only.\n",
     "proposals/P-001-copy.md": "# Duplicate\nID: P-001\n\nNever select a winner.\n"
@@ -80,14 +80,14 @@
         "title": "World",
         "metadata": {
           "ID": "WORLD-001",
-          "source": "inbox/a.md#SRC-1； inbox/missing.md; external;",
+          "source": "inbox/a.md#SRC-1； inbox/missing.md; external; see inbox/a.md#SRC-2 text;",
           "status": "confirmed（部分）",
           "related": "CH-001, INTENT-001, CH-001"
         },
         "stableId": "WORLD-001",
         "idSource": "metadata",
         "rawStatus": "confirmed（部分）",
-        "rawSource": "inbox/a.md#SRC-1； inbox/missing.md; external;",
+        "rawSource": "inbox/a.md#SRC-1； inbox/missing.md; external; see inbox/a.md#SRC-2 text;",
         "sourceReferences": [
           {
             "raw": "inbox/a.md#SRC-1",
@@ -111,6 +111,13 @@
             "gitBlobHash": null
           },
           {
+            "raw": "see inbox/a.md#SRC-2 text",
+            "path": "inbox/a.md",
+            "locator": "SRC-2",
+            "availability": "available",
+            "gitBlobHash": "fb2490e3e200fbfa44cf4825f1033e4f3e6f3254"
+          },
+          {
             "raw": "",
             "path": null,
             "locator": null,
@@ -129,10 +136,10 @@
             "markdown": "unknown"
           }
         ],
-        "markdown": "# World\nID: WORLD-001\nsource: inbox/a.md#SRC-1； inbox/missing.md; external;\nstatus: confirmed（部分）\nrelated: CH-001, INTENT-001, CH-001\n\n## Rule\n\nunknown\n",
+        "markdown": "# World\nID: WORLD-001\nsource: inbox/a.md#SRC-1； inbox/missing.md; external; see inbox/a.md#SRC-2 text;\nstatus: confirmed（部分）\nrelated: CH-001, INTENT-001, CH-001\n\n## Rule\n\nunknown\n",
         "bodyMarkdown": "## Rule\n\nunknown\n",
-        "sha256": "sha256:ad05ed2db952aa34d39b2eccb44ba1159d1924e94d215977acc83160044c4542",
-        "gitBlobHash": "e3634a9a8c855e73fb5b28f37481bdd1d05c47cc"
+        "sha256": "sha256:a0b7e929cb35eda5a7b75832de377776e3cc35b33e462ba2bbe5b16ef682e141",
+        "gitBlobHash": "6b3bfe4b9b4ea5e19cc8a82d7c0c22a7f9b1a907"
       }
     ],
     "proposalDocuments": [

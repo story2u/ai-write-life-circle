@@ -65,7 +65,7 @@ const ws = `[\t\n\v\f\r \x{00a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f
 var titleRE = regexp.MustCompile(`^#` + ws + `+([^\r\n\x{2028}\x{2029}]+?)` + ws + `*#*$`)
 var headingRE = regexp.MustCompile(`^#{1,6}` + ws + `+([^\r\n\x{2028}\x{2029}]+?)` + ws + `*#*$`)
 var fieldRE = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_-]*):` + ws + `*([^\r\n\x{2028}\x{2029}]*)(?:[\r\x{2028}\x{2029}])?$`)
-var sourceRE = regexp.MustCompile(`(?:^|\s|\()((?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\.md)(#[^\s;；]*)?`)
+var sourceRE = regexp.MustCompile(`(?:^|` + ws + `|\()((?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\.md)(#[^` + ws[1:len(ws)-1] + `;；]*)?`)
 
 func ptr(s string) *string          { return &s }
 func LocaleCompare(a, b string) int { return collate.New(language.English).CompareString(a, b) }

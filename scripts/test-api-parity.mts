@@ -71,7 +71,7 @@ try {
  await pair('chapter list',prefix+'/chapters')
  let [nd,gd]=await pair('chapter detail',prefix+'/chapters/CH-001');assert.equal(nd.headRevision.markdown,body);assert.equal(gd.headRevision.contentHash,nd.headRevision.contentHash)
  await pair('chapter history initial',prefix+'/chapters/CH-001/revisions?limit=0x10&cursor=0e1')
- for(const query of ['limit=0','limit=201','cursor=-1','limit=1.5','cursor=nope'])await pair('invalid page',prefix+'/chapters/CH-001/revisions?'+query,'GET',undefined,{},422)
+ for(const query of ['limit=0','limit=201','cursor=-1','limit=1.5','cursor=nope','limit=1_0','cursor=0x%2B10'])await pair('invalid page',prefix+'/chapters/CH-001/revisions?'+query,'GET',undefined,{},422)
  const original=[nd.headRevision.revisionId,gd.headRevision.revisionId]
  const revisionPath=prefix+'/chapters/CH-001/revisions';const payloads=(bases:string[],markdown:string)=>({node:{baseRevisionId:bases[0],markdown,trigger:'manual'},go:{baseRevisionId:bases[1],markdown,trigger:'manual'}})
  const saveHeaders=(key:string)=>({'Idempotency-Key':key,'x-request-id':'parity-save'})

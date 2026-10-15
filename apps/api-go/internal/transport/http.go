@@ -106,6 +106,9 @@ func jsNumber(s string) float64 {
 	}
 	for prefix, base := range map[string]int{"0x": 16, "0X": 16, "0b": 2, "0B": 2, "0o": 8, "0O": 8} {
 		if strings.HasPrefix(s, prefix) {
+			if !regexp.MustCompile(`^[0-9a-fA-F]+$`).MatchString(s[2:]) {
+				return math.NaN()
+			}
 			n, ok := new(big.Int).SetString(s[2:], base)
 			if !ok {
 				return math.NaN()
