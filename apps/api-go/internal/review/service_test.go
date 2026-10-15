@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 var testAuthor = application.Actor{ID: "fixture-author", Role: "author"}
@@ -427,6 +428,15 @@ func TestCancellationTimeoutAndProjectConcurrency(t *testing.T) {
 	if e != nil || final.Status != "cancelled" || len(final.Findings) != 0 {
 		t.Fatal("late model result replaced cancellation", e)
 	}
+	// A queued worker can start after cancellation. Its cancelled job context is
+	// not a storage failure and must not make the persisted cancellation unreadable.
+	queuedCtx, cancelQueued := context.WithCancel(context.Background())
+	cancelQueued()
+	s.wg.Add(1)
+	s.execute(queuedCtx, func() {}, final)
+	if queued, err := s.Get(context.Background(), testAuthor, r.RunID); err != nil || queued.Status != "cancelled" {
+		t.Fatal("cancelled preflight was reported as storage failure", err)
+	}
 	timed, _ := testService(t, func(ctx context.Context, _ llm.Request) (llm.Response, error) {
 		<-ctx.Done()
 		return llm.Response{}, ctx.Err()
@@ -470,5 +480,28 @@ func TestStorageFailureNeverReportsCompletedAndInterruptedRunsRecover(t *testing
 	recovered, e := restarted.Get(context.Background(), testAuthor, r.RunID)
 	if e != nil || recovered.Status != "failed" || recovered.FailureCode == nil || *recovered.FailureCode != "REVIEW_INTERRUPTED" {
 		t.Fatal(recovered, e)
+	}
+}
+
+func TestExcerptKeepsRawUnicodeOffsets(t *testing.T) {
+	body := strings.Repeat("Ⱥ", 1000) + "测试事实" + strings.Repeat("。", 1000)
+	text, offset := excerpt(body, []string{"测试"}, 1800)
+	if !strings.Contains(text, "测试事实") || len(text) > 1800 || offset <= 0 || !utf8.ValidString(text) {
+		t.Fatal("excerpt lost the raw Unicode match", offset)
+	}
+}
+
+func TestReviewHashContract(t *testing.T) {
+	for _, value := range []string{"", "sha256:" + strings.Repeat("g", 64), "sha256:" + strings.Repeat("A", 64)} {
+		if validHash(value) {
+			t.Fatal("invalid hash accepted", value)
+		}
+		_, err := normalize(Input{RevisionID: "saved", ContentHash: value, ReviewTypes: []string{"timeline_consistency"}})
+		if code(err) != "VALIDATION_FAILED" {
+			t.Fatal("hash contract not enforced", err)
+		}
+	}
+	if !validHash("sha256:" + strings.Repeat("a", 64)) {
+		t.Fatal("valid hash refused")
 	}
 }

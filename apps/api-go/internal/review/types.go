@@ -165,8 +165,19 @@ func DecodeInput(value any, dest any) error {
 	}
 	return nil
 }
+func validHash(value string) bool {
+	if !strings.HasPrefix(value, "sha256:") || len(value) != 71 {
+		return false
+	}
+	for _, c := range value[7:] {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return false
+		}
+	}
+	return true
+}
 func normalize(in Input) (Input, error) {
-	if in.RevisionID == "" || len(in.RevisionID) > 200 || !strings.HasPrefix(in.ContentHash, "sha256:") || len(in.ContentHash) != 71 || len(in.ReviewTypes) == 0 || len(in.ReviewTypes) > 2 {
+	if in.RevisionID == "" || len(in.RevisionID) > 200 || !validHash(in.ContentHash) || len(in.ReviewTypes) == 0 || len(in.ReviewTypes) > 2 {
 		return in, failure(422, "VALIDATION_FAILED", "A saved revision, SHA-256 hash and review types are required.")
 	}
 	have := map[string]bool{}

@@ -74,12 +74,17 @@ func excerpt(body string, terms []string, limit int) (string, int) {
 	start := 0
 	if len(body) > limit {
 		for _, term := range terms {
-			if i := strings.Index(strings.ToLower(body), term); i >= 0 {
+			// Match raw bytes when choosing offsets: Unicode lowercasing can change byte lengths.
+			if i := strings.Index(body, term); i >= 0 {
 				start = strings.LastIndex(body[:i], "\n\n")
-				if start < 0 {
-					start = 0
-				} else {
+				if start >= 0 {
 					start += 2
+				}
+				if start < 0 || i-start > limit/2 {
+					start = max(0, i-limit/3)
+					for start < i && !utf8.RuneStart(body[start]) {
+						start++
+					}
 				}
 				break
 			}

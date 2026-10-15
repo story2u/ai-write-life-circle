@@ -64,7 +64,7 @@ func (s *Service) Start(ctx context.Context, a application.Actor, chapterID, key
 		return Run{}, e
 	}
 	in.Input = normalized
-	if !in.Consent.Confirmed || in.Consent.PlanHash == "" {
+	if !in.Consent.Confirmed || !validHash(in.Consent.PlanHash) {
 		return Run{}, failure(422, "REVIEW_CONSENT_REQUIRED", "Confirm the displayed model and exact source scope before reviewing.")
 	}
 	fp := fingerprint(struct {
@@ -108,6 +108,9 @@ func (s *Service) Start(ctx context.Context, a application.Actor, chapterID, key
 			run = st.Runs[rec.RunID]
 			return false, nil
 		}
+		if len(st.Requests) >= 10000 {
+			return false, failure(409, "REVIEW_HISTORY_FULL", "The bounded review request history is full.")
+		}
 		for _, prior := range st.Runs {
 			if prior.PlanHash == plan.PlanHash && prior.CreatedBy == a.ID && (prior.Status == "running" || prior.Status == "completed") {
 				run = prior
@@ -149,11 +152,13 @@ func (s *Service) execute(ctx context.Context, cancel context.CancelFunc, run Ru
 	defer cancel()
 	defer func() { s.mu.Lock(); delete(s.jobs, run.RunID); s.mu.Unlock() }()
 	active := false
-	preflight := s.transaction(ctx, func(st *state) (bool, error) {
+	preflightCtx, stopPreflight := context.WithTimeout(context.Background(), 5*time.Second)
+	preflight := s.transaction(preflightCtx, func(st *state) (bool, error) {
 		current, ok := st.Runs[run.RunID]
 		active = ok && current.Status == "running"
 		return false, nil
 	})
+	stopPreflight()
 	if preflight != nil {
 		s.mu.Lock()
 		s.persistenceFailures[run.RunID] = true
@@ -299,6 +304,9 @@ func (s *Service) Cancel(ctx context.Context, a application.Actor, id, key strin
 				return false, failure(422, "IDEMPOTENCY_KEY_REUSED", "The review key was used for a different request.")
 			}
 			return false, nil
+		}
+		if len(st.Requests) >= 10000 {
+			return false, failure(409, "REVIEW_HISTORY_FULL", "The bounded review request history is full.")
 		}
 		if run.Status != "running" && run.Status != "cancelled" {
 			return false, failure(409, "REVIEW_NOT_RUNNING", "This review already finished.")

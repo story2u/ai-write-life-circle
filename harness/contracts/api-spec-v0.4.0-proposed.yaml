@@ -2400,6 +2400,19 @@ components:
             - HARNESS_WRITE_FAILED
             - VALIDATION_FAILED
             - AUDIT_WRITE_FAILED
+            - REVIEW_CONTEXT_TOO_LARGE
+            - REVIEW_EMPTY_CHAPTER
+            - REVIEW_REVISION_CHANGED
+            - REVIEW_SOURCE_UNAVAILABLE
+            - REVIEW_UNAVAILABLE
+            - REVIEW_BUSY
+            - REVIEW_CONSENT_REQUIRED
+            - REVIEW_CONTEXT_CHANGED
+            - REVIEW_HISTORY_FULL
+            - REVIEW_NOT_COMPLETED
+            - REVIEW_NOT_RUNNING
+            - REVIEW_VERSION_CONFLICT
+            - REVIEW_STORAGE_FAILED
             - NOTE_VERSION_CONFLICT
             - NEXT_WRITING_EXISTS
             - METHOD_NOT_ALLOWED
