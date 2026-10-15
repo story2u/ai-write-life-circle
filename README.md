@@ -10,7 +10,7 @@ pnpm dev          # Demo 界面
 pnpm dev:local    # 本地 API + 前端
 ```
 
-默认 API 为 Go，单独运行其二进制无需 Node.js；前端工具链仍使用 pnpm。本地 API 仅提供开发身份。真实 Agent Runtime 与正式知识写入尚未实现；Demo 模拟能力与 API 数据隔离。详情见 [Web](apps/web/README.md) 与 [Go API](apps/api-go/README.md)。
+默认 API 为 Go，单独运行其二进制无需 Node.js；前端工具链仍使用 pnpm。本地 API 仅提供开发身份。Go 已支持作者主动触发、固定修订与精确引文核验的连续性审查；需配置真实模型并逐次授权发送范围。通用 Agent Runtime 与正式知识写入尚未实现；Demo 模拟能力与 API 数据隔离。详情见 [Web](apps/web/README.md) 与 [Go API](apps/api-go/README.md)。
 
 ## 目录
 
@@ -34,3 +34,9 @@ pnpm dev:local    # 本地 API + 前端
 - `pnpm openapi:check`、`pnpm openapi:lint`、`pnpm test:e2e`
 
 作者负责创意决策与小说正文。项目维护不代写正文，不自动更新正式设定；外部作品目录与本项目应用状态应分别管理。
+
+## 连续性审查（Sprint 3）
+
+先保存真实章节，再点击“审查本章”，核对模型、资料范围并勾选授权。完成后按需查看页边注记、两处只读证据，标记有用/误报/有意为之/忽略；所有判断仍由作者确认。正文或证据变化后旧结果标记过期。未配置模型时禁用新审查，不加载演示发现。
+
+配置与限制见 [Go API](apps/api-go/README.md)、[实施报告](harness/reviews/sprint3-evidence-review-agent-report.md) 和 [评测说明](harness/evals/review-agent/README.md)。`pnpm eval:review` 运行隔离的确定性工程评测；真实模型验证按用户决定暂缓，不能据此宣称审查准确率。

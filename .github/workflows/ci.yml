@@ -93,6 +93,7 @@ jobs:
           path: |
             apps/web/test-results/
             apps/web/test-results-api/
+            apps/web/test-results-review/
           retention-days: 14
 
   go-container:

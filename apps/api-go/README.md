@@ -1,6 +1,6 @@
 # Writer Agent Go API
 
-默认后端。Go 1.27.2、标准库 HTTP/JSON/文件存储，唯一模块依赖为 Go 官方 `golang.org/x/text`（兼容 Node 的 Unicode 排序与解码）。没有数据库、LLM 或写入正式 Harness 的通路。
+默认后端。Go 1.27.2、标准库 HTTP/JSON/文件存储，唯一模块依赖为 Go 官方 `golang.org/x/text`（兼容 Node 的 Unicode 排序与解码）。没有数据库或写入正式 Harness 的通路；可选 LLM 仅用于作者主动授权的连续性审查。
 
 ```sh
 cd apps/api-go
@@ -28,3 +28,43 @@ HTTP 对正文实施 32MiB 上限，覆盖 2Mi Unicode 字符的合法 JSON 转�
 生产令牌为密码学随机生成的 32 字节（64 个十六进制字符），放在受保护的普通文件中（0600/0640；禁止软链接、组写和其他用户读取）。以 `Authorization: Bearer <token>` 请求；健康检查无需令牌，业务接口缺少或使用错误令牌返回 401，生产 internal projection 返回 404。不能使用 URL 参数、Cookie 或 X-Actor-* 冒充身份。作者 ID 由服务器配置，所有 Notes 创建者和审计归属于该 ID。
 
 这是单作者部署身份，不是多用户登录系统，也不提供 Agent 凭证。轮换令牌文件并重启服务后，旧令牌失效。不得把令牌放入 Git、前端构建变量、公开页面或访问日志。完整安装、HTTPS、备份和回滚见 [生产部署指南](../../harness/deploy-guide.md)。
+
+## 连续性审查
+
+新增 `internal/llm`（可注入 Client、配置、OpenAI-compatible HTTP）、`internal/review`（只读上下文、精确引文/版本核验、异步运行、独立原子状态）、`transport/review.go`。没有 Agent 框架、工具执行、自动改稿或知识写入。
+
+服务端本地环境变量：
+
+```sh
+export WRITER_AGENT_LLM_PROVIDER=openai-compatible
+export WRITER_AGENT_LLM_BASE_URL=https://your-provider.example/v1
+export WRITER_AGENT_LLM_MODEL=your-supported-model
+# 密钥通过本地环境/服务端 secret 配置 WRITER_AGENT_LLM_API_KEY，不进入前端或 Git。
+pnpm dev:local
+```
+
+Base URL 为 API 前缀，客户端追加 `/chat/completions`。远程服务只允许 HTTPS 且要求密钥；HTTP 仅允许 localhost/loopback，表示 **API 服务器本机**，不是浏览器本机。不跟随重定向，不自动重试。缺失或非法模型配置时 capability 不启用，不悄悄切换模型；其他 API 保持可用。正式部署仍需已有 Bearer 认证与 HTTPS。
+
+| 可选变量 | 默认 / 范围 |
+| --- | --- |
+| WRITER_AGENT_LLM_TIMEOUT_SECONDS | 60 / 1–180 秒 |
+| WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS | 12000 / 2048–64000；实际为保守 UTF-8 字节预算，非 tokenizer 计数 |
+| WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS | 2048 / 128–8192 |
+| WRITER_AGENT_LLM_RESPONSE_FORMAT | none；可选 json_object、json_schema，按服务商能力显式选择 |
+| WRITER_AGENT_LLM_TOKEN_PARAMETER | max_completion_tokens；旧兼容服务可选 max_tokens |
+
+仅支持 Chat Completions 兼容接口，不假设所有服务商支持 JSON Schema 或相同 token 参数。结构化输出参考 [OpenAI 官方说明](https://developers.openai.com/api/docs/guides/structured-outputs)。无论服务商格式模式如何，服务端均执行严格结构和引用核验。
+
+接口均位于 `/v1/projects/:projectId`，仅 author 身份可读写：
+
+- POST `/chapters/:chapterId/review-preview`：固定版本与实际发送范围，无模型调用。
+- GET/POST `/chapters/:chapterId/reviews`：历史 / 明确授权后启动（202）。
+- GET `/reviews/:runId`：状态、快照、来源新鲜度、发现与反馈。
+- POST `/reviews/:runId/cancel`：取消；迟到结果不能覆盖取消状态。
+- POST `/reviews/:runId/findings/:findingId/feedback`：四种作者反馈，baseVersion CAS。
+
+启动/取消/反馈要求 Idempotency-Key。预览/启动要求 revisionId、contentHash、reviewTypes；启动额外要求 consent.confirmed=true 和预览的 planHash。来源或模型改变返回 409，需要重新授权。幂等键重放返回同一运行，同计划成功/运行中任务去重；失败/取消任务使用新键重试。
+
+状态在 STATE_DIR/review-runs 下，每项目一个 JSON，权限 0600，原子保存运行/反馈/幂等，不混入 Draft、Notes、Audit 或正式 Harness。备份时包含整个状态目录；Review 快照也含原文，需按作品敏感资料保护。每项目最多 200 个运行、10000 条请求/反馈，达到上限需人工备份归档，不自动删记录。每项目同时一个运行；工作进程重启后原 running 在 deadline 到期读取时转为 interrupted，不自动重新发送作品。跨进程共享状态可协调，但远端进程取消不保证立即终止另一个进程的模型 HTTP 请求，结果仍不会覆盖取消；当前部署以单进程为准。
+
+`pnpm test:review` / `pnpm eval:review` 为真实 HTTP 路径的确定性测试。`pnpm eval:review:live` 显式授权发送合成夹具给配置的真实模型；作者真实作品不用于 CI。用户暂缓真实模型联调，当前不宣称真实 LLM E2E。
