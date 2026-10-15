@@ -51,5 +51,5 @@ uses exact Markdown; discarding the local copy requires explicit confirmation.
 Source Markdown that cannot round-trip stays read-only.
 
 Visual checks cover 1440/1024/768/390px, light/dark and focus. See
-../../docs/reviews/vnext-figma-fullstack-sync.md for evidence and remaining
+../../harness/reviews/vnext-figma-fullstack-sync.md for evidence and remaining
 runtime/production work. No full application pixel-perfect claim is made.

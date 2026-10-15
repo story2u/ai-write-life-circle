@@ -24,7 +24,7 @@ services:
     # 使用 GitHub Container Registry 镜像
     # 在 GitHub Actions 中构建并推送
     # 格式: ghcr.io/username/repository:tag
-    # 或本地构建: docker build -f deploy/Dockerfile.web -t greenfield-web:latest .
+    # 或本地构建: docker build -f scripts/deploy/Dockerfile.web -t greenfield-web:latest .
     image: ${GHCR_IMAGE:-ghcr.io/story2u/ai-write-life-circle:latest}
     container_name: greenfield-web
     ports:

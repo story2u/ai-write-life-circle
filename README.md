@@ -1,29 +1,34 @@
-# ai-write-life-circle
+# Writer Agent
 
-作者负责创意与正文；AI 负责创作资料管理、连续性检查、表达研究与启发。
+作者主导的写作工作台。React + TypeScript 前端、Node.js API 与共享契约组成 pnpm Monorepo。
 
-## 开始使用
-1. 在任意有文件读写能力的 AI 编辑器中打开本目录。
-2. 输入：`先读 AGENTS.md，按 harness/workflows/bootstrap.md 帮我建立本书档案。不要替我写正文。`
-3. 作者把正文放进 manuscript/，把未经整理的想法放进 inbox/。
-4. 写前用 prepare；写后用 ingest；查矛盾用 review；寻找表达方式用 inspire；认可建议后用 accept。
+## 本地开发
 
-不需要安装依赖或配置模型 API。使用编辑器中实际可用的模型，不绑定特定品牌或版本；“Gemini 3.8”仅视为用户举例，未在此确认型号可用性。
+```sh
+pnpm install --frozen-lockfile
+pnpm dev          # Demo 界面
+pnpm dev:local    # 本地 API + 前端
+```
+
+本地 API 仅提供开发身份。真实 Agent Runtime 与正式知识写入尚未实现；Demo 模拟能力与 API 数据隔离。详情见 [Web](apps/web/README.md) 与 [API](apps/api/README.md)。
 
 ## 目录
-- [AGENTS.md](AGENTS.md)：简短入口与边界
-- [架构评估](docs/architecture.md)：Markdown 与 pi 的比较及演进条件
-- [任务路由](harness/index.md)：按需读取工作流
-- [书籍索引](book/index.md)：作者意图、角色、情节、世界与风格
-- [会话状态](state/current.md)：当前任务与恢复点
-- [工具接入](docs/adapters.md)：跨编辑器启动方法
-- [验收场景](evals/cases.md)：检查 AI 是否尊重创作权与证据
 
-## 日常指令
-- “写前准备第 3 章，只梳理已确定目标、约束和未解问题。”
-- “我写完了 manuscript/ch003.md，提取设定变化，生成待确认清单。”
-- “我想表达亲近的人也可能彼此不理解。先复述你的理解，再找有出处的表达案例。”
-- “检查第三章人物知识边界、时间线和风格；不要润色正文。”
-- “接受 P-001 的第 1、3 项，第 2 项保留。”
+| 目录 | 必要职责 |
+| --- | --- |
+| `apps/` | Web 与 API 应用 |
+| `packages/` | 共享类型、数据契约与校验 |
+| `scripts/` | 开发、生成、校验工具；部署配置在 `scripts/deploy/` |
+| `harness/` | 唯一文档中心：架构、设计、API 规范、工作流与验证报告 |
 
-首版故事档案已建立：见 [书籍索引](book/index.md) 与 [当前状态](state/current.md)。已登记作者既有世界构想、核心主题和三类生命关系；主角 CHAR-001 已部分建档（姓名、年龄、职业等具体属性仍 unknown），具体情节、配角与正文仍未建档。[主要冲突与待决问题](proposals/P-002-bootstrap.md) 保留为候选。历史资料的证据范围见 [建档来源](notes/bootstrap-sources-2026-10-07.md)。Markdown 是事实载体；Git 是历史；编辑器 Agent 是执行器。
+`node_modules/` 是 pnpm 依赖，由安装命令生成；`.github/` 保存 CI/CD；隐藏的编辑器配置保留其约定路径。原 `docs/`、`design/` 已合并到 `harness/`，原 `deploy/` 已归入 `scripts/deploy/`。
+
+## 入口与验证
+
+- [协作入口](AGENTS.md) · [文档索引](harness/README.md) · [任务路由](harness/index.md)
+- [API 规范](harness/contracts/README.md) · [前端架构](harness/architecture/frontend-architecture.md)
+- [VNext 实施报告](harness/reviews/vnext-figma-fullstack-sync.md) · [部署说明](scripts/deploy/README.md)
+- `pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm build`
+- `pnpm openapi:check`、`pnpm openapi:lint`、`pnpm test:e2e`
+
+作者负责创意决策与小说正文。项目维护不代写正文，不自动更新正式设定；外部作品目录与本项目应用状态应分别管理。

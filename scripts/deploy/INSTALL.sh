@@ -3,7 +3,7 @@
 # 一键安装脚本 - 在 EC2 上直接运行
 # 使用方法：
 # 1. 通过 AWS Console EC2 Instance Connect 连接到 EC2
-# 2. 运行: bash <(curl -fsSL https://raw.githubusercontent.com/story2u/ai-write-life-circle/main/deploy/INSTALL.sh)
+# 2. 运行: bash <(curl -fsSL https://raw.githubusercontent.com/story2u/ai-write-life-circle/main/scripts/deploy/INSTALL.sh)
 
 set -e
 
@@ -52,8 +52,8 @@ print_step "代码已更新到最新版本"
 # 2. 运行 webhook 安装脚本
 print_info "安装 Webhook 自动部署服务..."
 echo ""
-chmod +x deploy/setup-webhook.sh
-./deploy/setup-webhook.sh
+chmod +x scripts/deploy/setup-webhook.sh
+./scripts/deploy/setup-webhook.sh
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"

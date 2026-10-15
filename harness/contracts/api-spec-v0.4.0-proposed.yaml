@@ -3681,6 +3681,6 @@ x-source-provenance:
   fileKey: kWBOdcae5utBZ6VtBHHXui
   retrievedAt: 2026-10-14
   note: The Figma MCP resource response was truncated; the complete source copy was supplied in the author reply
-    in this task and preserved under docs/contracts/source/.
+    in this task and preserved under harness/contracts/source/.
 x-notes-extension-provenance: "2026-10-14 author task: minimum persistent notes. VNext local export supplied
   by author; Figma API YAML is semantically unchanged. Engineering extension, not a Figma API source copy."

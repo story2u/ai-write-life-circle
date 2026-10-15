@@ -24,4 +24,4 @@ Playwright 检查 1440/1024/768/390px，Light/Dark、写作、抽屉、Focus，�
 
 ## 契约来源
 
-旧完整来源 `docs/contracts/source/api-spec-v0.4.0-figma-copy.yaml` 保留。新导出副本 `docs/contracts/source/api-spec-vnext-export-2026-10-14.yaml` 与旧来源解析后完全相同；新 Note/Capabilities 是独立工程扩展，不冒称 Figma 新 API。详见[实施报告](../../docs/reviews/vnext-figma-fullstack-sync.md)。
+旧完整来源 `harness/contracts/source/api-spec-v0.4.0-figma-copy.yaml` 保留。新导出副本 `harness/contracts/source/api-spec-vnext-export-2026-10-14.yaml` 与旧来源解析后完全相同；新 Note/Capabilities 是独立工程扩展，不冒称 Figma 新 API。详见[实施报告](../reviews/vnext-figma-fullstack-sync.md)。

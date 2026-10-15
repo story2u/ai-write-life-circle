@@ -17,7 +17,7 @@ pnpm dev
 ```bash
 git push origin main
 # GitHub Actions 自动构建
-# 然后在 EC2 上运行 deploy/deploy-simple.sh
+# 然后在 EC2 上运行 scripts/deploy/deploy-simple.sh
 ```
 
 ## 📚 文档索引
@@ -60,7 +60,7 @@ git push origin main
 ├── packages/         # 共享包
 │   └── contracts/    # 类型定义
 ├── harness/          # 文档中心
-├── deploy/           # 部署配置
+├── scripts/          # 开发、校验与部署工具（deploy/）
 ├── package.json      # Workspace 根配置
 ├── pnpm-workspace.yaml  # Workspace 定义
 └── tsconfig.base.json   # TypeScript 基础配置

@@ -54,8 +54,8 @@ cd ~/greenfield-adventures
 git pull origin main
 
 # 运行安装脚本
-chmod +x deploy/setup-webhook.sh
-./deploy/setup-webhook.sh
+chmod +x scripts/deploy/setup-webhook.sh
+./scripts/deploy/setup-webhook.sh
 ```
 
 脚本会自动：
@@ -305,7 +305,7 @@ sudo lsof -i :9000
 
 # 手动测试
 cd ~/greenfield-adventures
-node deploy/webhook-server.js
+node scripts/deploy/webhook-server.js
 ```
 
 ### 问题 2: GitHub 显示 "Unable to connect"
@@ -369,7 +369,7 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u story2u --password-stdin
 
 ### 设置健康检查
 
-创建监控脚本 `deploy/monitor-webhook.sh`:
+创建监控脚本 `scripts/deploy/monitor-webhook.sh`:
 
 ```bash
 #!/bin/bash
@@ -388,7 +388,7 @@ fi
 ```bash
 # 每 5 分钟检查一次
 crontab -e
-*/5 * * * * /home/ubuntu/greenfield-adventures/deploy/monitor-webhook.sh
+*/5 * * * * /home/ubuntu/greenfield-adventures/scripts/deploy/monitor-webhook.sh
 ```
 
 ### 部署通知（可选）

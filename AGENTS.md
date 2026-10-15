@@ -19,7 +19,7 @@
 ├── packages/         # 共享包
 │   └── contracts/    # 类型定义
 ├── harness/          # 文档中心（架构、设计、工作流）
-├── deploy/           # 部署配置
+├── scripts/          # 开发、校验与部署工具（deploy/）
 ├── package.json      # Workspace 根配置
 ├── pnpm-workspace.yaml  # Workspace 定义
 └── tsconfig.base.json   # TypeScript 基础配置
@@ -132,10 +132,8 @@ greenfield-adventures/
 │   ├── workflows/             # 工作流
 │   └── data-contract.md       # 数据契约
 │
-├── deploy/                     # 🚀 部署配置
-│   ├── deploy-simple.sh       # 部署脚本
-│   ├── docker-compose.yml     # 容器编排
-│   └── Dockerfile.web         # 镜像定义
+├── scripts/                    # 开发、校验与部署工具
+│   └── deploy/                # 部署脚本、容器编排与镜像定义
 │
 ├── .github/workflows/          # CI/CD
 ├── AGENTS.md                   # 📍 你在这里

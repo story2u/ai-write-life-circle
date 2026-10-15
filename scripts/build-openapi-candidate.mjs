@@ -2,8 +2,8 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import YAML from 'yaml'
 
-const sourcePath = fileURLToPath(new URL('../docs/contracts/source/api-spec-v0.4.0-figma-copy.yaml', import.meta.url))
-const candidatePath = fileURLToPath(new URL('../docs/contracts/api-spec-v0.4.0-proposed.yaml', import.meta.url))
+const sourcePath = fileURLToPath(new URL('../harness/contracts/source/api-spec-v0.4.0-figma-copy.yaml', import.meta.url))
+const candidatePath = fileURLToPath(new URL('../harness/contracts/api-spec-v0.4.0-proposed.yaml', import.meta.url))
 const source = YAML.parse(await readFile(sourcePath, 'utf8'))
 
 if (source.openapi !== '3.1.0' || source.info?.version !== '0.4.0-proposed') {
@@ -76,10 +76,10 @@ source['x-source-provenance'] = {
   file: 'Figma Make docs/contracts/api-spec.yaml',
   fileKey: 'kWBOdcae5utBZ6VtBHHXui',
   retrievedAt: '2026-10-14',
-  note: 'The Figma MCP resource response was truncated; the complete source copy was supplied in the author reply in this task and preserved under docs/contracts/source/.',
+  note: 'The Figma MCP resource response was truncated; the complete source copy was supplied in the author reply in this task and preserved under harness/contracts/source/.',
 }
 
-const notesExtension = JSON.parse(await readFile(new URL('../docs/contracts/notes-engineering-extension.json', import.meta.url), 'utf8'))
+const notesExtension = JSON.parse(await readFile(new URL('../harness/contracts/notes-engineering-extension.json', import.meta.url), 'utf8'))
 Object.assign(source.paths, notesExtension.paths)
 Object.assign(source.components.schemas, notesExtension.schemas)
 source.components.schemas.Workspace.properties.capabilities = { $ref: '#/components/schemas/WorkspaceCapabilities' }

@@ -18,7 +18,7 @@ import {
 import { describe, expect, it } from 'vitest'
 import { createApiHandler } from '../src/http.js'
 
-const contractPath = fileURLToPath(new URL('../../../docs/contracts/api-spec-v0.4.0-proposed.yaml', import.meta.url))
+const contractPath = fileURLToPath(new URL('../../../harness/contracts/api-spec-v0.4.0-proposed.yaml', import.meta.url))
 const contract = YAML.parse(await readFile(contractPath, 'utf8')) as {
   paths: Record<string, Record<string, { operationId?: string; 'x-implementation-status'?: string; responses?: Record<string, unknown> }>>
   components: { schemas: Record<string, unknown> }

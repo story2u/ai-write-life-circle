@@ -8,7 +8,7 @@
 
 **触发条件**:
 - 推送到 `main` 或 `develop` 分支
-- 修改 `apps/**`、`packages/**`、`deploy/Dockerfile.web` 或工作流文件本身
+- 修改 `apps/**`、`packages/**`、`scripts/deploy/Dockerfile.web` 或工作流文件本身
 - 手动触发 (workflow_dispatch)
 
 **主要步骤**:
@@ -106,7 +106,7 @@ aws ecr describe-repositories \
 
 ## Dockerfile 构建上下文
 
-**Dockerfile 路径**: `deploy/Dockerfile.web`
+**Dockerfile 路径**: `scripts/deploy/Dockerfile.web`
 **构建上下文**: 项目根目录 (`.`)
 
 **依赖文件**:
@@ -148,7 +148,7 @@ services:
 
 ```bash
 # 构建测试
-docker build -f deploy/Dockerfile.web -t greenfield-web:test .
+docker build -f scripts/deploy/Dockerfile.web -t greenfield-web:test .
 
 # 运行测试
 docker run -p 3000:3000 greenfield-web:test
@@ -201,7 +201,7 @@ aws ecr list-images \
 # 4. 在 EC2 上部署
 ssh ubuntu@16.170.155.138
 cd ~/greenfield-adventures
-./deploy/deploy-simple.sh
+./scripts/deploy/deploy-simple.sh
 ```
 
 ## 常见问题
@@ -266,7 +266,7 @@ Repository: greenfield-web
 🚀 To deploy to EC2:
   ssh ubuntu@YOUR_EC2_IP
   cd ~/greenfield-adventures
-  ./deploy/deploy-simple.sh
+  ./scripts/deploy/deploy-simple.sh
 ```
 
 ## 相关文档

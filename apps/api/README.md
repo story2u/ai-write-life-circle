@@ -63,7 +63,7 @@ database and distributed coordination remain separate work.
 
 Run pnpm dev:api or pnpm dev:local. The root typecheck, lint, test, build and
 E2E commands include this package. OpenAPI source copies and generated status
-are in docs/contracts; pnpm openapi:check and pnpm openapi:lint verify them.
+are in harness/contracts; pnpm openapi:check and pnpm openapi:lint verify them.
 pnpm harness:rebuild rebuilds a read-only projection. API/E2E tests use isolated
 fixtures and temporary state, including role, validation, storage, restart,
 idempotency, note concurrency and manuscript conflict scenarios.

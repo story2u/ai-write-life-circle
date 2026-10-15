@@ -55,14 +55,14 @@ echo ""
 print_step "配置 systemd 服务"
 
 # 更新服务文件中的 secret
-sed -i "s|your_secret_here_change_me|$WEBHOOK_SECRET|" "$PROJECT_DIR/deploy/webhook.service"
+sed -i "s|your_secret_here_change_me|$WEBHOOK_SECRET|" "$PROJECT_DIR/scripts/deploy/webhook.service"
 
 # 复制服务文件
-sudo cp "$PROJECT_DIR/deploy/webhook.service" /etc/systemd/system/
+sudo cp "$PROJECT_DIR/scripts/deploy/webhook.service" /etc/systemd/system/
 sudo chmod 644 /etc/systemd/system/webhook.service
 
 # 添加执行权限
-chmod +x "$PROJECT_DIR/deploy/webhook-server.js"
+chmod +x "$PROJECT_DIR/scripts/deploy/webhook-server.js"
 
 print_info "✓ systemd 服务已配置"
 

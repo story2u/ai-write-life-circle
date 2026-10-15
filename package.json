@@ -12,7 +12,7 @@
     "test": "pnpm --filter @writer-agent/api test && pnpm --filter @writer-agent/web test",
     "openapi:generate": "pnpm --filter @writer-agent/api exec tsx ../../scripts/build-notes-openapi.mts && node scripts/build-openapi-candidate.mjs",
     "openapi:check": "pnpm --filter @writer-agent/api exec tsx ../../scripts/build-notes-openapi.mts --check && node scripts/build-openapi-candidate.mjs --check",
-    "openapi:lint": "pnpm exec redocly lint docs/contracts/api-spec-v0.4.0-proposed.yaml",
+    "openapi:lint": "pnpm exec redocly lint harness/contracts/api-spec-v0.4.0-proposed.yaml",
     "dev:api": "pnpm --filter @writer-agent/api dev",
     "harness:rebuild": "pnpm --filter @writer-agent/api harness:rebuild",
     "test:e2e": "pnpm --filter @writer-agent/web test:e2e"

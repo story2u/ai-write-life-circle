@@ -6,13 +6,13 @@
 
 官方 Figma get_design_context 成功读取 kWBOdcae5utBZ6VtBHHXui / 0:1 的最新资源清单，whoami 确认当前连接身份；浏览器显示 Version 6 / Upgrade Writer Agent UI/UX。连接器没有 resources/read，资源模板为空，Make 截图端点不支持该文件。作者提供最新导出 `/Users/bruce/git/story/Writer Agent UI_UX Design` 解阻；实际读取 App、CSS、目标页面/组件、VNext model/demo/agent/relevance、DES-VNEXT 交接，以及产品、领域、API、状态机与实现说明。
 
-源码快照与 SHA-256：[manifest](../../harness/design/vnext-resource-manifest.json)；交接副本：[DES-VNEXT](../../harness/design/vnext-source-handoff.md)。未修改原导出目录。MCP 清单里的历史图片未被当前源码引用；图标来自最新 ui.tsx，无临时 Figma URL。
+源码快照与 SHA-256：[manifest](../design/vnext-resource-manifest.json)；交接副本：[DES-VNEXT](../design/vnext-source-handoff.md)。未修改原导出目录。MCP 清单里的历史图片未被当前源码引用；图标来自最新 ui.tsx，无临时 Figma URL。
 
-新 API YAML 完整副本保存为 docs/contracts/source/api-spec-vnext-export-2026-10-14.yaml。它与保留的旧完整来源 YAML 解析结果相同；没有冒用新版本 API 定义。Note 为本次作者明确授权的独立工程扩展。
+新 API YAML 完整副本保存为 harness/contracts/source/api-spec-vnext-export-2026-10-14.yaml。它与保留的旧完整来源 YAML 解析结果相同；没有冒用新版本 API 定义。Note 为本次作者明确授权的独立工程扩展。
 
 ## 2. 差异矩阵与阶段结果
 
-完整实施前矩阵见 [差异分析](../../harness/design/vnext-sync-gap-analysis.md)，请求路径 design/vnext-sync-gap-analysis.md 保留兼容入口。
+完整实施前矩阵见 [差异分析](../design/vnext-sync-gap-analysis.md)。根目录整理后统一维护在 harness，原兼容入口已删除。
 
 | 维度 | 分类 | 当前结果 |
 | --- | --- | --- |
@@ -91,7 +91,7 @@ AuthorNote：noteId、projectId、content、可选 chapterId、purpose、status�
 - node scripts/smoke-built-api.mjs：通过，覆盖构建后的进程和生产身份保护。
 - 所有真实数据测试使用独立 Harness fixture 与临时状态目录；章节 fixture 哈希与文件内容未被 API 修改。
 
-远端 [PR #5](https://github.com/story2u/ai-write-life-circle/pull/5) 已创建并保持 Open。实现提交 32626d6 的 [PR CI](https://github.com/story2u/ai-write-life-circle/actions/runs/38670044743) 全部通过，含 OpenAPI、Harness、构建 API smoke、Chromium E2E 与验证产物上传。后续报告提交的检查状态以 PR 当前 head 为准；没有合并或部署。
+远端 [PR #5](https://github.com/story2u/ai-write-life-circle/pull/5) 已按作者后续指令合并到 main（9238f24）。实现提交 32626d6 的 [PR CI](https://github.com/story2u/ai-write-life-circle/actions/runs/38670044743) 全部通过，含 OpenAPI、Harness、构建 API smoke、Chromium E2E 与验证产物上传。最终提交 3e5c3c9 的两次 CI 也已通过；未手动执行部署。
 
 ## 8. 尚未完成与独立后续任务
 

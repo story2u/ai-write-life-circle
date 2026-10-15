@@ -13,7 +13,7 @@ services:
       WRITER_AGENT_PROJECT_ID: ${WRITER_AGENT_PROJECT_ID:-local}
     volumes:
       - api_state:/data/state
-      - ./harness:/data/harness:ro
+      - ../../harness:/data/harness:ro
     networks:
       - greenfield-net
 
