@@ -7,7 +7,7 @@ WORKDIR /app
 RUN npm install -g pnpm@10.15.1
 
 # 复制 lockfile 和 workspace 配置
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 
 # 复制所有应用和包
 COPY apps ./apps
