@@ -18,9 +18,12 @@ export interface NotesAdapter {
 }
 export const httpNotesAdapter: NotesAdapter = {
   async list(projectId) {
-    return noteListSchema.parse(
+    const items = noteListSchema.parse(
       await getJson(`/v1/projects/${encodeURIComponent(projectId)}/notes`),
     ).items
+    if (items.some((note) => note.projectId !== projectId))
+      throw new Error('笔记列表与当前作品不匹配。')
+    return items
   },
   async save(projectId, input, key, noteId) {
     const path = `/v1/projects/${encodeURIComponent(projectId)}/notes`

@@ -1,5 +1,5 @@
 import type { PrototypeThinkingAgent } from '../../services/prototypeThinking'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type SetStateAction } from 'react'
 import type { CanonChange, Entry, Margin, Session, StoryConflict } from './model'
 import { relatedFor } from '../../mocks/vnextRelevance'
 import type { Chapter, Doc } from './model'
@@ -11,7 +11,14 @@ export function usePrototype(enabled: boolean, chapter: Chapter | undefined, doc
   const [margins, setMargins] = useState<Margin[]>([])
   const [conflicts, setConflicts] = useState<StoryConflict[]>([])
   const [changes, setChanges] = useState<CanonChange[]>([])
-  const [session, setSession] = useState<Session | null>(null)
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
+  const session = sessions.find((value) => value.id === activeSessionId) ?? null
+  const setSession = (value: SetStateAction<Session | null>) => {
+    const next = typeof value === 'function' ? value(session) : value
+    if (next) setSessions((all) => [...all.filter((item) => item.id !== next.id), next])
+    setActiveSessionId(next?.id ?? null)
+  }
   const [ignored, setIgnored] = useState<string[]>([])
   useEffect(() => {
     if (!enabled) return
@@ -21,6 +28,7 @@ export function usePrototype(enabled: boolean, chapter: Chapter | undefined, doc
         if (active) {
           setThinkingAgent(agent)
           setBaselineDoc(data.initialDoc)
+          setSessions(data.initialSessions)
           setEntries(data.initialEntries)
           setMargins(data.initialMargins)
           setConflicts(data.initialConflicts)
@@ -97,6 +105,8 @@ export function usePrototype(enabled: boolean, chapter: Chapter | undefined, doc
     setChanges,
     session,
     setSession,
+    sessions,
+    setActiveSessionId,
     ignored,
     setIgnored,
     related,

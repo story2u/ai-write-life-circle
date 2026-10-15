@@ -11,7 +11,7 @@ import { useManuscriptBridge } from '../../hooks/useManuscriptBridge'
 import { findUnsupportedMarkdown } from '../../lib/manuscriptMarkdown'
 import type { Annotation, Flash } from '../../components/ManuscriptEditor'
 import type { BookNav } from '../../components/vnext/BookView'
-import type { Chapter as ViewChapter, Source } from './model'
+import type { Chapter as ViewChapter, Source, CanonCandidateContext } from './model'
 
 export function useStudioController(
   adapter: WriterAgentAdapter,
@@ -27,6 +27,7 @@ export function useStudioController(
   const [marksHidden, setMarksHidden] = useState(false)
   const [activeMargin, setActiveMargin] = useState<string | null>(null)
   const [candidateNote, setCandidateNote] = useState<AuthorNote | null>(null)
+  const [candidateContext, setCandidateContext] = useState<CanonCandidateContext | null>(null)
   const [saveDialog, setSaveDialog] = useState(false)
   const [conflictId, setConflictId] = useState<string | null>(null)
   const [flash, setFlash] = useState<Flash>(null)
@@ -133,7 +134,7 @@ export function useStudioController(
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
   }
   const annotations: Annotation[] = prototype.margins
-    .filter((m) => !marksHidden && !prototype.ignored.includes(m.id) && m.state === 'fresh')
+    .filter((m) => !marksHidden && !prototype.ignored.includes(m.id) && m.state !== 'stale')
     .map((m) => ({
       id: m.id,
       kind: m.tone === 'conflict' ? 'fact' : m.tone === 'ai' ? 'suggestion' : 'research',
@@ -186,23 +187,46 @@ export function useStudioController(
     return () => window.removeEventListener('keydown', onKey)
   })
   const readonly = findUnsupportedMarkdown(workspace.markdownByChapter[current] ?? '').length > 0
-  const pinned = readonly || saveState.s === 'error' || saveState.s === 'recovery'
+  const failedLoad = workspace.chapterLoadState.status === 'error'
+  const pinned = readonly || failedLoad || saveState.s === 'error' || saveState.s === 'recovery'
   const status = readonly
     ? '只读保护'
-    : workspace.chapterLoadState.status === 'loading'
-      ? '正在打开章节…'
-      : saveState.s === 'saved'
-        ? `已保存 ${new Date(saveState.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
-        : saveState.s === 'saving'
-          ? '保存中…'
-          : saveState.s === 'dirty'
-            ? '有未保存修改'
-            : saveState.s === 'recovery'
-              ? '有待恢复草稿'
-              : saveState.conflict
-                ? '版本冲突'
-                : '保存失败'
+    : failedLoad
+      ? '章节读取失败'
+      : workspace.chapterLoadState.status === 'loading'
+        ? '正在打开章节…'
+        : saveState.s === 'saved'
+          ? `已保存 ${new Date(saveState.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+          : saveState.s === 'saving'
+            ? '保存中…'
+            : saveState.s === 'dirty'
+              ? '有未保存修改'
+              : saveState.s === 'recovery'
+                ? '有待恢复草稿'
+                : saveState.conflict
+                  ? '版本冲突'
+                  : '保存失败'
   const liveMargins = prototype.margins.filter((m) => !prototype.ignored.includes(m.id))
+  const resumePending = [
+    ...liveMargins
+      .filter((margin) => margin.state === 'fresh')
+      .map((margin) => ({
+        id: margin.id,
+        text: margin.title,
+        tone: margin.tone,
+        run: () => selectMargin(margin.id),
+      })),
+    ...notes.items
+      .filter(
+        (note) => note.status === 'active' && note.purpose === 'note' && note.chapterId === current,
+      )
+      .map((note) => ({
+        id: note.noteId,
+        text: `你的笔记：${note.content}`,
+        tone: 'quiet' as const,
+        run: openNotes,
+      })),
+  ].slice(0, 3)
   return {
     view,
     setView,
@@ -224,6 +248,8 @@ export function useStudioController(
     setActiveMargin,
     candidateNote,
     setCandidateNote,
+    candidateContext,
+    setCandidateContext,
     saveDialog,
     setSaveDialog,
     conflictId,
@@ -275,6 +301,7 @@ export function useStudioController(
     pinned,
     status,
     liveMargins,
+    resumePending,
     readonly,
     toast,
   }

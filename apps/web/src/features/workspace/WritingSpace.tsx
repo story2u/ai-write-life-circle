@@ -5,7 +5,7 @@ import StoryConflictView from '../../components/vnext/StoryConflictView'
 import WritingCanvas from '../workspace/WritingCanvas'
 import Resume from '../../components/vnext/Resume'
 import MarginPanel from '../../components/vnext/MarginPanel'
-import { Btn, IconBtn, Icon, Seg } from '../../components/vnext/ui'
+import { Btn, IconBtn, Icon, Seg, Kbd } from '../../components/vnext/ui'
 import type { WriterAgentAdapter } from '../../services/writerAgent'
 import ThinkingSpace from '../vnext/ThinkingSpace'
 export default function WritingSpace({
@@ -32,6 +32,7 @@ export default function WritingSpace({
     setMarksHidden,
     activeMargin,
     setConflictId,
+    setCandidateContext,
     flash,
     backTo,
     setBackTo,
@@ -61,6 +62,7 @@ export default function WritingSpace({
     selectMargin,
     saveNote,
     liveMargins,
+    resumePending,
     toast,
   } = studio
   const thinkView = (wide = false) => (
@@ -115,18 +117,19 @@ export default function WritingSpace({
               onSource={openSource}
               onResolve={(resolution) => {
                 if (resolution === 'edit-text') {
-                  openSource(conflict.a)
+                  if (conflict.a.state === 'ok') openSource(conflict.a)
+                  else {
+                    setConflictId(null)
+                    if (conflict.a.chapterId) switchChapter(conflict.a.chapterId)
+                    toast('引用需要重新核对，已回到对应章节，未自动定位段落。')
+                  }
                   return
                 }
                 if (resolution === 'edit-canon') {
-                  void import('../../mocks/vnextData').then(({ canonTemplate }) => {
-                    const change = canonTemplate('demo-conflict')
-                    prototype.setChanges((all) => [
-                      ...all.filter((c) => c.id !== change.id),
-                      change,
-                    ])
-                    setBookNav({ section: 'history', changeId: change.id })
-                    setView('book')
+                  setCandidateContext({
+                    entryId: conflict.extra?.entryId,
+                    sources: [conflict.a, conflict.b],
+                    reason: `作者从故事冲突“${conflict.title}”发起的演示候选，变更内容由作者填写。`,
                   })
                   return
                 }
@@ -187,7 +190,7 @@ export default function WritingSpace({
                     <Resume
                       chapter={{ ...currentViewChapter, title: chapter.title }}
                       tail={(bridge.paragraphs ?? doc[current] ?? []).filter(Boolean).slice(-3)}
-                      pending={[]}
+                      pending={resumePending}
                       nextUp={
                         nextUp
                           ? {
@@ -234,11 +237,13 @@ export default function WritingSpace({
                     ['think', '思考'],
                   ]}
                 />
-                <IconBtn
-                  icon="expand"
-                  label="展开为完整思考空间"
-                  onClick={() => setView('think')}
-                />
+                {rightTab === 'think' && (
+                  <IconBtn
+                    icon="expand"
+                    label="展开为完整思考空间"
+                    onClick={() => setView('think')}
+                  />
+                )}
                 <IconBtn
                   icon="x"
                   label="收起辅助"
@@ -279,11 +284,16 @@ export default function WritingSpace({
             </aside>
           </>
         )}
+        {!resume && !layout.rightOpen && !conflict && (
+          <div className="chrome pointer-events-none fixed bottom-4 left-1/2 z-0 hidden -translate-x-1/2 text-micro text-ink-3 lg:block">
+            <Kbd>⌘;</Kbd> 随手记 <Kbd>⌘\</Kbd> 注记 <Kbd>⌘⇧E</Kbd> 目录 <Kbd>⌘⇧F</Kbd> 专注
+          </div>
+        )}
         <footer className="chrome pointer-events-none fixed inset-x-0 bottom-0 z-10 flex items-end justify-between px-4 pb-4">
           <span className="hidden text-micro text-ink-3 sm:inline">
             {bridge.words ?? (doc[current] ?? []).join('').replace(/\s/g, '').length} 字
           </span>
-          {!layout.rightOpen && (
+          {(!layout.rightOpen || layout.focus) && (
             <div className="pointer-events-auto ml-auto flex gap-0.5 rounded-lg bg-page/80 p-0.5 backdrop-blur">
               <Btn size="sm" disabled={!notesEnabled} onClick={() => setQuick(true)}>
                 <Icon name="pen" />

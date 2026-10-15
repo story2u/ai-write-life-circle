@@ -1,22 +1,24 @@
 import { useState } from 'react'
 import type { AuthorNote } from '@writer-agent/contracts'
-import type { CanonChange, Entry } from './model'
+import type { CanonChange, Entry, CanonCandidateContext } from './model'
 import { Btn, Dialog, Select, TextArea } from '../../components/vnext/ui'
 
 /** Explicit Demo-only candidate construction; cannot write to the real Harness. */
 export default function CanonCandidate({
   note,
+  context,
   entries,
   onCreate,
   onClose,
 }: {
-  note: AuthorNote
+  note: AuthorNote | null
+  context?: CanonCandidateContext | null
   entries: Entry[]
   onCreate: (candidate: CanonChange) => void
   onClose: () => void
 }) {
-  const [entryId, setEntryId] = useState(entries[0]?.id ?? '')
-  const [proposed, setProposed] = useState(note.content)
+  const [entryId, setEntryId] = useState(context?.entryId ?? entries[0]?.id ?? '')
+  const [proposed, setProposed] = useState(note?.content ?? '')
   const entry = entries.find((value) => value.id === entryId)
   return (
     <Dialog
@@ -34,13 +36,15 @@ export default function CanonCandidate({
               if (!entry) return
               onCreate({
                 id: crypto.randomUUID(),
-                noteId: note.noteId,
+                noteId: note?.noteId,
                 entryId,
                 field: '条目描述',
                 current: entry.summary,
                 proposed,
-                reason: '由作者从创作笔记明确发起的演示候选',
-                sources: [{ label: '你的创作笔记', quote: note.content, state: 'ok' }],
+                reason: context?.reason ?? '由作者从创作笔记明确发起的演示候选',
+                sources:
+                  context?.sources ??
+                  (note ? [{ label: '你的创作笔记', quote: note.content, state: 'ok' }] : []),
                 chapters: entry.chapters,
                 impact: ['影响分析尚未接入。请作者自行核对相关章节。'],
                 status: 'draft',

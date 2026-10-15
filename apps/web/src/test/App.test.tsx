@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../app/App'
@@ -124,7 +124,7 @@ describe('Writer Agent studio', () => {
     const editor = screen.getByRole('textbox', { name: '正文编辑器' })
     const original = editor.textContent
     await user.click(screen.getByRole('button', { name: '注记' }))
-    await user.click(await screen.findByText('离京的季节与第 7 章不一致'))
+    await user.click(await within(screen.getByRole('complementary', { name: '辅助' })).findByText('离京的季节与第 7 章不一致'))
     await user.click(screen.getByRole('button', { name: '进入冲突对照' }))
     await user.click(screen.getByRole('radio', { name: /这是有意为之/ }))
     await user.click(screen.getByRole('button', { name: '确定' }))

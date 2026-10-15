@@ -1,15 +1,18 @@
 import type { useStudioController } from '../vnext/useStudioController'
-import { Btn, IconBtn, Seg } from '../../components/vnext/ui'
+import { Btn, IconBtn, Seg, Proto } from '../../components/vnext/ui'
 export default function StudioHeader({
   studio,
+  demo,
 }: {
   studio: ReturnType<typeof useStudioController>
+  demo: boolean
 }) {
   const {
     view,
     setView,
     setSaveDialog,
     workspace,
+    chapter,
     layout,
     setLayout,
     dark,
@@ -17,6 +20,7 @@ export default function StudioHeader({
     saveState,
     downloadLocalDraft,
     pinned,
+    readonly,
     status,
   } = studio
   return (
@@ -51,12 +55,14 @@ export default function StudioHeader({
           </div>
         )}
         <div className="ml-auto flex items-center gap-1">
-          <span
-            className={`${pinned ? 'text-danger' : 'chrome hidden sm:inline'} text-ui-sm`}
-            aria-live="polite"
-          >
-            {status}
-          </span>
+          {(pinned || (view === 'write' && chapter.id)) && (
+            <span
+              className={`${readonly ? 'text-ink-2' : pinned ? (saveState.s === 'recovery' ? 'text-warn' : 'text-danger') : 'chrome hidden sm:inline'} text-ui-sm`}
+              aria-live="polite"
+            >
+              {status}
+            </span>
+          )}
           {saveState.s === 'error' && saveState.conflict && (
             <Btn size="sm" variant="link" onClick={() => setSaveDialog(true)}>
               处理冲突
@@ -73,6 +79,7 @@ export default function StudioHeader({
             label={dark ? '浅色主题' : '深色主题'}
             onClick={() => setDark(!dark)}
           />
+          {demo && <Proto>演示</Proto>}
         </div>
       </header>
       {saveState.s === 'error' && !saveState.conflict && (

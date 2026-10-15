@@ -58,7 +58,7 @@ export default function WritingCanvas({
           desc="将作者撰写的 Markdown 章节按项目约定加入作品资料后，这里会显示原文。工作台不会自动生成或填充正文。"
         />
       ) : chapterLoadState.status === 'loading' || chapterLoadState.status === 'idle' ? (
-        <Empty title="正在读取章节原文…" desc="编辑器将在服务端返回 Markdown 与版本标识后开放。" />
+        <Empty title="正在读取章节原文…" desc="正文读取完成后即可编辑。" />
       ) : chapterLoadState.status === 'error' ? (
         <Empty
           title="章节加载失败"
@@ -105,7 +105,7 @@ export default function WritingCanvas({
             {chapterNumber ? ` · 第 ${chapterNumber} 章` : ''}
           </div>
           <h1 className="font-prose text-display font-medium">{displayTitle ?? chapter.title}</h1>
-          <div className="mt-2 mb-10 text-xs" style={{ color: 'var(--ink-3)' }}>
+          <div className="mt-2 mb-12 text-ui-sm" style={{ color: 'var(--ink-3)' }}>
             {chapter.meta}
           </div>
           {saveState.s === 'error' && saveState.conflict && (

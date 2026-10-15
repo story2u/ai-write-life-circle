@@ -23,6 +23,8 @@ export type Source = {
   state: 'ok' | 'stale' | 'missing'
 }
 
+export type CanonCandidateContext = { entryId?: string; sources: Source[]; reason: string }
+
 export type Tone = 'conflict' | 'ai' | 'quiet'
 
 /** A margin annotation: Agent observation anchored to a paragraph. Never edits prose. */

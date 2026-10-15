@@ -27,6 +27,7 @@ const SECTIONS: [BookSection, string][] = [
 ]
 
 type P = {
+  historyContent?: ReactNode
   noteContent?: ReactNode
   unavailable?: boolean
   nav: BookNav
@@ -589,12 +590,14 @@ function HistoryPage(p: P) {
           </li>
         ))}
       </ol>
+      {p.historyContent}
     </>
   )
 }
 
 function CanonChangePage({ c, entry, ...p }: P & { c: CanonChange; entry?: Entry }) {
   const decided = c.status !== 'draft'
+  const unavailableEvidence = c.sources.some((source) => source.state !== 'ok')
   return (
     <article className="fade" aria-label="定稿变更">
       <Btn
@@ -635,7 +638,12 @@ function CanonChangePage({ c, entry, ...p }: P & { c: CanonChange; entry?: Entry
         </Heading>
         <div className="space-y-4">
           {c.sources.map((s, i) => (
-            <Quote key={i} label={s.label} onOpen={s.chapterId ? () => p.onSource(s) : undefined}>
+            <Quote
+              key={i}
+              label={s.label}
+              state={s.state}
+              onOpen={s.chapterId ? () => p.onSource(s) : undefined}
+            >
               {s.quote}
             </Quote>
           ))}
@@ -693,8 +701,17 @@ function CanonChangePage({ c, entry, ...p }: P & { c: CanonChange; entry?: Entry
               确认后，“{entry?.name}”的「{c.field}
               」将更新，并在变更历史中记下这次决定。正文不会被修改。
             </p>
+            {unavailableEvidence && (
+              <p className="mb-4 text-ui-sm text-warn">
+                存在过期或未核验依据，确认暂不可用；可以先暂缓或放弃这份演示候选。
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
-              <Btn variant="primary" onClick={() => p.onDecide(c.id, 'confirmed')}>
+              <Btn
+                variant="primary"
+                disabled={unavailableEvidence}
+                onClick={() => p.onDecide(c.id, 'confirmed')}
+              >
                 确认变更
               </Btn>
               <Btn variant="outline" onClick={() => p.onDecide(c.id, 'deferred')}>

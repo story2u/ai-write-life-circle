@@ -2,7 +2,7 @@ import StudioHeader from '../features/vnext/StudioHeader'
 import WritingSpace from '../features/workspace/WritingSpace'
 import BookSpace from '../features/knowledge/BookSpace'
 import { useStudioController } from '../features/vnext/useStudioController'
-import ThinkingSpace from '../features/vnext/ThinkingSpace'
+import ThinkingPage from '../features/vnext/ThinkingPage'
 import CanonCandidate from '../features/vnext/CanonCandidate'
 import SaveConflictDialog from '../features/workspace/SaveConflictDialog'
 import { useEffect, useState } from 'react'
@@ -10,7 +10,6 @@ import type { WorkspaceSnapshot } from '@writer-agent/contracts'
 import type { WriterAgentAdapter } from '../services/writerAgent'
 import { createWriterAgentAdapter } from '../services/adapterFactory'
 import { ConfirmDialog, Toasts } from '../components/ui'
-import { Btn, Proto } from '../components/vnext/ui'
 import QuickNote from '../features/notes/QuickNote'
 type AppLoadState =
   | { status: 'loading' }
@@ -87,6 +86,8 @@ function WriterStudio({
     setQuick,
     candidateNote,
     setCandidateNote,
+    candidateContext,
+    setCandidateContext,
     saveDialog,
     setSaveDialog,
     confirm,
@@ -102,32 +103,16 @@ function WriterStudio({
     notes,
     downloadLocalDraft,
   } = studio
-  const thinkView = (wide = false) => (
-    <ThinkingSpace studio={studio} demo={adapter.mode === 'demo'} wide={wide} />
-  )
   return (
     <div
       className={`${dark ? 'dark' : ''} ${typing ? 'is-typing' : ''}`}
       onPointerMove={() => setTyping(false)}
     >
       <div className="flex h-dvh flex-col overflow-hidden bg-page text-ink">
-        <StudioHeader studio={studio} />
+        <StudioHeader studio={studio} demo={adapter.mode === 'demo'} />
         <WritingSpace studio={studio} adapter={adapter} />
         <BookSpace studio={studio} adapter={adapter} />
-        {view === 'think' && (
-          <main className="scroll min-h-0 flex-1 overflow-auto px-6">
-            <div className="mx-auto max-w-page pt-6">
-              <Btn onClick={() => setView('write')}>← 回到正文</Btn>
-              <h1 className="mt-6 font-prose text-title">思考</h1>
-            </div>
-            {thinkView(true)}
-          </main>
-        )}
-        {adapter.mode === 'demo' && (
-          <div className="pointer-events-none fixed bottom-1 left-2">
-            <Proto />
-          </div>
-        )}
+        {view === 'think' && <ThinkingPage studio={studio} adapter={adapter} />}
       </div>
       {quick && (
         <QuickNote
@@ -139,14 +124,19 @@ function WriterStudio({
           }}
         />
       )}
-      {candidateNote && adapter.mode === 'demo' && (
+      {(candidateNote || candidateContext) && adapter.mode === 'demo' && (
         <CanonCandidate
           note={candidateNote}
+          context={candidateContext}
           entries={prototype.entries}
-          onClose={() => setCandidateNote(null)}
+          onClose={() => {
+            setCandidateNote(null)
+            setCandidateContext(null)
+          }}
           onCreate={(candidate) => {
             prototype.setChanges((all) => [...all, candidate])
             setCandidateNote(null)
+            setCandidateContext(null)
             setView('book')
             setBookNav({ section: 'notes', changeId: candidate.id })
           }}

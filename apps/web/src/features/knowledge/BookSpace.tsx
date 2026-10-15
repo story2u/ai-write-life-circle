@@ -1,3 +1,4 @@
+import LegacyRecords from './LegacyRecords'
 import type { useStudioController } from '../vnext/useStudioController'
 import BookView from '../../components/vnext/BookView'
 import { NotesPanel } from '../notes/NotesPanel'
@@ -11,6 +12,7 @@ export default function BookSpace({
 }) {
   const {
     view,
+    workspace,
     setView,
     bookNav,
     setBookNav,
@@ -38,6 +40,9 @@ export default function BookSpace({
           related={prototype.related}
           notes={[]}
           changes={prototype.changes}
+          historyContent={
+            <LegacyRecords proposals={workspace.proposals} decisions={workspace.decisions} />
+          }
           unavailable={adapter.mode === 'api'}
           noteContent={
             <NotesPanel

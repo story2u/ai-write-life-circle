@@ -4,9 +4,25 @@ import type { NotesAdapter } from '../services/api/notesApi'
 const storageKey = (project: string) => `writer-agent.demo-notes.v1:${project}`
 export const demoNotesAdapter: NotesAdapter = {
   async list(projectId) {
-    return noteListSchema.parse(
-      JSON.parse(localStorage.getItem(storageKey(projectId)) ?? '{"items":[]}'),
-    ).items
+    const raw = localStorage.getItem(storageKey(projectId))
+    if (raw) return noteListSchema.parse(JSON.parse(raw)).items
+    const { initialNotes } = await import('./vnextData')
+    const items = initialNotes.map((note, index) => ({
+      noteId: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      projectId,
+      content: note.text,
+      chapterId: note.chapterId ?? null,
+      purpose: note.nextUp ? ('next_writing' as const) : ('note' as const),
+      status: note.archived ? ('archived' as const) : ('active' as const),
+      version: 1,
+      createdAt: new Date(note.at).toISOString(),
+      updatedAt: new Date(note.at).toISOString(),
+      createdBy: 'demo-author',
+    }))
+    const validated = noteListSchema.parse({ items })
+    // Persist the seed once, in the independent Demo namespace only.
+    localStorage.setItem(storageKey(projectId), JSON.stringify(validated))
+    return validated.items
   },
   async save(projectId, input, key, noteId) {
     const items = await this.list(projectId)
