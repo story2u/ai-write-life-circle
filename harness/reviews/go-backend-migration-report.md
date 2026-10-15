@@ -1,6 +1,6 @@
 # Go 后端迁移验收报告
 
-日期：2026-10-15。分支：codex/writer-agent-go-backend。基线为 PR #6 的 abe53d6；#5 已合并，#6 仍为目录迁移前置 PR。本任务未合并 PR、未部署、未操作真实作者状态目录；原工作区未提交架构说明保持原样。
+日期：2026-10-15。分支：codex/writer-agent-go-backend；交付 [PR #7](https://github.com/story2u/ai-write-life-circle/pull/7)。基线为 PR #6 的 abe53d6；#5 已合并，#6 仍为目录迁移前置 PR。本任务未合并 PR、未部署、未操作真实作者状态目录；原工作区未提交架构说明保持原样。
 
 ## 交付结果
 
@@ -38,7 +38,7 @@ Go 已接管默认本地 API、全栈启动、构建和前端 API E2E。React �
 | 默认全栈 smoke | dev:local 启动 Go + Vite，代理读取 Workspace，两个进程组均正确退出 |
 | 工程 | frozen lockfile、typecheck、lint、build、go vet、OpenAPI 复现与校验、Harness 重建/ID 检查通过 |
 | Linux 交叉编译 | CGO_ENABLED=0 构建静态 ELF；不依赖后端 Node Runtime |
-| 容器 | 本机 daemon 未运行；CI 配置实际构建 scratch 镜像、验证生产拒绝启动、隔离开发网络内执行健康检查，远端结果以 PR 检查为准 |
+| 容器 | 本机 daemon 未运行；[远端 CI](https://github.com/story2u/ai-write-life-circle/actions/runs/38693551252) 已实际构建 Go scratch 与 Web 镜像，验证生产拒绝启动、隔离健康检查，全部通过。该运行验证实现提交 9c4714a；后续报告提交状态以 [PR #7](https://github.com/story2u/ai-write-life-circle/pull/7) 的当前检查为准 |
 
 对照覆盖 Workspace 恢复/合并、章节列表/原文/hash/排序/历史、无变化保存及重放、409、源采纳/分歧、笔记创建/编辑/归档/恢复/重试/唯一计划，以及角色、项目、JSON、路径、字段与大请求校验。另有独立 Go 进程争用正文与 Note 的 CAS、审计失败注入、损坏状态、锁取消与临时文件清理测试。Node 生成的 Golden 覆盖 Unicode、代理项、字节解码、元数据、引用、重复 ID、模板和软链接；CI 验证生成结果可复现。
 
