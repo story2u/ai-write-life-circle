@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src vite.config.ts playwright.config.ts e2e",
     "test": "vitest run",
-    "test:e2e": "playwright test --config playwright.config.ts && pnpm --filter @writer-agent/api build && node e2e/run-api-e2e.mjs"
+    "test:e2e": "playwright test --config playwright.config.ts && pnpm -w build:api:go && node e2e/run-api-e2e.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^3.32.0",

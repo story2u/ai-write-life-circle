@@ -23,7 +23,7 @@ export default defineConfig({
   projects: [{ name: 'chromium-api', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command: 'node ../api/dist/dev-server.js',
+      command: '../api-go/dist/writer-agent-api',
       url: 'http://127.0.0.1:8788/healthz',
       reuseExistingServer: false,
       timeout: 120_000,

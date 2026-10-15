@@ -1,35 +1,23 @@
-FROM node:22-alpine
+FROM golang:1.27.2-alpine AS builder
+WORKDIR /src
+COPY apps/api-go/go.mod apps/api-go/go.sum ./
+RUN go mod download
+COPY apps/api-go/ ./
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /writer-agent-api ./cmd/server && \
+    mkdir -p /runtime/data/harness /runtime/data/state /runtime/tmp
 
-WORKDIR /app
-
-# 安装 pnpm
-RUN npm install -g pnpm@10.15.1
-
-# 复制 workspace 配置
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY packages/contracts/package.json ./packages/contracts/
-COPY apps/api/package.json ./apps/api/
-
-# 仅安装生产依赖（含 devDeps，因为需要 tsx 构建）
-RUN pnpm install --frozen-lockfile
-
-# 复制源码
-COPY packages ./packages
-COPY apps/api ./apps/api
-
-# 构建 contracts + api
-RUN pnpm --filter @writer-agent/contracts build && \
-    pnpm --filter @writer-agent/api build
-
-# 清理 devDeps，只保留运行时所需
-RUN pnpm prune --prod
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8787/health || exit 1
-
+# Standalone Go binary. No Node.js, shell, package manager or dynamic libc.
+# Retain the legacy container UID for compatibility with existing root-owned volumes.
+FROM scratch
+COPY --from=builder /runtime/ /
+COPY --from=builder /writer-agent-api /writer-agent-api
+ENV HOME=/tmp \
+    WRITER_AGENT_ENV=production \
+    WRITER_AGENT_API_PORT=8787 \
+    WRITER_AGENT_HARNESS_ROOT=/data/harness \
+    WRITER_AGENT_STATE_DIR=/data/state
 EXPOSE 8787
-
-ENV NODE_ENV=production \
-    WRITER_AGENT_API_PORT=8787
-
-CMD ["node", "apps/api/dist/dev-server.js"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD ["/writer-agent-api", "--healthcheck"]
+# Production deliberately fails closed until a real identity adapter is supplied.
+ENTRYPOINT ["/writer-agent-api"]

@@ -15,7 +15,8 @@
 /
 ├── apps/              # 应用代码
 │   ├── web/          # 前端应用（主要）
-│   └── api/          # 后端 API（未启用）
+│   ├── api-go/       # Go 默认后端
+│   └── api/          # Node 对照与回滚实现
 ├── packages/         # 共享包
 │   └── contracts/    # 类型定义
 ├── harness/          # 文档中心（架构、设计、工作流）
@@ -122,7 +123,8 @@
 greenfield-adventures/
 ├── apps/
 │   ├── web/                    # React 前端应用
-│   └── api/                    # Node.js 后端框架（待实现）
+│   ├── api-go/                 # Go 默认后端
+│   └── api/                    # Node 对照与回滚实现
 │
 ├── harness/                    # 📖 文档中心
 │   ├── README.md              # 文档导航
@@ -151,9 +153,9 @@ greenfield-adventures/
 - **状态**：React Hooks
 
 ### 后端
-- **框架**：待实现（Express/Fastify）
-- **数据库**：PostgreSQL 17
-- **类型**：Zod Schema
+- **运行时**：Go 1.27.2 / net/http
+- **存储**：Markdown Harness 只读；应用状态为带文件锁的原子 JSON
+- **契约**：OpenAPI + 前端 Zod；旧 Node API 保留对照与回滚
 
 ### 部署
 - **容器**：Docker + Docker Compose

@@ -5,12 +5,14 @@ const apiPort = process.env.WRITER_AGENT_API_PORT || '8787'
 const apiTarget = `http://127.0.0.1:${apiPort}`
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 
-const api = spawn(pnpm, ['--filter', '@writer-agent/api', 'dev'], {
+const api = spawn(pnpm, [process.argv.includes('--node') ? 'dev:api:node' : 'dev:api:go'], {
   stdio: 'inherit',
+  detached: process.platform !== 'win32',
   env: { ...process.env, NODE_ENV: 'development', WRITER_AGENT_PROJECT_ID: projectId, WRITER_AGENT_API_PORT: apiPort },
 })
 const web = spawn(pnpm, ['--filter', '@writer-agent/web', 'dev'], {
   stdio: 'inherit',
+  detached: process.platform !== 'win32',
   env: {
     ...process.env,
     VITE_WRITER_AGENT_MODE: 'api',
@@ -23,8 +25,12 @@ let stopping = false
 function stop(signal = 'SIGTERM') {
   if (stopping) return
   stopping = true
-  api.kill(signal)
-  web.kill(signal)
+  for (const child of [api, web]) {
+    try {
+      if (process.platform === 'win32') child.kill(signal)
+      else process.kill(-child.pid, signal)
+    } catch (error) { if (error.code !== 'ESRCH') throw error }
+  }
 }
 
 process.once('SIGINT', () => stop('SIGINT'))

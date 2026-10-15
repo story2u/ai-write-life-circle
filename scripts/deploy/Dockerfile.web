@@ -7,7 +7,7 @@ WORKDIR /app
 RUN npm install -g pnpm@10.15.1
 
 # 复制 lockfile 和 workspace 配置
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 
 # 复制所有应用和包
 COPY apps ./apps
@@ -15,7 +15,7 @@ COPY packages ./packages
 
 # 安装依赖并构建
 RUN pnpm install --frozen-lockfile && \
-    pnpm build
+    pnpm --filter @writer-agent/web build
 
 # 生产阶段：轻量级运行环境
 FROM node:22-alpine

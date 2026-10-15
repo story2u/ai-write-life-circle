@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/api/**'
+      - 'apps/api-go/**'
       - 'packages/**'
       - 'scripts/deploy/Dockerfile.api'
       - 'scripts/deploy/docker-compose.prod.yml'
@@ -63,6 +63,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy to EC2
+    # Production identity is not implemented. Never deploy local-author to a shared host.
+    if: ${{ false }}
     needs: build-and-push
 
     steps:

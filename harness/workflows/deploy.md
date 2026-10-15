@@ -1,5 +1,7 @@
 # deploy - 部署到 AWS
 
+> 历史文档：以下 EC2 Web/PostgreSQL 部署流程及脚本已废弃，不应按本文执行。当前入口见 [部署说明](../../scripts/deploy/README.md)；Go API 生产认证未完成，生产部署保持暂停。
+
 ## 任务
 
 部署 Web 应用到 AWS EC2，使用 GitHub Actions 构建镜像并推送到 ECR。

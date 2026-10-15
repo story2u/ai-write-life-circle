@@ -13,12 +13,9 @@ pnpm dev
 # 访问 http://localhost:5173
 ```
 
-### 部署到 AWS
-```bash
-git push origin main
-# GitHub Actions 自动构建
-# 然后在 EC2 上运行 scripts/deploy/deploy-simple.sh
-```
+### 部署
+
+当前 Web 由 `deploy-web.yml` 构建并通过 Wrangler 部署。Go API 仅构建镜像，生产认证未完成，EC2 部署保持暂停。旧 EC2 Web/PostgreSQL 脚本已废弃，不应执行。入口与边界见 [部署说明](scripts/deploy/README.md)。
 
 ## 📚 文档索引
 
@@ -56,7 +53,8 @@ git push origin main
 /
 ├── apps/              # 应用代码
 │   ├── web/          # 前端应用（主要）
-│   └── api/          # 后端 API（未启用）
+│   ├── api-go/       # Go 默认后端
+│   └── api/          # Node 对照与回滚实现
 ├── packages/         # 共享包
 │   └── contracts/    # 类型定义
 ├── harness/          # 文档中心

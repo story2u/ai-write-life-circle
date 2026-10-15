@@ -1,5 +1,7 @@
 # GitHub Container Registry 部署指南
 
+> 历史文档：以下 EC2 Web/PostgreSQL 部署流程及脚本已废弃，不应按本文执行。当前入口见 [部署说明](../../scripts/deploy/README.md)；Go API 生产认证未完成，生产部署保持暂停。
+
 使用 GitHub Container Registry (ghcr.io) 替代 AWS ECR，无需 AWS 权限配置。
 
 ## ✅ 优势
