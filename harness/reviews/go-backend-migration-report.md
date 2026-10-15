@@ -79,3 +79,10 @@ Docker API 使用固定 Go 1.27.2 多阶段构建和 scratch 运行镜像；Web 
 4. 旧 Node Runtime 保留是本轮回滚要求，不是生产依赖；待作者确认迁移稳定后可单独移除。Go PR 依赖 #6 的目录整理，保持 Open，不自动合并。
 
 设计依据与详细规则见 [迁移基线](../architecture/go-backend-migration.md)。工具链来源：[Go 官方稳定下载](https://go.dev/dl/)，本机自动工具链与 CI/go.mod/Docker 固定一致；仅额外使用 Go 官方 x/text，以解决 Node 的 Unicode 排序和解码兼容。
+
+## PR 审查反馈处理（2026-10-15）
+
+- P2 历史部署入口：采用明确废弃方案。`BUILD_AND_DEPLOY.sh` 已移除旧构建/上传/SSH 流程，执行即提示废弃并返回 1；不再尝试错误的 Dockerfile 路径或远端 Compose。其他历史 EC2 Web/PostgreSQL 工具在部署说明中标记为不支持、未验证；旧流程文档加上历史标记，CLAUDE 入口移除推荐执行旧脚本的说明。
+- 本地检查：脚本 Bash 语法通过；从仓库根目录、脚本目录和仓库外目录调用均返回 1，显示废弃提示；使用命令探针验证未调用 Docker、SSH、SCP、curl 或 sudo。文档相对链接检查通过。未实际部署或操作作者数据。
+- 合并依赖未变：#6 先合并，#7 再切换 base 为 main 并重新核对 diff/CI。按原任务要求，两项 PR 保持 Open，未执行合并。
+- 保留 production 身份拒绝启动和 fsync。技术迁移完成不等于生产可用；生产认证与部署安全仍需独立实现。

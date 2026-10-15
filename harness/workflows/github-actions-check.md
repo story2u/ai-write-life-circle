@@ -1,5 +1,7 @@
 # GitHub Actions 工作流检查清单
 
+> 历史文档：以下 EC2 Web/PostgreSQL 部署流程及脚本已废弃，不应按本文执行。当前入口见 [部署说明](../../scripts/deploy/README.md)；Go API 生产认证未完成，生产部署保持暂停。
+
 本文档用于验证 GitHub Actions 工作流配置是否正确。
 
 ## 工作流概览
