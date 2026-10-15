@@ -69,7 +69,7 @@ Go 已接管默认本地 API、全栈启动、构建和前端 API E2E。React �
 
 实际数据切换必须先停止旧写入进程，备份完整 WRITER_AGENT_STATE_DIR，再让 Go 使用同一路径。出现问题时先停止 Go，再用旧入口读取当前状态；回滚兼容已验证。勿把较旧备份覆盖到已有新写入的目录；调查或恢复时先复制到另一路径。未知遗留 .lock 必须确认无持有进程后再处理。
 
-Docker 使用固定 Go 1.27.2 多阶段构建和 scratch 运行镜像。api_state Volume 保留；只读挂载的是包含 manuscript/book 的项目根目录，可用 WRITER_AGENT_HARNESS_SOURCE 指定外部作者项目。镜像保留旧容器 UID，避免未经批准地改写现有 Volume 权限。生产端口仅映射宿主机 loopback。
+Docker API 使用固定 Go 1.27.2 多阶段构建和 scratch 运行镜像；Web 镜像只运行前端构建，不因根 build 命令切换而新增 Go 工具链依赖。api_state Volume 保留；只读挂载的是包含 manuscript/book 的项目根目录，可用 WRITER_AGENT_HARNESS_SOURCE 指定外部作者项目。镜像保留旧容器 UID，避免未经批准地改写现有 Volume 权限。生产端口仅映射宿主机 loopback。
 
 ## 差异与未解决项
 

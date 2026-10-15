@@ -99,6 +99,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build runtime without Node.js
         run: docker build -f scripts/deploy/Dockerfile.api -t writer-agent-api-ci .
+      - name: Build frontend without a Go toolchain
+        run: docker build -f scripts/deploy/Dockerfile.web -t writer-agent-web-ci .
       - name: Verify production identity guard
         run: |
           if docker run --rm writer-agent-api-ci; then

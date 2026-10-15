@@ -15,7 +15,7 @@ COPY packages ./packages
 
 # 安装依赖并构建
 RUN pnpm install --frozen-lockfile && \
-    pnpm build
+    pnpm --filter @writer-agent/web build
 
 # 生产阶段：轻量级运行环境
 FROM node:22-alpine
