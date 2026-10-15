@@ -91,7 +91,7 @@ AuthorNote：noteId、projectId、content、可选 chapterId、purpose、status�
 - node scripts/smoke-built-api.mjs：通过，覆盖构建后的进程和生产身份保护。
 - 所有真实数据测试使用独立 Harness fixture 与临时状态目录；章节 fixture 哈希与文件内容未被 API 修改。
 
-远端 CI 在 PR 创建后核对，以 GitHub 检查结果为准。CI 已恢复 OpenAPI、Harness、构建 API smoke、Chromium E2E 与产物上传。
+远端 [PR #5](https://github.com/story2u/ai-write-life-circle/pull/5) 已创建并保持 Open。实现提交 32626d6 的 [PR CI](https://github.com/story2u/ai-write-life-circle/actions/runs/38670044743) 全部通过，含 OpenAPI、Harness、构建 API smoke、Chromium E2E 与验证产物上传。后续报告提交的检查状态以 PR 当前 head 为准；没有合并或部署。
 
 ## 8. 尚未完成与独立后续任务
 
