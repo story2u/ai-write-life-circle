@@ -48,6 +48,17 @@ describe('workspace save and review version safety', () => {
     vi.useRealTimers()
   })
 
+  it('starts first-use Demo workspaces with the Agent panel collapsed', async () => {
+    const { result } = await setupController()
+    expect(result.current.layout).toMatchObject({ leftOpen: false, rightOpen: false })
+  })
+
+  it('restores an explicitly saved Demo layout preference', async () => {
+    localStorage.setItem('writer-agent.v2', JSON.stringify({ layout: { leftOpen: false, rightOpen: true, leftW: 300, rightW: 420, focus: false } }))
+    const { result } = await setupController()
+    expect(result.current.layout).toMatchObject({ leftOpen: false, rightOpen: true, leftW: 300, rightW: 420 })
+  })
+
   it('keeps failed edits dirty and lets the author retry after a transient save failure', async () => {
     const { result, adapter, toast } = await setupController()
     const saveSuccessfully = adapter.saveChapter.bind(adapter)
@@ -191,7 +202,7 @@ describe('workspace save and review version safety', () => {
     expect(pendingBefore).toBeGreaterThan(0)
 
     await completeReview(result)
-    expect(result.current.task).toMatchObject({ state: 'done', summary: expect.stringContaining('历史待处理') })
+    expect(result.current.task).toMatchObject({ state: 'done', summary: expect.stringContaining('此前的发现等待判断') })
     expect(result.current.task).toMatchObject({ state: 'done', summary: expect.not.stringContaining('未发现问题') })
   })
 

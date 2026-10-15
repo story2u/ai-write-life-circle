@@ -1,5 +1,7 @@
 import {
   chapterRevisionCreateV04Schema,
+  noteCreateSchema,
+  noteUpdateSchema,
   userWorkspaceStateV04Schema,
   workspaceV04Schema,
 } from '@writer-agent/contracts'
@@ -12,6 +14,7 @@ import { ChapterNotFoundError, DuplicateChapterIdError, InvalidChapterSourceErro
 import { FileChapterRevisionStore, IdempotencyKeyReuseError } from './chapters/revision-store.js'
 import { RevisionConflictError } from './concurrency/revision.js'
 import { appendAuditRecord } from './audit/log.js'
+import { FileNoteStore, NoteError } from './notes/store.js'
 import { FileWorkspaceStateStore } from './workspace/state-store.js'
 
 export type ApiActor = { id: string; role: 'author' | 'agent' | 'system' }
@@ -84,6 +87,7 @@ export function createApiHandler(options: ApiHandlerOptions): (request: Request)
   const stateDirectory = resolve(options.stateDirectory ?? process.env.WRITER_AGENT_STATE_DIR ?? resolve(homedir(), '.local/share/ai-write-life-circle'))
   const workspaceState = new FileWorkspaceStateStore(stateDirectory)
   const revisions = new FileChapterRevisionStore(stateDirectory)
+  const notes = new FileNoteStore(stateDirectory)
   const environment = options.environment ?? (process.env.NODE_ENV === 'development' ? 'development' : process.env.NODE_ENV === 'test' ? 'test' : 'production')
 
   return async (request) => {
@@ -97,18 +101,53 @@ export function createApiHandler(options: ApiHandlerOptions): (request: Request)
     const chaptersMatch = url.pathname.match(/^\/v1\/projects\/([^/]+)\/chapters$/)
     const chapterMatch = url.pathname.match(/^\/v1\/projects\/([^/]+)\/chapters\/([^/]+)$/)
     const revisionsMatch = url.pathname.match(/^\/v1\/projects\/([^/]+)\/chapters\/([^/]+)\/revisions$/)
-    if (!internalMatch && !workspaceMatch && !chaptersMatch && !chapterMatch && !revisionsMatch) {
+    const notesMatch = url.pathname.match(/^\/v1\/projects\/([^/]+)\/notes(?:\/([^/]+))?$/)
+    if (!notesMatch && !internalMatch && !workspaceMatch && !chaptersMatch && !chapterMatch && !revisionsMatch) {
       return problem(404, 'NOT_FOUND', 'No API route matches this request.')
     }
     if (internalMatch && environment !== 'development') return problem(404, 'NOT_FOUND', 'No API route matches this request.')
 
-    const encodedProjectId = (internalMatch ?? workspaceMatch ?? chaptersMatch ?? chapterMatch ?? revisionsMatch)![1]
+    const encodedProjectId = (notesMatch ?? internalMatch ?? workspaceMatch ?? chaptersMatch ?? chapterMatch ?? revisionsMatch)![1]
     const projectId = decodePathPart(encodedProjectId)
     if (!projectId) return problem(400, 'VALIDATION_FAILED', 'The project ID is not valid URL encoding.')
     if (projectId !== options.projectId) return problem(404, 'NOT_FOUND', 'The configured project does not match this request.')
 
     const actor = await options.resolveActor(request)
     if (!actor) return problem(401, 'AUTHOR_DECISION_REQUIRED', 'A server-authenticated actor is required.')
+
+    if (notesMatch) {
+      const denied = requireRole(actor, ['author'])
+      if (denied) return denied
+      const noteId = notesMatch[2] ? decodePathPart(notesMatch[2]) : undefined
+      if (notesMatch[2] && !noteId) return problem(400, 'VALIDATION_FAILED', 'Invalid note ID encoding.')
+      try {
+        if (request.method === 'GET') {
+          const items = await notes.list(projectId)
+          if (noteId) {
+            const note = items.find((item) => item.noteId === noteId)
+            return note ? json(note) : problem(404, 'NOT_FOUND', 'Note not found.')
+          }
+          return json({ items })
+        }
+        if ((!noteId && request.method === 'POST') || (noteId && request.method === 'PATCH')) {
+          const parsed = (noteId ? noteUpdateSchema : noteCreateSchema).safeParse(await requestJson(request))
+          const key = request.headers.get('Idempotency-Key')
+          if (!parsed.success || !key || !/^[A-Za-z0-9._:-]{1,128}$/.test(key)) {
+            return problem(422, 'VALIDATION_FAILED', 'Valid note content and an Idempotency-Key (1–128 safe characters) are required.')
+          }
+          if (parsed.data.chapterId) {
+            const projection = await loadProjection(options.harnessRoot, projectId)
+            getUniqueHarnessChapterSource(projection, parsed.data.chapterId)
+          }
+          const saved = await notes.mutate(projectId, actor.id, key, parsed.data, noteId ?? undefined)
+          return json(saved, noteId ? 200 : 201)
+        }
+        return problem(405, 'METHOD_NOT_ALLOWED', 'Unsupported note operation.')
+      } catch (error) {
+        if (error instanceof NoteError) return problem(error.status, error.code, error.message)
+        return errorResponse(error)
+      }
+    }
 
     if (internalMatch && request.method === 'GET') {
       const denied = requireRole(actor, ['author', 'agent'])
@@ -133,6 +172,7 @@ export function createApiHandler(options: ApiHandlerOptions): (request: Request)
         await loadProjection(options.harnessRoot, projectId)
         const dto = workspaceV04Schema.parse({
           project: { projectId },
+          capabilities: { notes: true, agentRuntime: false, knowledge: false, annotations: false, canonChanges: false },
           userState: await workspaceState.load(projectId, actor.id),
           counts: {},
           runningTasks: [],

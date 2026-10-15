@@ -35,6 +35,7 @@ const implementedOperationIds = [
   'getChapter',
   'listChapterRevisions',
   'saveChapterRevision',
+  'listAuthorNotes', 'getAuthorNote', 'createAuthorNote', 'updateAuthorNote',
 ].sort()
 
 function operationById(operationId: string) {
@@ -67,7 +68,7 @@ async function fixture() {
 }
 
 describe('versioned OpenAPI contract', () => {
-  it('marks every operation implemented or proposed and limits Sprint 1 to its six implemented routes', () => {
+  it('marks every operation implemented or proposed and lists only the implemented Workspace, Chapter and Note routes', () => {
     const operations = Object.values(contract.paths).flatMap((pathItem) => Object.values(pathItem))
     expect(operations.every((operation) => ['implemented', 'proposed'].includes(operation['x-implementation-status'] ?? ''))).toBe(true)
     expect(operations.filter((operation) => operation['x-implementation-status'] === 'implemented').map((operation) => operation.operationId).sort()).toEqual(implementedOperationIds)

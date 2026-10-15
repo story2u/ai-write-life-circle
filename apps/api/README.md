@@ -1,103 +1,69 @@
-# Writer Agent API boundary
+# Writer Agent local API
 
-Sprint 1 implements the proposed V0.4 Workspace and Chapter operations that
-can be exercised using the author's approved Harness chapter convention.
-The supplied OpenAPI YAML is still a proposed product contract. The Zod
-schemas in `packages/contracts/src/v04.ts` are the runtime source for the
-implemented subset; their TypeScript types are inferred from those schemas.
-They are hand-aligned to the supplied candidate, not generated from an
-OpenAPI file. No complete local OpenAPI document or code-generation step is
-claimed.
+The Fetch-compatible API reads a configured Markdown Harness and stores
+application drafts/state independently. It never writes Harness Markdown or
+runs Git or an LLM. The local server listens on 127.0.0.1 and derives a local
+author identity; this identity is not production authentication. The development
+entry refuses NODE_ENV=production until a production identity adapter exists.
 
-## Implemented routes
+## Implemented business routes
 
-- `GET /healthz`
-- `GET /internal/projects/:projectId/harness-projection` — local diagnostic,
-  read-only Harness projection.
-- `GET /v1/projects/:projectId/workspace` — Harness-backed workspace identity
-  and restored user state.
-- `PATCH /v1/projects/:projectId/workspace` — persist user layout/theme/view
-  state outside the Harness.
-- `GET /v1/projects/:projectId/chapters` — list only manuscript documents
-  with an explicit `CH-*` metadata ID and matching ID-prefixed filename.
-- `GET /v1/projects/:projectId/chapters/:chapterId` — current Harness content
-  or latest application draft, with an `ETag`.
-- `GET /v1/projects/:projectId/chapters/:chapterId/revisions` — immutable
-  revision summaries, newest first.
-- `POST /v1/projects/:projectId/chapters/:chapterId/revisions` — author-only
-  application draft save with `baseRevisionId` compare-and-swap and optional
-  `Idempotency-Key`.
+- GET /v1/projects/:projectId/workspace — project, user preferences and server capabilities.
+- PATCH /v1/projects/:projectId/workspace — application preferences.
+- GET /v1/projects/:projectId/chapters — ordered, stable-ID chapter tree.
+- GET /v1/projects/:projectId/chapters/:chapterId — exact Markdown and head revision.
+- GET /v1/projects/:projectId/chapters/:chapterId/revisions — immutable revision lineage.
+- POST /v1/projects/:projectId/chapters/:chapterId/revisions — author draft save.
+- GET /v1/projects/:projectId/notes — author notes, including archived items.
+- GET /v1/projects/:projectId/notes/:noteId — author note detail.
+- POST /v1/projects/:projectId/notes — create a non-canon note.
+- PATCH /v1/projects/:projectId/notes/:noteId — edit/archive/restore with baseVersion.
 
-The repository currently contains no formal chapter records, so chapter reads
-return an empty list until the author creates a Markdown chapter file such as
-`manuscript/CH-001.md`. It must start with a level-one title, then ordinary
-`Key: value` metadata including `ID: CH-001`, followed by a blank line and
-author-written Markdown prose. An optional `volumeId` groups chapters; an
-optional positive-integer `order` sorts them within the volume. When omitted,
-chapters sort by their numeric CH ID. The filename must begin with the same
-chapter ID as the metadata. This follows the author's decision to use the
-existing Harness conventions; `templates/chapter.md` remains a planning and
-fact-extraction card, not a manuscript template.
+GET /healthz is a health probe. The /internal/projects/:projectId/harness-projection
+diagnostic route is read-only and available only in development.
 
-The TipTap/editor representation is Markdown at the Harness boundary. The
-parser retains the exact raw body and source hash. The editor serializes the
-supported Markdown structures and round-trip tests cover Chinese paragraphs,
-blank lines, quotations, lists, hard breaks, and special characters. Chapter
-saves remain immutable application drafts outside the Harness; the author
-separately decides whether and when to write and commit manuscript prose to
-Git. When the committed Harness body exactly matches the latest app draft, the
-next save continues from a new source baseline while preserving the draft
-history. A different external edit remains a 409 conflict. The API does not
-allocate a chapter record or rewrite manuscript files.
+Chapter reads allow author/agent; draft saves, revision history, workspace and
+all Note operations require a server-authenticated author. The configured
+project ID is checked before any operation. New writes validate strict shared
+Zod payloads and return Problem Details errors.
 
-## Persistence and trust boundary
+## Chapter and author safety
 
-The local dev server binds to `127.0.0.1` and derives a local author identity.
-This is a development-only adapter, not production authentication. Replace
-`resolveActor` before deploying or exposing routes beyond loopback. The route
-layer enforces author-only saves even when the caller is the Agent.
+Only manuscript Markdown with a level-one title, matching CH-* filename and
+leading ID metadata is projected. Optional volumeId and positive order fields
+organize it; missing order falls back to stable chapter ID ordering. The
+repository currently has no formal chapters; supply a separate author Harness
+through WRITER_AGENT_HARNESS_ROOT. No demo prose is imported into API projects.
 
-Workspace state, chapter application drafts, and the append-only audit log are
-stored as local JSON files under `WRITER_AGENT_STATE_DIR`, defaulting to
-`~/.local/share/ai-write-life-circle`. File locks and atomic rename are a
-single-machine Sprint 1 bridge only; this is not a production multi-host or
-distributed concurrency guarantee. These are application drafts, not Git
-commits. The author separately commits accepted manuscript work to the
-Harness. `commitRef` remains `null`; this server does not invoke Git. Save
-attempts have correlated requested and terminal audit events; storage and
-audit-finalization failures return errors instead of a false saved state.
+Draft writes use baseRevisionId compare-and-swap and Idempotency-Key. Original
+Markdown, source hash and immutable parents are retained. Exact app content
+later committed by the author is adopted as a new Harness baseline; divergent
+external changes return 409. The API does not commit drafts to Git.
 
-The complete proposed OpenAPI source copy and the reproducibly generated
-candidate are in `docs/contracts/`. OpenAPI operations marked `implemented`
-are limited to the Workspace and Chapter subset. The Zod schemas in
-`packages/contracts/src/v04.ts` are checked against those request/response
-schemas in API tests. The other operations remain `proposed` and are not
-implemented.
+## Notes and persistence
 
-Each draft is immutable and references its parent revision. A stale
-`baseRevisionId`, a duplicate chapter ID, or a divergent external Harness edit
-returns a conflict; no write overwrites newer content. If the author commits
-the exact current app draft into the Harness, the next save can continue from
-that content. Save requests append an audit JSONL record in the application
-state directory. Neither chapter nor workspace writes touch `book/`,
-`manuscript/`, or `proposals/`.
+WRITER_AGENT_STATE_DIR defaults to ~/.local/share/ai-write-life-circle.
+Workspace, chapter drafts and notes use encoded project paths, file locks and
+atomic rename for single-machine use. Notes, successful replay results and
+success audit records commit together in notes/<encoded-project>.json. Note
+updates require baseVersion, and both POST/PATCH require Idempotency-Key.
+Stale edits cannot overwrite a newer note. Archive is reversible.
 
-## Commands
+Only one active next_writing note is allowed per project; an existing plan must
+be explicitly edited or archived. Notes remain author ideas and never become
+formal knowledge. Chapter association is validated against real Harness IDs.
+Storage failures return errors instead of reporting success.
 
-- `pnpm dev:api` — start the local API on port 8787.
-- `pnpm harness:rebuild` — print counts and unresolved paths from the
-  read-only projection.
-- `pnpm openapi:generate` — regenerate the candidate contract from the
-  versioned source copy.
-- `pnpm openapi:check` / `pnpm openapi:lint` — verify candidate reproducibility
-  and OpenAPI 3.1 validity.
-- Root `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, and
-  `pnpm build` include the API package.
+Workspace declares notes=true, knowledge/annotations/canonChanges/agentRuntime=false.
+Real review, knowledge query, source viewer, story judgment, canon application
+and persistent thinking sessions are not implemented. Production identity,
+database and distributed coordination remain separate work.
 
-No Agent runtime, LLM provider, proposal workflow, or production database is
-implemented in Sprint 1 or Sprint 2. The web adapter now uses the implemented
-V0.4 Workspace and Chapter routes, with typed DTO mapping and local recovery
-for chapter drafts. Knowledge, review, chat, challenge, proposal, and reasoning
-routes remain unavailable in API mode. See
-`docs/reviews/v0.4-contract-review.md` for open contract decisions and
-`docs/reviews/v0.4-sprint2-frontend-integration.md` for the integration scope.
+## Verification and local use
+
+Run pnpm dev:api or pnpm dev:local. The root typecheck, lint, test, build and
+E2E commands include this package. OpenAPI source copies and generated status
+are in docs/contracts; pnpm openapi:check and pnpm openapi:lint verify them.
+pnpm harness:rebuild rebuilds a read-only projection. API/E2E tests use isolated
+fixtures and temporary state, including role, validation, storage, restart,
+idempotency, note concurrency and manuscript conflict scenarios.

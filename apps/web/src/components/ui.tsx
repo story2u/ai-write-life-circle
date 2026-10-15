@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { Choice } from './vnext/ui'
 import { kindMeta, statusMeta, type Evidence, type ProposalKind, type ProposalStatus } from '../types'
 
 export function Btn({ children, onClick, variant = 'ghost', disabled, title, className = '', small }: {
@@ -72,17 +73,19 @@ export function Kbd({ children }: { children: ReactNode }) {
   return <kbd className="rounded border px-1 font-sans text-[10px]" style={{ borderColor: 'var(--line)', color: 'var(--ink-3)' }}>{children}</kbd>
 }
 
-export function ConfirmDialog({ title, desc, confirmText, danger, onConfirm, onCancel }: {
-  title: string; desc: string; confirmText: string; danger?: boolean; onConfirm: () => void; onCancel: () => void
+export function ConfirmDialog({ title, desc, confirmText, danger, onConfirm, onCancel, requireAcknowledgement }: {
+  title: string; desc: string; confirmText: string; danger?: boolean; requireAcknowledgement?: boolean; onConfirm: () => void; onCancel: () => void
 }) {
+  const [acknowledged, setAcknowledged] = useState(false)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(20,18,15,.28)' }} onClick={onCancel} role="dialog" aria-modal="true">
-      <div className="fade-up w-[400px] rounded-xl border p-5" style={{ background: 'var(--surface)', borderColor: 'var(--line)', boxShadow: 'var(--shadow)' }} onClick={(e) => e.stopPropagation()}>
+      <div className="fade-up w-[min(400px,calc(100vw-2rem))] rounded-xl border p-5" style={{ background: 'var(--surface)', borderColor: 'var(--line)', boxShadow: 'var(--shadow)' }} onClick={(e) => e.stopPropagation()}>
         <div className="text-[15px] font-medium">{title}</div>
         <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'var(--ink-2)' }}>{desc}</p>
+        {requireAcknowledgement && <Choice checked={acknowledged} onChange={setAcknowledged} className="mt-4 text-ui">我已导出本地草稿，或确认不再需要它。</Choice>}
         <div className="mt-5 flex justify-end gap-2">
           <Btn variant="outline" onClick={onCancel}>取消</Btn>
-          <button autoFocus type="button" onClick={onConfirm} className="btn rounded-md px-3 py-1.5 text-[12.5px] hover:opacity-85"
+          <button autoFocus type="button" disabled={requireAcknowledgement && !acknowledged} onClick={onConfirm} className="btn rounded-md px-3 py-1.5 text-[12.5px] hover:opacity-85"
             style={{ background: danger ? 'var(--danger)' : 'var(--ink)', color: danger ? '#fff' : 'var(--bg)' }}>
             {confirmText}
           </button>

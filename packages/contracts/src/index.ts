@@ -1,3 +1,4 @@
+import { capabilitiesSchema } from './notes.js'
 import { z } from 'zod'
 import { chapterRevisionSummaryV04Schema } from './v04.js'
 
@@ -40,7 +41,7 @@ export const workspacePreferencesSchema = z.object({
     leftW: z.number().int().min(200).max(360),
     rightW: z.number().int().min(320).max(560),
     focus: z.boolean(),
-  }),
+  }).optional(),
   theme: z.enum(['light', 'dark']),
 })
 export type WorkspacePreferences = z.infer<typeof workspacePreferencesSchema>
@@ -115,6 +116,7 @@ export const challengeRoundSchema = z.object({
 export type ChallengeRound = z.infer<typeof challengeRoundSchema>
 
 export const workspaceSnapshotSchema = z.object({
+  capabilities: capabilitiesSchema.optional(),
   projectId: z.string(), projectTitle: z.string().optional(),
   chapters: z.array(chapterSchema), knowledge: z.array(knowledgeEntrySchema), document: documentSchema,
   markdownByChapter: markdownDocumentSchema.optional(),
@@ -169,3 +171,5 @@ export const workspaceStateSchema = z.object({
   challenge: z.array(challengeRoundSchema), sequence: z.number().int().nonnegative(),
 })
 export type WorkspaceState = z.infer<typeof workspaceStateSchema>
+
+export * from './notes.js'

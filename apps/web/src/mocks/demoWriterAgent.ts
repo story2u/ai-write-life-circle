@@ -1,3 +1,4 @@
+import { demoNotesAdapter } from './demoNotes'
 import {
   chapterVersionSchema,
   challengeRoundSchema,
@@ -91,6 +92,7 @@ export function createDemoWriterAgentAdapter(seed: WriterAgentSeed): WriterAgent
 
   return {
     mode: 'demo',
+    notes: demoNotesAdapter,
     async loadWorkspace(projectId) {
       const stored = readStoredWorkspace()
 
@@ -113,8 +115,9 @@ export function createDemoWriterAgentAdapter(seed: WriterAgentSeed): WriterAgent
       const chapterIds = new Set(seed.chapters.map((chapter) => chapter.id))
       const defaultChapterId = chapterIds.has('c12') ? 'c12' : seed.chapters[0]?.id
       const snapshot = workspaceSnapshotSchema.parse({
+        capabilities: { notes: true, agentRuntime: false, knowledge: false, annotations: false, canonChanges: false },
         projectId,
-        projectTitle: '雨落江宁',
+        projectTitle: '江宁旧事',
         chapters: seed.chapters,
         knowledge: seed.knowledge,
         document,

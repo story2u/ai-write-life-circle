@@ -1,0 +1,717 @@
+{
+  "readDate": "2026-10-14",
+  "fileKey": "kWBOdcae5utBZ6VtBHHXui",
+  "nodeId": "0:1",
+  "browserVersion": "Version 6",
+  "sourceContentsRead": true,
+  "resources": [
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/App.tsx",
+      "name": "src/App.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/main.tsx",
+      "name": "src/main.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/package.json",
+      "name": "package.json",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/acceptance/acceptance-criteria.md",
+      "name": "docs/acceptance/acceptance-criteria.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/acceptance/test-scenarios.md",
+      "name": "docs/acceptance/test-scenarios.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/acceptance/traceability-matrix.md",
+      "name": "docs/acceptance/traceability-matrix.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/contracts/api-spec.yaml",
+      "name": "docs/contracts/api-spec.yaml",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/contracts/domain-model.md",
+      "name": "docs/contracts/domain-model.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/contracts/events.md",
+      "name": "docs/contracts/events.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/contracts/permissions.md",
+      "name": "docs/contracts/permissions.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/contracts/persistence.md",
+      "name": "docs/contracts/persistence.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/contracts/state-machines.md",
+      "name": "docs/contracts/state-machines.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/design/component-contracts.md",
+      "name": "docs/design/component-contracts.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/design/design-system.md",
+      "name": "docs/design/design-system.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/design/interaction-spec.md",
+      "name": "docs/design/interaction-spec.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/design/screen-map.md",
+      "name": "docs/design/screen-map.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/design/vnext-handoff.md",
+      "name": "docs/design/vnext-handoff.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/features/agent-review.md",
+      "name": "docs/features/agent-review.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/features/creative-reasoning.md",
+      "name": "docs/features/creative-reasoning.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/features/issue-center.md",
+      "name": "docs/features/issue-center.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/features/knowledge-base.md",
+      "name": "docs/features/knowledge-base.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/features/knowledge-relations.md",
+      "name": "docs/features/knowledge-relations.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/features/proposals-decisions.md",
+      "name": "docs/features/proposals-decisions.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/features/writing-workspace.md",
+      "name": "docs/features/writing-workspace.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/implementation/agent-handoff.md",
+      "name": "docs/implementation/agent-handoff.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/implementation/architecture-guidance.md",
+      "name": "docs/implementation/architecture-guidance.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/implementation/backend-handoff.md",
+      "name": "docs/implementation/backend-handoff.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/implementation/frontend-handoff.md",
+      "name": "docs/implementation/frontend-handoff.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/implementation/HANDOFF.md",
+      "name": "docs/implementation/HANDOFF.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/implementation/implementation-plan.md",
+      "name": "docs/implementation/implementation-plan.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/product/feature-matrix.md",
+      "name": "docs/product/feature-matrix.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/product/glossary.md",
+      "name": "docs/product/glossary.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/product/information-architecture.md",
+      "name": "docs/product/information-architecture.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/product/PRD.md",
+      "name": "docs/product/PRD.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/product/user-journeys.md",
+      "name": "docs/product/user-journeys.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/docs/README.md",
+      "name": "docs/README.md",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/index.html",
+      "name": "index.html",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/public/favicon.svg",
+      "name": "public/favicon.svg",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/BookView.tsx",
+      "name": "src/components/BookView.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/ChapterDrawer.tsx",
+      "name": "src/components/ChapterDrawer.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/ManuscriptEditor.tsx",
+      "name": "src/components/ManuscriptEditor.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/MarginPanel.tsx",
+      "name": "src/components/MarginPanel.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/ProtoMenu.tsx",
+      "name": "src/components/ProtoMenu.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/QuickNote.tsx",
+      "name": "src/components/QuickNote.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/Resume.tsx",
+      "name": "src/components/Resume.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/Safety.tsx",
+      "name": "src/components/Safety.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/SpecView.tsx",
+      "name": "src/components/SpecView.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/StoryConflictView.tsx",
+      "name": "src/components/StoryConflictView.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/ThinkingSession.tsx",
+      "name": "src/components/ThinkingSession.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/components/ui.tsx",
+      "name": "src/components/ui.tsx",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/index.css",
+      "name": "src/index.css",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/vite-env.d.ts",
+      "name": "src/vite-env.d.ts",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/vnext/agent.ts",
+      "name": "src/vnext/agent.ts",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/vnext/demo.ts",
+      "name": "src/vnext/demo.ts",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/vnext/model.ts",
+      "name": "src/vnext/model.ts",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/src/vnext/relevance.ts",
+      "name": "src/vnext/relevance.ts",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/tsconfig.json",
+      "name": "tsconfig.json",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/source/kWBOdcae5utBZ6VtBHHXui/vite.config.ts",
+      "name": "vite.config.ts",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/2062d536b6179c8a8d737495a1ae65e0cc2224cd.png",
+      "name": "2062d536b6179c8a8d737495a1ae65e0cc2224cd.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/22e9cf1bc7bd4c66540e493f09389197eb152168.png",
+      "name": "22e9cf1bc7bd4c66540e493f09389197eb152168.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/6071f90f6c39e72b97ecfb85a73a9ae43ac3b035.png",
+      "name": "6071f90f6c39e72b97ecfb85a73a9ae43ac3b035.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/6afa61e045e6c10f4394c6edba354c87ab790117.png",
+      "name": "6afa61e045e6c10f4394c6edba354c87ab790117.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/7e0afb25b8022e5eb17cbc8f86bbd42699392564.png",
+      "name": "7e0afb25b8022e5eb17cbc8f86bbd42699392564.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/83ebe18e3c720f6761fb85a76098a25ffbb307ec.png",
+      "name": "83ebe18e3c720f6761fb85a76098a25ffbb307ec.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/89b3a4a0b6049febce525ef719bc05d84b1f8a64.png",
+      "name": "89b3a4a0b6049febce525ef719bc05d84b1f8a64.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/972db23b99b6cedc83c39def2fda55e69ec7d94f.png",
+      "name": "972db23b99b6cedc83c39def2fda55e69ec7d94f.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/a0f31329061b1a115de54f1bdbad2a40b87cef8a.png",
+      "name": "a0f31329061b1a115de54f1bdbad2a40b87cef8a.png",
+      "mimeType": "image/png"
+    },
+    {
+      "uri": "file://figma/make/image/kWBOdcae5utBZ6VtBHHXui/fd917ad61df5c4e3ff6c5c5af9c35636c593cb44.png",
+      "name": "fd917ad61df5c4e3ff6c5c5af9c35636c593cb44.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "localExport": "/Users/bruce/git/story/Writer Agent UI_UX Design",
+  "snapshot": [
+    {
+      "path": ".figma/make/analyze-routes",
+      "bytes": 70,
+      "sha256": "7a81578bcfa5ba5f2105d7165e0cd2d8d1c6151d2a0c5ba766b3ef1c824ee788"
+    },
+    {
+      "path": ".figma/make/deploy",
+      "bytes": 88,
+      "sha256": "fe35b0aff744f5aa8bb16eb1590c720ff6b0ff4bce9ede78f73e02bbfd7e7f3f"
+    },
+    {
+      "path": ".figma/make/deploy-preview",
+      "bytes": 163,
+      "sha256": "3b82ce85bad03ce7b0e4e288a6e40e5caf119c41a392de3d3420ff17c42d0e8b"
+    },
+    {
+      "path": ".figma/make/dev",
+      "bytes": 52,
+      "sha256": "91f795e632539988b0fe3de57084839f41a827ba5c274590388f7d0650ec2314"
+    },
+    {
+      "path": ".figma/make/dev.json",
+      "bytes": 959,
+      "sha256": "e78b91a2a63456a6eab9756c3fb6d767dfe3673adcef1dcfe4f52c010238c3e7"
+    },
+    {
+      "path": ".figma/make/format",
+      "bytes": 63,
+      "sha256": "254598ef0d1a61c3abc2a426c7065487ca140c8f9b90e4d66ea05dff20832335"
+    },
+    {
+      "path": ".figma/make/install",
+      "bytes": 90,
+      "sha256": "90705d33ffd6b0700def7f2f304fd24ae04e17af5fc7d8437df44cf546d64891"
+    },
+    {
+      "path": ".figma/make/langserver",
+      "bytes": 106,
+      "sha256": "e6b9034d28bbc82e6333a3b77f8d5fd593ac54eeed7e4e76569329fdbb534fff"
+    },
+    {
+      "path": ".figma/make/site.json",
+      "bytes": 296,
+      "sha256": "a20446f1fd5f7e8b3ed859428d5d147e00875672c12b0d3f366a4e0851bc7795"
+    },
+    {
+      "path": ".gitattributes",
+      "bytes": 7728,
+      "sha256": "fdd53ecc7bf79a69d3ef228ec98e0151f10e02702b90b553f04785b61db68354"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 424,
+      "sha256": "6770e60e045a25964f62df2a396a19b3f5c402facbf43c73c125b021b2fc5674"
+    },
+    {
+      "path": ".mise.toml",
+      "bytes": 43,
+      "sha256": "6d2834ef5f78a7dc4c384570a62b895137fdf63df171d237f0747932bd001435"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 2321,
+      "sha256": "b39f6ead09e39e9f6eb5a132342519fb7bf9c77ab14522f0da38edf9224c6b77"
+    },
+    {
+      "path": "CLAUDE.md",
+      "bytes": 11,
+      "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49"
+    },
+    {
+      "path": "docs/README.md",
+      "bytes": 10006,
+      "sha256": "4b1b2c224e0fe7cc241f60b679c02e240610edfc9db41b6b6bfbc84fb8ee3dbf"
+    },
+    {
+      "path": "docs/acceptance/acceptance-criteria.md",
+      "bytes": 11111,
+      "sha256": "6af3ddbcbfcf6321a041e43dc2ac56cf860e439a3a82f0cf9a455573631e5817"
+    },
+    {
+      "path": "docs/acceptance/test-scenarios.md",
+      "bytes": 3327,
+      "sha256": "83f6e32db8acace7f89c2d3a41de60f7fe359e821139a3945e1b835b3ce1c9df"
+    },
+    {
+      "path": "docs/acceptance/traceability-matrix.md",
+      "bytes": 8032,
+      "sha256": "7de6b222e17b2b58af0b9fe8c923cc3043743e0381c47287daafbcef41d26ff3"
+    },
+    {
+      "path": "docs/contracts/api-spec.yaml",
+      "bytes": 70945,
+      "sha256": "27d75186043716c4b253572c43ff114692c4a86088c35126c455ec6d851301b3"
+    },
+    {
+      "path": "docs/contracts/domain-model.md",
+      "bytes": 14652,
+      "sha256": "d62a4de4172b0b5fa872ce38677f0a2a49f0ae4e40e6aa828cd40e85e1f17505"
+    },
+    {
+      "path": "docs/contracts/events.md",
+      "bytes": 3716,
+      "sha256": "8516b92185f9535dd641f989f7f3187629719d2e452812b94654c0febbda0013"
+    },
+    {
+      "path": "docs/contracts/permissions.md",
+      "bytes": 2826,
+      "sha256": "825ece159707dbf71f9f7898774710ba4627a7f1bae548389b91ccb0a7dbd996"
+    },
+    {
+      "path": "docs/contracts/persistence.md",
+      "bytes": 5617,
+      "sha256": "6cae939ef86c38c98aa1678ef1028d895281b5c09036cccc1010217846c7b74e"
+    },
+    {
+      "path": "docs/contracts/state-machines.md",
+      "bytes": 7991,
+      "sha256": "2b97cecc51dfb1acaae97a2924f9beec4dddfcafd74253ea181d38541dca5490"
+    },
+    {
+      "path": "docs/design/component-contracts.md",
+      "bytes": 12188,
+      "sha256": "4c8cf7933118e92d269b084f83e3abc984b2334a1a637a8a715ec849d1541546"
+    },
+    {
+      "path": "docs/design/design-system.md",
+      "bytes": 3957,
+      "sha256": "79d7ba5ce13aad11747acafd2affe3482eada415a84aba88d5843f7bef382391"
+    },
+    {
+      "path": "docs/design/interaction-spec.md",
+      "bytes": 3369,
+      "sha256": "4885997305ed1a8ee53d3002a29c2e4931058616403e4e1583ca5194541b8c1f"
+    },
+    {
+      "path": "docs/design/screen-map.md",
+      "bytes": 3932,
+      "sha256": "cb6784f1238de0858260ab67d3d74ab929d41388d11b48b578ba0160b3b9a3dd"
+    },
+    {
+      "path": "docs/design/vnext-handoff.md",
+      "bytes": 17482,
+      "sha256": "e464a5636943296385ab296f592fcc787a2761fb8690117a90728ac3a3942ee3"
+    },
+    {
+      "path": "docs/features/agent-review.md",
+      "bytes": 6933,
+      "sha256": "712a0f1f9d71650792748b455a36ec4ca44840667b05458aa84c7d9723912fb3"
+    },
+    {
+      "path": "docs/features/creative-reasoning.md",
+      "bytes": 16651,
+      "sha256": "5c1bc27820376620a0d520f55a6cb36a96344abed8395dc7eec9a86818583c7f"
+    },
+    {
+      "path": "docs/features/issue-center.md",
+      "bytes": 7301,
+      "sha256": "12a2171d3b53795bcc058a7db1e08ca35af51411cac0f76c0df72487c9380687"
+    },
+    {
+      "path": "docs/features/knowledge-base.md",
+      "bytes": 15424,
+      "sha256": "195c32f4a73caab8ce573c6d52e2a044d78e68e918aba9a4cdfff6757fff215b"
+    },
+    {
+      "path": "docs/features/knowledge-relations.md",
+      "bytes": 7066,
+      "sha256": "63fee5d6f321d3303b79c83112bcbb5afc0285ad20cf2d1c3a5acafe216b16c1"
+    },
+    {
+      "path": "docs/features/proposals-decisions.md",
+      "bytes": 9061,
+      "sha256": "8f59c70f0df158ab88e7e9ae230cf9dbcb7ae96792bdf87537d00addd17b39d6"
+    },
+    {
+      "path": "docs/features/writing-workspace.md",
+      "bytes": 13182,
+      "sha256": "4471e0113f15a5fd653ae53c2c86f85b3ac99379aa3ea8d6d52709e429e995bb"
+    },
+    {
+      "path": "docs/implementation/HANDOFF.md",
+      "bytes": 14405,
+      "sha256": "8efb9f577dd93621e81c3a0133ec596364870d71e6d84821de15ce895690b3c3"
+    },
+    {
+      "path": "docs/implementation/agent-handoff.md",
+      "bytes": 4461,
+      "sha256": "831a602c7ade8d2fe8d7c5050312ee7245c43785cdf82e8ac453b3b3a1d1b99d"
+    },
+    {
+      "path": "docs/implementation/architecture-guidance.md",
+      "bytes": 4889,
+      "sha256": "31e1152a0e4eb1bc0bcf9a1cf4c49a6e295c237b9d77ef496a37f5c8a1b4d14c"
+    },
+    {
+      "path": "docs/implementation/backend-handoff.md",
+      "bytes": 3152,
+      "sha256": "4d084a57b939c256f6d7e0f8ada994c915b546cddbbf0156b2305f6624d3ce70"
+    },
+    {
+      "path": "docs/implementation/frontend-handoff.md",
+      "bytes": 3936,
+      "sha256": "4fd1dfcb7365a1c3ab1b98b3fc9b3598b09caa69b5d7e450dc966c59bd9fa310"
+    },
+    {
+      "path": "docs/implementation/implementation-plan.md",
+      "bytes": 4946,
+      "sha256": "df672733179fdceeb31921ee817703e03e2960bdceb5f5bbb6912b526bb5198b"
+    },
+    {
+      "path": "docs/product/PRD.md",
+      "bytes": 10295,
+      "sha256": "2a9d4022991235ad1eeef65ac2be124fdf57899db947caed830657e4b0cbff3e"
+    },
+    {
+      "path": "docs/product/feature-matrix.md",
+      "bytes": 7955,
+      "sha256": "363e4f09199273f6c5c7a3051dd105ed89ab4137649391a17ead93745a93068d"
+    },
+    {
+      "path": "docs/product/glossary.md",
+      "bytes": 4709,
+      "sha256": "b57b96c872bb33058a1b7a6605932660c1b68dd2487520a450b18f4fcbd26d86"
+    },
+    {
+      "path": "docs/product/information-architecture.md",
+      "bytes": 5318,
+      "sha256": "bbfc83c115fc348cf245053abac90a3050234a6f4f0262dfa4cea4cec61b4721"
+    },
+    {
+      "path": "docs/product/user-journeys.md",
+      "bytes": 9264,
+      "sha256": "4e1b5709b3bf4aa6c76cdbdbc9eeb7fce3d3981fb4e09c4cb82c5607b3dfa5c1"
+    },
+    {
+      "path": "index.html",
+      "bytes": 440,
+      "sha256": "768eac67e6271681de61c23f1c94a6bf688607bbad2d0bccafd8f4bfe789a079"
+    },
+    {
+      "path": "package.json",
+      "bytes": 715,
+      "sha256": "7d71ea71c467e5f5b46b0c25df8892ba0899f766ea263b7f469efc5a9aaadfa2"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "bytes": 51328,
+      "sha256": "67ab1f4d9e53efd429ef129af300429c8a0cbbbd517536a55b5d002464deaf77"
+    },
+    {
+      "path": "public/favicon.svg",
+      "bytes": 3235,
+      "sha256": "84856b1fa530b1ef445f1ea2c8eba3fe6518f6f90f8ef21f15177644ddeaeac5"
+    },
+    {
+      "path": "src/App.tsx",
+      "bytes": 36335,
+      "sha256": "1219a52d3772fb8199d7072145795bc5de2479cb303fa7f8839e7e3a2032e62e"
+    },
+    {
+      "path": "src/components/BookView.tsx",
+      "bytes": 19762,
+      "sha256": "362fa9185b4be55b62901ebd72b2f9bbccc3383a5356ca51f939f8cc83fb6d09"
+    },
+    {
+      "path": "src/components/ChapterDrawer.tsx",
+      "bytes": 5457,
+      "sha256": "cc3a7ecef38a08b376f149dcb1f44f3332565ae504a96f4996f05362f1ef6764"
+    },
+    {
+      "path": "src/components/ManuscriptEditor.tsx",
+      "bytes": 5431,
+      "sha256": "f01632bcf6335b029303fcfa0308372050bab759f3e7877ae261aae44907b2e7"
+    },
+    {
+      "path": "src/components/MarginPanel.tsx",
+      "bytes": 5214,
+      "sha256": "a90a5b9bcbdcb69c203fb428172c857140d7d6de87a715a7afa8bd04a49032e7"
+    },
+    {
+      "path": "src/components/ProtoMenu.tsx",
+      "bytes": 3020,
+      "sha256": "d1c50ecfd552a25b19f2cfe4278be645dd3d5eb1cc2dc205aebad279beca9731"
+    },
+    {
+      "path": "src/components/QuickNote.tsx",
+      "bytes": 1571,
+      "sha256": "464318ef5fe73a7a12582a6a9723bb351846f14814c6e18a9fe0ca89f521824e"
+    },
+    {
+      "path": "src/components/Resume.tsx",
+      "bytes": 2204,
+      "sha256": "d7e6e67c7cc614e19bdc9b87acdf32586fe79c9d9e93ed62fc93c9e6fdd05761"
+    },
+    {
+      "path": "src/components/Safety.tsx",
+      "bytes": 5556,
+      "sha256": "98b57cbb78b846e68691823b630471ac5981fdda90fdcc6afabd34d4dd9d9017"
+    },
+    {
+      "path": "src/components/SpecView.tsx",
+      "bytes": 4984,
+      "sha256": "009f7815b8f2fa40fe8900e25ddb8748da09f5f821563fafb770be55dc63f1a8"
+    },
+    {
+      "path": "src/components/StoryConflictView.tsx",
+      "bytes": 3772,
+      "sha256": "f00367b9a0be5a02eb46620404639d2442b4e1048cc34a7ec2d7ddb85ab9b1f6"
+    },
+    {
+      "path": "src/components/ThinkingSession.tsx",
+      "bytes": 9601,
+      "sha256": "b7df5a122a636986f064fbfa5d051064844123c8bbb4ec033561fa4094e793bc"
+    },
+    {
+      "path": "src/components/ui.tsx",
+      "bytes": 12019,
+      "sha256": "1675ddb64c5502a75aca516bd1520d07dc45fa9d19f97dcb45d3402d1f3b4696"
+    },
+    {
+      "path": "src/index.css",
+      "bytes": 7273,
+      "sha256": "677b71252da01e1349f2f4ed2c3174846f35c3fe5c1f71c243e798195cc27076"
+    },
+    {
+      "path": "src/main.tsx",
+      "bytes": 232,
+      "sha256": "5f49dce6e6cc4b5d678cf529ef892af0ab7dfa6afb300b11ad559224019b8b05"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "bytes": 38,
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    },
+    {
+      "path": "src/vnext/agent.ts",
+      "bytes": 3898,
+      "sha256": "1964727cf5fbabdfba49802e7d7da447a7abddb7f4d1f0106e8381d912813e2d"
+    },
+    {
+      "path": "src/vnext/demo.ts",
+      "bytes": 16119,
+      "sha256": "5d598115838a2bdd6e02d2baf499f8906c1644ef6e0d55b7e5239426afe73460"
+    },
+    {
+      "path": "src/vnext/model.ts",
+      "bytes": 3463,
+      "sha256": "31306f8eaed8b30583e81d857dd7887b9bd92cc001f2f67cbcaa2c6f5fa7ec02"
+    },
+    {
+      "path": "src/vnext/relevance.ts",
+      "bytes": 2576,
+      "sha256": "c18fc9f50c22abe6f57517f3a223b4508d4881f03cb97b7f349c1c720af9a20b"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 556,
+      "sha256": "9a1e96d63eaccd5416b2f78ecaccf2b3a27ca71e213fa5859cf5349c66123bf9"
+    },
+    {
+      "path": "vite.config.ts",
+      "bytes": 13078,
+      "sha256": "def4b9477d50b52ed920a1f8e64c56228228ebf73af26aec356a3c9d9fd9e3d9"
+    }
+  ]
+}

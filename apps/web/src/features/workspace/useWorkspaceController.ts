@@ -39,6 +39,7 @@ type PersistedWorkspace = {
   decisions: Decision[]
   chapterVersions: Record<string, ChapterVersion>
   layout: Layout
+  layoutCustomized?: boolean
   chat: ChatMessage[]
   challenge: ChallengeRound[]
   seq: number
@@ -46,15 +47,18 @@ type PersistedWorkspace = {
   dark: boolean
 }
 
-const defaultLayout: Layout = { leftOpen: true, rightOpen: true, leftW: 248, rightW: 380, focus: false }
+const defaultLayout: Layout = { leftOpen: false, rightOpen: false, leftW: 280, rightW: 360, focus: false }
 
 function getDemoPreferences() {
-  if (typeof localStorage === 'undefined') return { layout: defaultLayout, dark: false }
+  if (typeof localStorage === 'undefined') return { layout: defaultLayout, layoutCustomized: false, dark: false }
   try {
     const saved = JSON.parse(localStorage.getItem(WORKSPACE_STORAGE_KEY) || 'null') as Partial<PersistedWorkspace> | null
-    return saved ? { layout: { ...defaultLayout, ...saved.layout }, dark: saved.dark ?? false } : { layout: defaultLayout, dark: false }
+    const layoutCustomized = saved?.layoutCustomized ?? Boolean(saved?.layout)
+    return saved
+      ? { layout: layoutCustomized ? { ...defaultLayout, ...saved.layout } : defaultLayout, layoutCustomized, dark: saved.dark ?? false }
+      : { layout: defaultLayout, layoutCustomized: false, dark: false }
   } catch {
-    return { layout: defaultLayout, dark: false }
+    return { layout: defaultLayout, layoutCustomized: false, dark: false }
   }
 }
 
@@ -62,7 +66,8 @@ function getInitialPreferences(adapterMode: WriterAgentAdapter['mode'], workspac
   if (adapterMode === 'demo') return getDemoPreferences()
   const stored = workspacePreferences
   return {
-    layout: stored?.layout ?? defaultLayout,
+    layout: { ...defaultLayout, ...stored?.layout },
+    layoutCustomized: Boolean(stored?.layout),
     dark: stored?.theme === 'dark',
   }
 }
@@ -83,7 +88,12 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
   const [proposals, setProposals] = useState(initialWorkspace.proposals)
   const [decisions, setDecisions] = useState(initialWorkspace.decisions)
   const [chapterVersions, setChapterVersions] = useState(initialWorkspace.chapterVersions)
-  const [layout, setLayout] = useState(preferences.layout)
+  const [layout, setLayoutState] = useState(preferences.layout)
+  const [layoutCustomized, setLayoutCustomized] = useState(preferences.layoutCustomized)
+  const setLayout = useCallback((next: Layout | ((current: Layout) => Layout)) => {
+    setLayoutState(next)
+    setLayoutCustomized(true)
+  }, [])
   const [chat, setChat] = useState(initialWorkspace.chat)
   const [challenge, setChallenge] = useState(initialWorkspace.challenge)
   const [seq, setSeq] = useState(initialWorkspace.sequence)
@@ -131,9 +141,9 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     if (adapter.mode !== 'demo' || typeof localStorage === 'undefined') return
     localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify({
       doc, markdownByChapter, proposals, decisions, chapterVersions,
-      layout, chat, challenge, seq, current, dark,
+      layout, layoutCustomized, chat, challenge, seq, current, dark,
     } satisfies PersistedWorkspace))
-  }, [adapter.mode, doc, markdownByChapter, proposals, decisions, chapterVersions, layout, chat, challenge, seq, current, dark])
+  }, [adapter.mode, doc, markdownByChapter, proposals, decisions, chapterVersions, layout, layoutCustomized, chat, challenge, seq, current, dark])
   useEffect(persist, [persist])
 
   useEffect(() => {
@@ -635,9 +645,6 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         }
 
         setSeq((value) => value + Math.max(result.proposals.length, 1))
-        let created = 0
-        let reopened = 0
-        let kept = 0
         const touchedIds = new Set<string>()
         const newDecisions: Decision[] = []
         const next = proposalsRef.current.map((proposal) => ({ ...proposal }))
@@ -648,7 +655,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
             return
           }
           const existing = next.find((proposal) => proposal.chapterId === chapterId && proposal.ruleKey === resultProposal.ruleKey)
-          if (!existing) { next.push(resultProposal); touchedIds.add(resultProposal.id); created++; continue }
+          if (!existing) { next.push(resultProposal); touchedIds.add(resultProposal.id); continue }
           touchedIds.add(existing.id)
           existing.anchor = resultProposal.anchor
           existing.projectId = resultProposal.projectId
@@ -661,38 +668,29 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
           if (existing.status === 'resolved') {
             existing.status = 'pending'
             newDecisions.push(addDecision(existing.id, '复审：再次出现', '系统复审'))
-            reopened++
-          } else kept++
+          }
         }
         setProposals(next)
         setDecisions((existing) => [...existing, ...newDecisions])
-        const historicalUnresolved = next.filter((proposal) => proposal.status === 'pending' && !touchedIds.has(proposal.id)).length
+        const hasHistoricalUnresolved = next.some((proposal) => proposal.status === 'pending' && !touchedIds.has(proposal.id))
         const coverageIncomplete = !result.coverage.complete
         const evidencePartial = result.evidenceValidation.status === 'partial'
         const notices = [
           coverageIncomplete ? '本次仅完成部分检查，不能认定章节不存在其他问题' : '',
           evidencePartial ? '部分证据未核验' : '',
         ].filter(Boolean)
-        const found = created + kept + reopened
         let summary: string
-        if (found > 0) {
-          const parts = [
-            created ? `新增 ${created} 项` : '',
-            kept ? `保留 ${kept} 项` : '',
-            reopened ? `重开 ${reopened} 项` : '',
-            historicalUnresolved ? `另有 ${historicalUnresolved} 项历史待处理` : '',
-          ].filter(Boolean)
-          summary = parts.join(' · ')
-        } else if (historicalUnresolved > 0) {
-          summary = `本次未检出新问题，仍有 ${historicalUnresolved} 项历史待处理问题`
+        if (result.proposals.length > 0) {
+          summary = '本次审查已整理出发现，可按需查看。'
+        } else if (hasHistoricalUnresolved) {
+          summary = '仍有此前的发现等待判断。'
         } else if (coverageIncomplete || evidencePartial) {
-          summary = '本次未检出新问题'
+          summary = '本次没有新的已核验发现；检查范围或证据尚不完整。'
         } else {
-          summary = '未发现问题'
+          summary = '本次未发现新问题。'
         }
         reviewInFlight.current = false
         setTask({ state: 'done', summary: [summary, ...notices].join(' · '), at: Date.now() })
-        toast(`审查完成：${[summary, ...notices].join(' · ')}`)
       }).catch((cause: unknown) => {
         if (runId === reviewGeneration.current) {
           reviewInFlight.current = false
@@ -700,15 +698,14 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
         }
       })
     }, 520)
-  }, [actions, adapter.mode, current, flushSave, initialWorkspace.chapters, initialWorkspace.projectId, seq, toast])
+  }, [actions, adapter.mode, current, flushSave, initialWorkspace.chapters, initialWorkspace.projectId, seq])
 
   const cancelReview = useCallback(() => {
     reviewGeneration.current++
     reviewInFlight.current = false
     if (reviewTimer.current !== undefined) window.clearInterval(reviewTimer.current)
     setTask({ state: 'idle' })
-    toast('已取消审查')
-  }, [toast])
+  }, [])
 
   const decide = useCallback(async (id: string, action: 'adopt' | 'reject' | 'defer' | 'note' | 'reopen', optionId?: string) => {
     const proposal = proposalsRef.current.find((value) => value.id === id)

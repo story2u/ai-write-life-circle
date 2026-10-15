@@ -1,5 +1,35 @@
 # Figma synchronization log
 
+## 2026-10-14 — Product/UX review remediation brief
+
+- Re-read the current Figma Make context for key `kWBOdcae5utBZ6VtBHHXui`, node
+  `0:1`, through the official remote MCP. The Make resources still describe the
+  V0.3 three-column workbench and four Agent tabs; no version identifier was
+  exposed. `get_screenshot` reports that Make files are unsupported, so no
+  pixel-level design comparison is claimed.
+- Created `design/writer-agent-ux-vnext-handoff.md` as a design task for Figma.
+  It describes candidate information architectures, resume entry, Note vs
+  Canon Change, anchored evidence, chapter-related knowledge, story conflict
+  comparison, history and Chinese long-form visual states. It is not a claim
+  that Figma has implemented these designs.
+- Implemented only low-risk interim frontend changes: first-use right panel
+  collapsed while saved preferences are retained; removed pending-count
+  badges and review-completion/cancel toasts; kept save/error/conflict alerts;
+  hid design notes in production; removed unavailable navigation placeholders;
+  clarified empty-workspace copy.
+- No changes were made to `manuscript/`, `book/`, `inbox/`, `proposals/`, or
+  `decisions/`. No Note API, Agent Runtime, knowledge API, new visual tokens, or
+  new product navigation was implemented.
+- Verification: frozen install, typecheck, lint, API/Web unit tests (65 total), build,
+  Playwright at 1440px (Light/Dark/Focus and open-on-demand panel), API/Harness E2E,
+  OpenAPI check/lint, and Harness projection rebuild passed. Redocly retains 32
+  existing warnings; Vite retains the existing ~854 kB chunk advisory. The
+  rebuild found 44 Markdown docs, 7 knowledge docs, 2 proposals, 0 formal
+  chapters, and no ID collisions. No files under `manuscript/`, `book/`,
+  `inbox/`, `proposals/`, or `decisions/` changed. Local screenshots were
+  inspected; Figma pixel comparison remains unavailable. The production JS
+  bundle excludes the developer design-notes module and labels.
+
 ## 2026-10-14 — OQ-016 chapter source convention
 
 - Author decision: “沿用现有 Harness 习惯”. This resolves OQ-016 using the
@@ -43,3 +73,13 @@
 - Three PNG payloads were truncated during resource retrieval; source code did not reference those images. Three complete PNGs and the favicon were copied. No manuscript, book, proposal, decision, or Harness data file was changed.
 - Verification: `pnpm typecheck`, `pnpm lint`, `pnpm test` (8 tests), and `pnpm build` passed. The production build emits a chunk-size advisory for the combined React/Tiptap bundle.
 - Desktop tool discovery still requires a Codex restart; the fresh CLI session already proved remote registration and source access.
+
+## 2026-10-15 — VNext 全栈同步
+
+- 官方 MCP 返回 Version 6 资源清单；资源读取缺口由作者提供的最新本地导出解阻。源码和交接文档 hash 记录在 vnext-resource-manifest.json。
+- 迁移稿纸、三空间、双抽屉、续写、随手记、书与思考、故事冲突对照。复用原 Markdown 保存与恢复控制器。
+- 新增真实作者 Note 列表/创建/详情/修改与归档，Workspace 能力声明；使用独立应用状态、版本与幂等，保留旧 OpenAPI 来源。
+- 定稿变更、知识、研究和自动注记仍是隔离 Demo 原型；API 不返回模拟发现。
+- 合入当前 main 的部署与文档迁移。正式作品档案相对 main 无变更；设计与架构主文档位于 harness，旧请求路径提供兼容入口。
+- 视觉覆盖四种宽度、两主题、抽屉与 Focus。导出源码临时参考与实现的主要稿纸几何、字体 metrics 和纸色一致；没有 Figma 服务端截图像素差分。
+- 完整测试、限制和后续事项见 ../../docs/reviews/vnext-figma-fullstack-sync.md。

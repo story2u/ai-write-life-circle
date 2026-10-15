@@ -32,6 +32,12 @@ jobs:
       - name: Build contracts
         run: pnpm --filter @writer-agent/contracts build
 
+      - name: OpenAPI reproducibility
+        run: pnpm openapi:check
+
+      - name: OpenAPI validation
+        run: pnpm openapi:lint
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -43,3 +49,26 @@ jobs:
 
       - name: Build (smoke check)
         run: pnpm build
+
+      - name: Harness projection and ID checks
+        run: |
+          pnpm harness:rebuild
+          node scripts/check-knowledge-ids.mjs --fail
+
+      - name: Built API smoke and production identity guard
+        run: node scripts/smoke-built-api.mjs
+
+      - name: Install Chromium
+        run: pnpm --filter @writer-agent/web exec playwright install --with-deps chromium
+
+      - name: Visual and API end-to-end tests
+        run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: writer-agent-vnext-verification
+          path: |
+            apps/web/test-results/
+            apps/web/test-results-api/
+          retention-days: 14

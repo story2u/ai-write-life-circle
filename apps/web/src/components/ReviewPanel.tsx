@@ -4,7 +4,7 @@ import { Btn, DemoBadge, Empty, EvidenceItem, KindTag, Kbd, StatusTag } from './
 
 export type DecideFn = (id: string, action: 'adopt' | 'reject' | 'defer' | 'note' | 'reopen', optionId?: string) => void
 
-export function AgentStatus({ task, pending, onRun, onCancel }: { task: AgentTask; pending: number; onRun: () => void; onCancel: () => void }) {
+export function AgentStatus({ task, onRun, onCancel }: { task: AgentTask; onRun: () => void; onCancel: () => void }) {
   return (
     <div className="mx-4 mb-3 rounded-lg border px-3 py-2.5" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
       {task.state === 'running' ? (
@@ -21,12 +21,10 @@ export function AgentStatus({ task, pending, onRun, onCancel }: { task: AgentTas
         </>
       ) : (
         <div className="flex items-center gap-2 text-[12.5px]">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: task.state === 'failed' ? 'var(--danger)' : pending ? 'var(--warn)' : 'var(--ok)' }} />
-          <div className="min-w-0 flex-1">
+          {task.state === 'failed' && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--danger)' }} />}
+          <div className="min-w-0 flex-1" aria-live="polite" aria-atomic="true" role={task.state === 'failed' ? 'alert' : undefined}>
             {task.state === 'failed' ? (
               <span style={{ color: 'var(--danger)' }}>审查失败：{task.error}</span>
-            ) : pending > 0 ? (
-              <span><span style={{ color: 'var(--warn)' }}>{pending} 项待你确认</span>{task.state === 'done' && <span style={{ color: 'var(--ink-3)' }}> · {task.summary}</span>}</span>
             ) : task.state === 'done' ? (
               <span style={{ color: 'var(--ink-2)' }}>{task.summary}</span>
             ) : (
@@ -106,14 +104,13 @@ export default function ReviewPanel({ task, proposals, activeId, onSelect, onDec
   const [filter, setFilter] = useState<'open' | 'all'>('open')
   const open = proposals.filter((p) => p.status === 'pending' || p.status === 'adopted')
   const list = filter === 'open' ? open : proposals
-  const pending = proposals.filter((p) => p.status === 'pending').length
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="pt-3"><AgentStatus task={task} pending={pending} onRun={onRun} onCancel={onCancel} /></div>
+      <div className="pt-3"><AgentStatus task={task} onRun={onRun} onCancel={onCancel} /></div>
       <div className="flex items-center gap-1 px-4 pb-2 text-[12px]">
         {(['open', 'all'] as const).map((f) => (
           <button key={f} type="button" onClick={() => setFilter(f)} className="btn ghost rounded px-2 py-0.5" style={{ color: filter === f ? 'var(--ink)' : 'var(--ink-3)', fontWeight: filter === f ? 500 : 400 }}>
-            {f === 'open' ? `待处理 ${open.length}` : `全部 ${proposals.length}`}
+            {f === 'open' ? '待处理' : '全部'}
           </button>
         ))}
         <span className="ml-auto"><DemoBadge /></span>
