@@ -74,6 +74,9 @@ jobs:
       - name: Built API smoke and production identity guard
         run: node scripts/smoke-built-api.mjs
 
+      - name: Production bearer identity and persistence
+        run: node scripts/smoke-production-api.mjs
+
       - name: Default Go and Web launcher
         run: node scripts/smoke-local-stack.mjs
 

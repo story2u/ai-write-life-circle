@@ -9,7 +9,10 @@ import (
 	"strings"
 )
 
-type Config struct{ Root, State, Project, Host, Port, Environment string }
+type Config struct {
+	Root, State, Project, Host, Port, Environment string
+	AuthMode, AuthTokenFile, AuthorID             string
+}
 
 func value(key, fallback string) string {
 	if v, ok := os.LookupEnv(key); ok {
@@ -39,15 +42,27 @@ func Load() (Config, error) {
 		return Config{}, e
 	}
 	c := Config{Root: Root(), State: value("WRITER_AGENT_STATE_DIR", filepath.Join(home, ".local/share/ai-write-life-circle")), Project: value("WRITER_AGENT_PROJECT_ID", "local"), Host: value("WRITER_AGENT_API_HOST", "127.0.0.1"), Port: value("WRITER_AGENT_API_PORT", "8787"), Environment: value("WRITER_AGENT_ENV", value("NODE_ENV", "development"))}
-	if c.Environment == "production" || os.Getenv("NODE_ENV") == "production" {
-		return c, errors.New("the local demo-identity API server is development-only and must not run in production; production identity adapter required")
+	c.AuthMode = value("WRITER_AGENT_AUTH_MODE", "local")
+	c.AuthTokenFile = value("WRITER_AGENT_AUTH_TOKEN_FILE", "")
+	c.AuthorID = value("WRITER_AGENT_AUTHOR_ID", "")
+	if os.Getenv("NODE_ENV") == "production" && c.Environment != "production" {
+		return c, errors.New("NODE_ENV=production requires WRITER_AGENT_ENV=production and production identity")
 	}
-	if c.Environment != "development" && c.Environment != "test" {
-		return c, errors.New("WRITER_AGENT_ENV must be development or test; no production identity is configured")
+	switch c.Environment {
+	case "production":
+		if c.AuthMode != "bearer" || c.AuthTokenFile == "" || c.AuthorID == "" {
+			return c, errors.New("production requires bearer identity, a token file and an explicit author ID; local identity is development-only")
+		}
+	case "development", "test":
+		if c.AuthMode != "local" && c.AuthMode != "bearer" {
+			return c, errors.New("unsupported authentication mode")
+		}
+	default:
+		return c, errors.New("WRITER_AGENT_ENV must be development, test or production")
 	}
 	ip := net.ParseIP(c.Host)
 	if ip == nil || !ip.IsLoopback() {
-		return c, errors.New("local development identity requires a loopback bind address")
+		return c, errors.New("API requires a loopback bind address behind a trusted TLS proxy")
 	}
 	port, e := strconv.Atoi(c.Port)
 	if e != nil || port < 0 || port > 65535 {

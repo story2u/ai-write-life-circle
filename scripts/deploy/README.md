@@ -3,7 +3,8 @@
 当前入口：
 
 - Web：仓库的 [deploy-web.yml](../../.github/workflows/deploy-web.yml) 构建前端并通过 Wrangler 部署到 Cloudflare Workers，需要相应的 Secrets/Variables。
-- Go API：[deploy-api.yml](../../.github/workflows/deploy-api.yml) 构建镜像；EC2 deploy job 明确暂停，生产身份认证尚未实现。
+- Go API：优先按 [生产部署指南](../../harness/deploy-guide.md) 使用 `install-api-systemd.sh` 安装原生二进制，`install-api-https.sh` 配置 HTTPS。单作者 Bearer 身份已实现，所有接口由 loopback API 和 TLS 边缘代理分层处理。
+- [deploy-api.yml](../../.github/workflows/deploy-api.yml) 继续构建镜像；旧 EC2 deploy job 保持暂停，避免覆盖手工配置的服务和身份。
 - 镜像构建：从仓库根目录使用 `docker build -f scripts/deploy/Dockerfile.api .` 或 `docker build -f scripts/deploy/Dockerfile.web .`。构建成功不代表生产服务可以启动。
 
 ## 已废弃的 EC2 Web/PostgreSQL 工具
@@ -18,6 +19,6 @@
 
 `docker-compose.prod.yml` 保留 api_state Volume；只读挂载 Markdown 项目根目录（应包含 book/manuscript），可用 WRITER_AGENT_HARNESS_SOURCE 指定外部作品目录。端口仅映射宿主机 loopback；镜像保持旧容器 UID，避免现有 root-owned Volume 需要改权迁移。
 
-生产身份尚未实现，`WRITER_AGENT_ENV=production` 必须拒绝启动，因此当前 production Compose 不能成功启动 Go API。不得通过公开开发身份、修改保护或清空 Volume 来恢复部署。镜像构建和隔离的 CI 运行验证继续执行。
+`WRITER_AGENT_ENV=production` 必须配置 Bearer 身份、令牌文件和作者 ID，缺少配置时拒绝启动。旧 `docker-compose.prod.yml` 没有挂载身份文件，仍不可直接用于生产启动；其端口映射也不能转发到容器内部 loopback。当前使用宿主机 systemd 运行原生 API，Caddy 在 host network 连接宿主机 loopback。不得改为开发身份或清空 Volume 来恢复部署。
 
 完整本地切换与回滚步骤见 [Go API](../../apps/api-go/README.md) 与 [迁移报告](../../harness/reviews/go-backend-migration-report.md)。实际作者状态目录切换前，先停止旧写入服务并备份完整状态目录。

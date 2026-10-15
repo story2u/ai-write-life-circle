@@ -15,7 +15,7 @@ pnpm dev
 
 ### 部署
 
-当前 Web 由 `deploy-web.yml` 构建并通过 Wrangler 部署。Go API 仅构建镜像，生产认证未完成，EC2 部署保持暂停。旧 EC2 Web/PostgreSQL 脚本已废弃，不应执行。入口与边界见 [部署说明](scripts/deploy/README.md)。
+当前 Web 由 `deploy-web.yml` 构建并通过 Wrangler 部署。Go API 支持单作者 Bearer 身份，使用 systemd + HTTPS 代理部署；GitHub Actions 的旧 EC2 自动部署仍暂停。旧 EC2 Web/PostgreSQL 脚本已废弃，不应执行。入口见 [部署说明](scripts/deploy/README.md)。
 
 ## 📚 文档索引
 

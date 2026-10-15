@@ -83,6 +83,7 @@ const notesExtension = JSON.parse(await readFile(new URL('../harness/contracts/n
 Object.assign(source.paths, notesExtension.paths)
 Object.assign(source.components.schemas, notesExtension.schemas)
 source.components.schemas.Workspace.properties.capabilities = { $ref: '#/components/schemas/WorkspaceCapabilities' }
+source.components.securitySchemes.bearerAuth.description = 'Production: one configured author authenticated by a 256-bit opaque Bearer token over HTTPS; token never comes from query strings or actor headers. Local development identity is development/test only.'
 source.tags ??= []
 source.tags.push({ name: 'Author Notes', description: 'Informal author application state, isolated from Harness facts.' })
 for (const code of ['NOTE_VERSION_CONFLICT', 'NEXT_WRITING_EXISTS', 'METHOD_NOT_ALLOWED']) {

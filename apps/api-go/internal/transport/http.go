@@ -170,6 +170,7 @@ func Handler(o Options) http.Handler {
 			actor = o.ResolveActor(r)
 		}
 		if actor == nil {
+			w.Header().Set("WWW-Authenticate", `Bearer realm="writer-agent"`)
 			problem(w, application.Fail(401, "AUTHOR_DECISION_REQUIRED", "A server-authenticated actor is required."), "")
 			return
 		}

@@ -42,3 +42,7 @@ knowledge, annotations, canonChanges and agentRuntime are false. Missing flags
 from an older server disable the new UI instead of triggering a Demo fallback.
 Advanced VNext UI models live in the Demo presentation layer and are not final
 production DTOs or approved formal knowledge models.
+
+## Production authentication
+
+Go production uses a 256-bit opaque Bearer token mapped to one server-configured author ID and project, over HTTPS. The generated candidate describes this implementation; the preserved Figma source is unchanged. Local unauthenticated identity remains development/test only. Request actor headers, cookies and token query parameters do not select an identity. Healthz is public; production internal projection is hidden. See the [deployment guide](../deploy-guide.md).

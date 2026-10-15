@@ -22,3 +22,30 @@ func TestLocalIdentityConfigurationFailsClosed(t *testing.T) {
 		})
 	}
 }
+
+func TestProductionRequiresExplicitBearerIdentity(t *testing.T) {
+	for _, tc := range []struct {
+		name, mode, file, author string
+		ok                       bool
+	}{
+		{"valid", "bearer", "/etc/writer-agent/auth-token", "bruce", true},
+		{"local", "local", "/etc/writer-agent/auth-token", "bruce", false},
+		{"missing file", "bearer", "", "bruce", false},
+		{"missing author", "bearer", "/etc/writer-agent/auth-token", "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("WRITER_AGENT_ENV", "production")
+			t.Setenv("NODE_ENV", "production")
+			t.Setenv("WRITER_AGENT_AUTH_MODE", tc.mode)
+			t.Setenv("WRITER_AGENT_AUTH_TOKEN_FILE", tc.file)
+			t.Setenv("WRITER_AGENT_AUTHOR_ID", tc.author)
+			t.Setenv("WRITER_AGENT_STATE_DIR", t.TempDir())
+			t.Setenv("WRITER_AGENT_API_HOST", "127.0.0.1")
+			t.Setenv("WRITER_AGENT_API_PORT", "8787")
+			_, err := Load()
+			if (err == nil) != tc.ok {
+				t.Fatal(err)
+			}
+		})
+	}
+}
