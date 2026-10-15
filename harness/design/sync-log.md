@@ -73,3 +73,13 @@
 - Three PNG payloads were truncated during resource retrieval; source code did not reference those images. Three complete PNGs and the favicon were copied. No manuscript, book, proposal, decision, or Harness data file was changed.
 - Verification: `pnpm typecheck`, `pnpm lint`, `pnpm test` (8 tests), and `pnpm build` passed. The production build emits a chunk-size advisory for the combined React/Tiptap bundle.
 - Desktop tool discovery still requires a Codex restart; the fresh CLI session already proved remote registration and source access.
+
+## 2026-10-15 — VNext 全栈同步
+
+- 官方 MCP 返回 Version 6 资源清单；资源读取缺口由作者提供的最新本地导出解阻。源码和交接文档 hash 记录在 vnext-resource-manifest.json。
+- 迁移稿纸、三空间、双抽屉、续写、随手记、书与思考、故事冲突对照。复用原 Markdown 保存与恢复控制器。
+- 新增真实作者 Note 列表/创建/详情/修改与归档，Workspace 能力声明；使用独立应用状态、版本与幂等，保留旧 OpenAPI 来源。
+- 定稿变更、知识、研究和自动注记仍是隔离 Demo 原型；API 不返回模拟发现。
+- 合入当前 main 的部署与文档迁移。正式作品档案相对 main 无变更；设计与架构主文档位于 harness，旧请求路径提供兼容入口。
+- 视觉覆盖四种宽度、两主题、抽屉与 Focus。导出源码临时参考与实现的主要稿纸几何、字体 metrics 和纸色一致；没有 Figma 服务端截图像素差分。
+- 完整测试、限制和后续事项见 ../../docs/reviews/vnext-figma-fullstack-sync.md。

@@ -27,3 +27,29 @@ requests to the loopback API target.
 
 Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm test:e2e` from the
 repository root to verify the frontend and its API integration.
+
+## VNext (2026-10-15)
+
+The studio opens on the manuscript with Write / Book / Think navigation and
+on-demand chapter / annotation drawers. Explicit older layout choices are
+restored; new users start with both drawers closed. The old writer-agent.v2
+workspace and API draft keys remain compatible.
+
+Resume reads the mounted chapter's final text paragraphs and a saved author
+next-writing note. Quick Note (Ctrl/Cmd ;) uses the real Notes adapter in API
+mode, and Book → Creative Notes can reopen/edit/archive notes after refresh.
+Errors retain input; version conflicts never silently replace newer notes.
+
+API mode calls only implemented endpoints and uses server capability flags.
+Missing flags disable notes. Knowledge, annotations, thinking Agent and canon
+changes show unavailable states. Demo mode keeps its own notes and mock Agent,
+marks simulated output and does not write real project/Harness data.
+
+The existing Markdown editor, recovery, immutable revision saves, 409 queue
+cancellation and memory export are preserved. The read-only server comparison
+uses exact Markdown; discarding the local copy requires explicit confirmation.
+Source Markdown that cannot round-trip stays read-only.
+
+Visual checks cover 1440/1024/768/390px, light/dark and focus. See
+../../docs/reviews/vnext-figma-fullstack-sync.md for evidence and remaining
+runtime/production work. No full application pixel-perfect claim is made.

@@ -1,96 +1,27 @@
-# Figma UI source
+# Figma 设计来源与当前同步状态
 
-## Authority and source
+- 最新读取：2026-10-14；实现与验收：2026-10-15（Asia/Shanghai）。
+- 来源：[Writer Agent UI/UX Design](https://www.figma.com/make/kWBOdcae5utBZ6VtBHHXui/Writer-Agent-UI-UX-Design)。fileKey `kWBOdcae5utBZ6VtBHHXui`，node `0:1`，React / TypeScript。
+- 浏览器版本标识：Version 6 / Upgrade Writer Agent UI/UX。交接文档：DES-VNEXT，UI/UX 设计权威；V0.4 未被修改的 API/领域候选仍有效。
+- 官方连接器 get_design_context 和身份查询成功，返回最新资源清单；本会话没有资源读取工具，截图端点不支持 Make。作者随后提供本地导出 `/Users/bruce/git/story/Writer Agent UI_UX Design`，据此读取最新完整源码。
+- [资源及 SHA-256 快照](vnext-resource-manifest.json)、[来源交接文档副本](vnext-source-handoff.md)、[差异分析](vnext-sync-gap-analysis.md)。原始导出目录未修改；没有使用旧 V0.3 缓存替代 VNext。
 
-- File: [Writer Agent UI/UX Design](https://www.figma.com/make/kWBOdcae5utBZ6VtBHHXui/Writer-Agent-UI-UX-Design)
-- Type: Figma Make
-- File key: `kWBOdcae5utBZ6VtBHHXui`
-- Entry node: `0:1`
-- The public Make preview/source currently corresponds to the V0.3 prototype; the MCP response does not expose a version field. The V0.4 product documents are marked `draft-for-engineering`, not a final API contract.
-- Last read: 2026-10-14 (Asia/Shanghai), using the official remote Figma MCP.
-- Official remote endpoint: `https://mcp.figma.com/mcp`
-- The Make source is the authority for page structure, interactions, design tokens, typography, assets, and themes.
+## 已同步
 
-## MCP access and diagnosis
+稿纸、写作/书/思考导航、按需章节与注记/思考抽屉、续写卡、随手记、作品记忆、思考四阶段、故事冲突对照与定稿候选演示。CSS tokens、图标、暖色 Light/Dark、18px / 1.9 中文正文来自当前源码。原型控件未复制到生产作者导航。
 
-The shell Codex CLI was `0.159.0`; the Codex Desktop bundled CLI was
-`0.162.0-alpha.17.2`. Initially there was no `figma` server in
-`~/.codex/config.toml`, and `codex mcp get figma` reported no server. No
-`enabled_tools`/`disabled_tools` filter or custom model provider was configured.
-The Figma server was registered once at the official remote URL. OAuth login
-completed successfully through `codex mcp login figma`.
+保留现有 Markdown + TipTap 管线、无法无损往返时的只读保护、不可变草稿版本、幂等、409、排队保存取消、恢复和内存导出。新增真实笔记列表/创建/编辑/归档；原型字段没有直接变成正式知识对象。
 
-A fresh CLI session exposed `mcp__figma__get_design_context`,
-`mcp__figma__get_screenshot`, and `mcp__figma__get_variable_defs`. The original
-Desktop thread kept its stale connector wrapper and still returned
-`Unknown tool(figma.get_design_context)`; restart Codex Desktop to refresh that
-thread's tool list. This was a tool-routing/reload issue, not a file-permission
-denial.
+Demo 展示模拟知识、注记、思考和候选变更，研究引用均标为未核验。API 模式有真实章节与笔记；其余能力明确不可用，不加载 Demo Agent 数据。
 
-## Read resources and limits
+## 视觉证据与限制
 
-`get_design_context` succeeded for file key `kWBOdcae5utBZ6VtBHHXui`, node
-`0:1`, framework `react`, language `typescript`. The returned Make resources
-were read through the `figma` remote MCP resource templates. They included the
-app entry, React components, source CSS, types, demo data, package metadata,
-and image resources. The implementation files are now under `apps/web`.
+Playwright 检查 1440/1024/768/390px，Light/Dark、写作、抽屉、Focus，保存本地截图。另用导出源码的临时副本建立本地参考（仅替换 Make 专用 Vite 启动配置，UI 源码未改），定性比较 1440px Light/Dark 与 390px Dark。
 
-## 2026-10-14 V0.4 product review
+正常稿纸的计算值相同：18px、34.2px 行高、36px 缩进、16.2px 段距、608px 内容宽度，1440px 下起点 x=416/y=272，纸色 #fbfaf7。未执行 Figma 服务端截图的像素差分；不能称全应用逐像素还原。笔记的真实加载、并发与错误行为采用工程状态；无实际数据的入口保留真实空态。
 
-The official remote MCP successfully returned `get_design_context` for node
-`0:1`. The review read `docs/README.md`, the product PRD, user journeys and
-feature matrix, feature documents, domain model, API spec, state machines,
-persistence and permissions, component contracts, screen map, acceptance
-criteria, traceability matrix, HANDOFF and implementation plan. It also read
-the relevant Make sources: `src/App.tsx`, `src/types.ts`, `src/kb/types.ts`,
-`src/kb/data.ts`, `src/kb/route.ts`, `src/reasoning/engine.ts`,
-`src/index.css`, and the related architecture/handoff resources.
+当前源码没有使用 MCP 清单中的十张历史图片；可见图标直接来自 ui.tsx 的 SVG 基础组件，没有临时 Figma 资源 URL。
 
-The API spec resource was returned with an in-body `…6290 tokens truncated…`
-marker; the author then supplied the complete proposed YAML in the task reply.
-The full text has not been saved as a repository OpenAPI file or run through an
-OpenAPI validator. Sprint 1's Workspace/Chapter Zod schemas were hand-aligned
-to the supplied operations and are the runtime source for that implemented
-subset. Operations marked `proposed` remain non-final. The Make
-`get_screenshot` and `get_variable_defs` tools report that they do not support
-Make files. A public browser preview was visible and showed the V0.3 workbench;
-its source-code panel requested sign-in. No screenshot pixel diff is claimed.
-The application draft endpoint is implemented. The author resolved OQ-016 by
-confirming the existing Harness conventions for chapter files; no chapter
-record exists yet because `manuscript/` contains no authored chapter. The API
-does not write Harness files.
-The initial API-spec truncation was a resource limit, not a file permission
-failure.
+## 契约来源
 
-The V0.4 PRD is a candidate product spec. Open questions affecting data safety
-and authorship are recorded in `docs/reviews/v0.4-contract-review.md`; they are
-not silently resolved by the implementation.
-
-## 2026-10-14 Claude product/UX remediation review
-
-The official remote MCP `get_design_context` was used again for the same Make
-file and node (`0:1`). The current Make docs/source still describe the V0.3
-three-column workbench and four Agent tabs; they do not expose a newer approved
-information architecture. This review has no Make version identifier.
-`get_screenshot` returned that Make files are unsupported. The browser preview
-was not used as a pixel-comparison source during this remediation, so visual
-parity for the updated default state is not claimed.
-
-The safe interim frontend adjustment is limited to collapsing the right Agent
-panel on first use when no saved layout exists, while preserving saved layout,
-chapter navigation, theme and focus-mode behavior. The new product design brief
-is `design/writer-agent-ux-vnext-handoff.md`; it is a request for Figma work,
-not an approved design or a claim that Figma was updated. The evidence-based
-status of the ten review items is recorded in
-`docs/reviews/claude-product-ux-remediation.md`.
-
-The Make `get_screenshot` tool explicitly reports that it does not support Make
-files. A browser preview of the Make file was available and used for qualitative
-desktop comparison; automated/pixel-diff screenshot comparison is not available
-through that MCP tool. Three returned PNG resource payloads were truncated and
-could not be decoded. The source code does not reference those PNGs; the three
-complete PNGs and favicon were retained under `apps/web/public`.
-
-No Figma Make runtime configuration, `.figma/make` directory, or platform-only
-plugin was copied into the production app. Figma sync is a manual MCP workflow;
-there is no automatic watcher or bidirectional sync.
+旧完整来源 `docs/contracts/source/api-spec-v0.4.0-figma-copy.yaml` 保留。新导出副本 `docs/contracts/source/api-spec-vnext-export-2026-10-14.yaml` 与旧来源解析后完全相同；新 Note/Capabilities 是独立工程扩展，不冒称 Figma 新 API。详见[实施报告](../../docs/reviews/vnext-figma-fullstack-sync.md)。
