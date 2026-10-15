@@ -1,5 +1,6 @@
 import type { useStudioController } from '../vnext/useStudioController'
-import { Empty } from '../../components/ui'
+import { ReviewConsentDialog } from '../reviews/ReviewConsentDialog'
+import { ReviewMarginPanel } from '../reviews/ReviewMarginPanel'
 import ChapterDrawer from '../../components/vnext/ChapterDrawer'
 import StoryConflictView from '../../components/vnext/StoryConflictView'
 import WritingCanvas from '../workspace/WritingCanvas'
@@ -16,6 +17,7 @@ export default function WritingSpace({
   adapter: WriterAgentAdapter
 }) {
   const {
+    reviews, reviewAnnotations, reviewFlash, locateReview, selectReview,
     view,
     setView,
     leftTab,
@@ -70,6 +72,7 @@ export default function WritingSpace({
   )
   return (
     <>
+      {adapter.mode === 'api' && <ReviewConsentDialog review={reviews} onStarted={() => { setRightTab('margin'); setLayout((prior) => ({ ...prior, rightOpen: true, focus: false })) }} />}
       <div
         hidden={view !== 'write'}
         className={view === 'write' ? 'relative flex min-h-0 flex-1' : ''}
@@ -176,10 +179,10 @@ export default function WritingSpace({
                 }
                 chapterNumber={adapter.mode === 'demo' ? currentViewChapter?.no : undefined}
                 scrollRef={scroll}
-                annotations={annotations}
-                flash={flash}
+                annotations={adapter.mode === 'api' ? reviewAnnotations : annotations}
+                flash={adapter.mode === 'api' ? (!reviews.stale && reviewFlash?.runId === reviews.run?.runId ? reviewFlash : null) : flash}
                 downloadLocalDraft={downloadLocalDraft}
-                selectIssue={selectMargin}
+                selectIssue={adapter.mode === 'api' ? selectReview : selectMargin}
                 handleEditorReady={ready}
                 setSelection={setSelection}
                 resume={
@@ -255,10 +258,9 @@ export default function WritingSpace({
                 {rightTab === 'think' ? (
                   thinkView()
                 ) : adapter.mode === 'api' ? (
-                  <Empty
-                    title="页边注记尚未接入"
-                    desc="当前没有真实审查与注记服务，不会生成演示发现。"
-                  />
+                  <ReviewMarginPanel review={reviews} locate={(id) => void locateReview(id)} select={selectReview}
+                    saveNote={saveNote} marksHidden={marksHidden} setMarksHidden={setMarksHidden}
+                    emptyChapter={!(workspace.markdownByChapter[current] ?? '').trim()} />
                 ) : (
                   <MarginPanel
                     margins={liveMargins}
@@ -299,6 +301,7 @@ export default function WritingSpace({
                 <Icon name="pen" />
                 随手记
               </Btn>
+              {adapter.mode === 'api' && <Btn size="sm" disabled={!reviews.available || !!reviews.busy || !current || !(workspace.markdownByChapter[current] ?? '').trim() || reviews.run?.status === 'running'} onClick={() => void reviews.prepare()}>{reviews.busy === 'preview' ? '准备审查…' : '审查本章'}</Btn>}
               <Btn size="sm" onClick={() => openThink(selection)}>
                 思考
               </Btn>

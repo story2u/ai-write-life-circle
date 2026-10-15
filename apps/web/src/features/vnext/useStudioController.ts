@@ -5,6 +5,8 @@ import {
   useWorkspaceController,
   type WorkspaceConfirmAction,
 } from '../workspace/useWorkspaceController'
+import { useReviewController } from '../reviews/useReviewController'
+import { reviewAnchorRanges } from '../../lib/reviewAnchor'
 import { useNotes } from '../notes/useNotes'
 import { usePrototype } from './usePrototype'
 import { useManuscriptBridge } from '../../hooks/useManuscriptBridge'
@@ -31,6 +33,8 @@ export function useStudioController(
   const [saveDialog, setSaveDialog] = useState(false)
   const [conflictId, setConflictId] = useState<string | null>(null)
   const [flash, setFlash] = useState<Flash>(null)
+  const [reviewFlash, setReviewFlash] = useState<(NonNullable<Flash> & { runId: string }) | null>(null)
+  const locationRequest = useRef(0)
   const [backTo, setBackTo] = useState<{ chapterId: string; scroll: number } | null>(null)
   const [confirm, setConfirm] = useState<WorkspaceConfirmAction | null>(null)
   const [toasts, setToasts] = useState<{ id: string; text: string }[]>([])
@@ -74,6 +78,35 @@ export function useStudioController(
   const prototype = usePrototype(adapter.mode === 'demo', currentViewChapter, doc)
   const notesEnabled = initialWorkspace.capabilities?.notes === true && !!adapter.notes
   const notes = useNotes(adapter.notes, initialWorkspace.projectId, notesEnabled)
+  const reviews = useReviewController({ adapter, workspace, available: initialWorkspace.capabilities?.evidenceReview === true,
+    paneOpen: view === 'write' && layout.rightOpen && rightTab === 'margin', toast })
+  const locateReview = async (id: string) => {
+    const request = ++locationRequest.current
+    const value = await reviews.revalidate(id)
+    if (!value || request !== locationRequest.current) return
+    const finding = value.findings.find((item) => item.findingId === id)
+    const target = value.sources.find((item) => item.kind === 'target')
+    const mounted = editor.current
+    if (!finding || !target || !mounted || mounted.isDestroyed || finding.anchor.status !== 'unique'
+      || reviewAnchorRanges(mounted.state.doc, target.excerpt, finding.anchor).length === 0) {
+      toast('此引用暂不能精确定位。可以查看只读证据快照。'); return
+    }
+    setReviewFlash({ paraIndex: 0, quote: finding.anchor.quote, nonce: Date.now(), reviewAnchor: finding.anchor,
+      reviewMarkdown: target.excerpt, runId: value.runId })
+    reviews.setActiveId(id)
+    setRightTab('margin'); setLayout((prior) => ({ ...prior, rightOpen: true, focus: false }))
+  }
+  const selectReview = (id: string | null) => {
+    reviews.setActiveId(id)
+    if (!id) { locationRequest.current++; setReviewFlash(null); return }
+    if (reviews.finding(id)?.anchor.status === 'unique' && !reviews.stale) void locateReview(id)
+  }
+  const reviewTarget = reviews.run?.sources.find((source) => source.kind === 'target')
+  const reviewAnnotations: Annotation[] = !marksHidden && !reviews.stale && reviews.run?.status === 'completed'
+    ? reviews.run.findings.filter((finding) => finding.feedback?.choice !== 'ignored' && finding.anchor.status === 'unique').map((finding) => ({
+      id: finding.findingId, kind: 'suggestion', paraIndex: 0, quote: finding.anchor.quote,
+      active: finding.findingId === reviews.activeId, reviewAnchor: finding.anchor, reviewMarkdown: reviewTarget?.excerpt,
+    })) : []
   const nextUp = notes.items.find((n) => n.status === 'active' && n.purpose === 'next_writing')
   const conflict = prototype.conflicts.find((c) => c.id === conflictId)
   const [thinkingSeed, setThinkingSeed] = useState('')
@@ -228,6 +261,7 @@ export function useStudioController(
       })),
   ].slice(0, 3)
   return {
+    reviews, reviewAnnotations, reviewFlash, locateReview, selectReview,
     view,
     setView,
     leftTab,

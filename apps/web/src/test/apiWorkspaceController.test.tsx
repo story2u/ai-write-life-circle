@@ -72,6 +72,48 @@ describe('API workspace chapter workflow', () => {
     vi.restoreAllMocks()
   })
 
+  it('captures a review only after saving the current exact Markdown revision', async () => {
+    const { result } = await setupApiController()
+    const text = '审查前作者新增内容。'
+    act(() => result.current.onChange([text], text))
+    let snapshot: Awaited<ReturnType<typeof result.current.prepareReview>> | undefined
+    await act(async () => { snapshot = await result.current.prepareReview() })
+    expect(snapshot).toMatchObject({ revisionId: 'draft:revision-2', markdown: text, contentHash: await hashMarkdown(text) })
+  })
+
+  it.each([500, 409])('refuses review when saving returns %s', async (status) => {
+    const { result } = await setupApiController({ saveResponse: async () => apiResponse({ type:'about:blank',title:'Save refused',status,code:status===409?'REVISION_CONFLICT':'INTERNAL_ERROR',detail:'save failed' },status) })
+    act(() => result.current.onChange(['未保存'], '未保存'))
+    await act(async () => { await expect(result.current.prepareReview()).rejects.toThrow() })
+    expect(result.current.markdownByChapter[chapterId]).toBe('未保存')
+  })
+
+  it('refuses review while a recoverable local draft is pending', async () => {
+    const { result } = await setupApiController({ storedDraft: { baseRevisionId:'source:blob-1', markdown:'本地恢复内容',idempotencyKey:'recovery',updatedAt:new Date().toISOString() } })
+    await act(async () => { await expect(result.current.prepareReview()).rejects.toThrow() })
+  })
+
+  it('refuses a snapshot if the author types again while the save is in flight', async () => {
+    let resolveSave!: (response: Response) => void
+    let started!: () => void
+    const gate = new Promise<void>((resolve) => { started = resolve })
+    const { result } = await setupApiController({ saveResponse: async () => {
+      started()
+      return new Promise<Response>((resolve) => { resolveSave = resolve })
+    } })
+    const first = '开始保存的内容', next = '保存期间又修改的内容'
+    let capture!: Promise<unknown>
+    act(() => { result.current.onChange([first], first); capture = result.current.prepareReview() })
+    const rejected = expect(capture).rejects.toThrow()
+    await gate
+    act(() => result.current.onChange([next], next))
+    await act(async () => {
+      resolveSave(apiResponse({ revisionId:'draft:saved',parentRevisionId:'source:blob-1',contentHash:await hashMarkdown(first),commitRef:null },201))
+      await rejected
+    })
+    expect(result.current.markdownByChapter[chapterId]).toBe(next)
+  })
+
   it('uses the collapsed Agent panel default when the API has no saved layout', async () => {
     const { result } = await setupApiController()
     expect(result.current.layout).toMatchObject({ leftOpen: false, rightOpen: false })

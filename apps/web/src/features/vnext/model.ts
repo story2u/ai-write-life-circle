@@ -21,6 +21,7 @@ export type Source = {
   para?: number
   entryId?: string
   state: 'ok' | 'stale' | 'missing'
+  reviewSourceId?: string
 }
 
 export type CanonCandidateContext = { entryId?: string; sources: Source[]; reason: string }
@@ -38,6 +39,8 @@ export type Margin = {
   facts: Source[]
   inference: string
   question: string
+  alternativeExplanation?: string
+  locationLabel?: string
   /** fresh: computed on current text. stale: text changed after analysis. source-missing: a cited source is not on file. */
   state: 'fresh' | 'stale' | 'source-missing'
   conflictId?: string

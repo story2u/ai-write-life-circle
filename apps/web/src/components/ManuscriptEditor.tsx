@@ -6,11 +6,13 @@ import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { Node as PMNode } from '@tiptap/pm/model'
+import type { TextAnchor } from '@writer-agent/contracts'
+import { reviewAnchorRanges } from '../lib/reviewAnchor'
 import type { Proposal } from '../types'
 import { findUnsupportedMarkdown, paragraphEntries, paragraphsFromDocument } from '../lib/manuscriptMarkdown'
 
-export type Annotation = { id: string; kind: Proposal['kind']; paraIndex: number; quote: string; active: boolean }
-export type Flash = { paraIndex: number; quote?: string; nonce: number } | null
+export type Annotation = { id: string; kind: Proposal['kind']; paraIndex: number; quote: string; active: boolean; reviewAnchor?: TextAnchor; reviewMarkdown?: string }
+export type Flash = { paraIndex: number; quote?: string; nonce: number; reviewAnchor?: TextAnchor; reviewMarkdown?: string } | null
 
 const key = new PluginKey('annotations')
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -29,6 +31,20 @@ function build(doc: PMNode, anns: Annotation[], flash: Flash, onSelect: (id: str
   const decos: Decoration[] = []
   const seen = new Set<number>()
   for (const a of anns) {
+    if (a.reviewAnchor) {
+      const ranges = reviewAnchorRanges(doc, a.reviewMarkdown ?? '', a.reviewAnchor)
+      if (ranges.length === 0) continue
+      decos.push(Decoration.widget(ranges[0].from, () => {
+        const mark = document.createElement('button')
+        mark.type = 'button'; mark.className = 'margin-dot tone-ai'; mark.contentEditable = 'false'
+        mark.setAttribute('aria-label', '查看本段注记')
+        mark.addEventListener('mousedown', (event) => { event.preventDefault(); onSelect(a.id) })
+        mark.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(a.id) } })
+        return mark
+      }, { key: a.id, side: -1, ignoreSelection: true }))
+      if (a.active) for (const range of ranges) decos.push(Decoration.inline(range.from, range.to, { class: 'ann-quote tone-ai', 'data-review-highlight': a.id }))
+      continue
+    }
     const loc = locate(doc, a.paraIndex, a.quote)
     if (!loc) continue
     const tone = a.kind === 'fact' ? 'conflict' : a.kind === 'suggestion' ? 'ai' : 'quiet'
@@ -50,7 +66,9 @@ function build(doc: PMNode, anns: Annotation[], flash: Flash, onSelect: (id: str
       if (off >= 0) decos.push(Decoration.inline(loc.pos + 1 + off, loc.pos + 1 + off + a.quote.length, { class: `ann-quote tone-${tone}` }))
     }
   }
-  if (flash) {
+  if (flash?.reviewAnchor) {
+    for (const range of reviewAnchorRanges(doc, flash.reviewMarkdown ?? '', flash.reviewAnchor)) decos.push(Decoration.inline(range.from, range.to, { class: 'ann-flash' }))
+  } else if (flash) {
     const loc = locate(doc, flash.paraIndex, flash.quote)
     if (loc) decos.push(Decoration.node(loc.pos, loc.pos + loc.node.nodeSize, { class: 'ann-flash' }))
   }
@@ -130,6 +148,14 @@ export default function ManuscriptEditor({ chapterId, initial, initialMarkdown, 
   useEffect(() => {
     if (!editor || !flash) return
     const t = setTimeout(() => {
+      if (flash.reviewAnchor) {
+        const range = reviewAnchorRanges(editor.state.doc, flash.reviewMarkdown ?? '', flash.reviewAnchor)[0]
+        if (!range) return
+        const node = editor.view.domAtPos(range.from).node
+        const element = node instanceof HTMLElement ? node : node.parentElement
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        return
+      }
       const loc = locate(editor.state.doc, flash.paraIndex, flash.quote)
       if (!loc) return
       const dom = editor.view.nodeDOM(loc.pos) as HTMLElement | null
