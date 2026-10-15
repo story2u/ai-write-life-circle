@@ -740,6 +740,9 @@
         },
         "canonChanges": {
           "type": "boolean"
+        },
+        "evidenceReview": {
+          "type": "boolean"
         }
       },
       "required": [

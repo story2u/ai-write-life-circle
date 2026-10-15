@@ -91,6 +91,12 @@ for (const code of ['NOTE_VERSION_CONFLICT', 'NEXT_WRITING_EXISTS', 'METHOD_NOT_
 }
 source['x-notes-extension-provenance'] = notesExtension.provenance
 
+const reviewExtension = JSON.parse(await readFile(new URL('../harness/contracts/review-engineering-extension.json', import.meta.url), 'utf8'))
+Object.assign(source.paths, reviewExtension.paths)
+Object.assign(source.components.schemas, reviewExtension.schemas)
+source.tags.push({ name: 'Evidence Review', description: 'Author-triggered, fixed-revision continuity review. Verified quotes are evidence, not verified AI judgments.' })
+source['x-review-extension-provenance'] = reviewExtension.provenance
+
 const generated = YAML.stringify(source, { indent: 2, lineWidth: 110 })
 if (process.argv.includes('--check')) {
   const existing = await readFile(candidatePath, 'utf8').catch(() => '')
