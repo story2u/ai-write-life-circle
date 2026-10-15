@@ -11,9 +11,9 @@ go build -o dist/writer-agent-api ./cmd/server
 ./dist/writer-agent-api
 ```
 
-二进制运行无需 Node.js。开发服务器默认 127.0.0.1:8787。支持 WRITER_AGENT_HARNESS_ROOT、WRITER_AGENT_STATE_DIR、WRITER_AGENT_PROJECT_ID、WRITER_AGENT_API_PORT；STATE_DIR 默认为 ~/.local/share/ai-write-life-circle。WRITER_AGENT_ENV=development/test；NODE_ENV 仅兼容旧环境。production 或非 loopback 绑定会拒绝启动，因为生产身份适配器尚未实现。不要改为公开 local-author 来完成部署。
+二进制运行无需 Node.js。开发服务器默认 127.0.0.1:8787。支持 WRITER_AGENT_HARNESS_ROOT、WRITER_AGENT_STATE_DIR、WRITER_AGENT_PROJECT_ID、WRITER_AGENT_API_PORT；STATE_DIR 默认为 ~/.local/share/ai-write-life-circle。WRITER_AGENT_ENV=development/test 默认使用本地身份。production 必须显式设置 WRITER_AGENT_AUTH_MODE=bearer、WRITER_AGENT_AUTH_TOKEN_FILE 和 WRITER_AGENT_AUTHOR_ID；缺少任何一项均拒绝启动。所有模式仍只允许 loopback 绑定，公网访问经过 HTTPS 代理。不要改为公开 local-author 来完成部署。
 
-实现十条业务操作和两个系统入口：Workspace GET/PATCH，Chapters GET，Chapter GET，Revisions GET/POST，Notes 列表/详情 GET、POST/PATCH；GET /healthz；development-only /internal/projects/:projectId/harness-projection。完整请求/响应规范见 [契约](../../harness/contracts/README.md)。身份解析通过 transport.Resolver 注入，运行入口只提供本地开发 author，不信任请求中的角色声明。测试角色服务只在 parity build tag 下编译，不进入正式镜像。
+实现十条业务操作和两个系统入口：Workspace GET/PATCH，Chapters GET，Chapter GET，Revisions GET/POST，Notes 列表/详情 GET、POST/PATCH；GET /healthz；development-only /internal/projects/:projectId/harness-projection。完整请求/响应规范见 [契约](../../harness/contracts/README.md)。身份解析通过 transport.Resolver 注入，运行入口支持本地开发 author 和生产单作者 Bearer 令牌，不信任请求中的角色声明。测试角色服务只在 parity build tag 下编译，不进入正式镜像。
 
 HTTP 对正文实施 32MiB 上限，覆盖 2Mi Unicode 字符的合法 JSON 转义体。Workspace/Revision 的未知字段按旧 Zod 行为移除，Notes 保持严格字段检查。响应、请求 ID、ETag、错误和事务语义与旧实现自动对照；JavaScript Unicode、字符串指纹和原始 Markdown 字节通过 Golden Tests 验证。
 
@@ -22,3 +22,9 @@ HTTP 对正文实施 32MiB 上限，覆盖 2Mi Unicode 字符的合法 JSON 转�
 停止旧 API 写入→备份完整状态目录→启动 Go。不要让两种后端同时写真实目录。回滚时停止 Go，使用 `pnpm dev:api:node` 指向同一目录；已由对照测试验证 Node 可读取并重放 Go 生成的状态。需要调查时，将备份恢复到另一路径，勿覆盖更新的数据。
 
 [迁移基线](../../harness/architecture/go-backend-migration.md) · [验收报告](../../harness/reviews/go-backend-migration-report.md)
+
+## 生产身份
+
+生产令牌为密码学随机生成的 32 字节（64 个十六进制字符），放在受保护的普通文件中（0600/0640；禁止软链接、组写和其他用户读取）。以 `Authorization: Bearer <token>` 请求；健康检查无需令牌，业务接口缺少或使用错误令牌返回 401，生产 internal projection 返回 404。不能使用 URL 参数、Cookie 或 X-Actor-* 冒充身份。作者 ID 由服务器配置，所有 Notes 创建者和审计归属于该 ID。
+
+这是单作者部署身份，不是多用户登录系统，也不提供 Agent 凭证。轮换令牌文件并重启服务后，旧令牌失效。不得把令牌放入 Git、前端构建变量、公开页面或访问日志。完整安装、HTTPS、备份和回滚见 [生产部署指南](../../harness/deploy-guide.md)。

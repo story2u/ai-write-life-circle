@@ -30,7 +30,7 @@ function operation(
     'x-design-status': 'engineering-extension',
     'x-required-role': ['author'],
     description:
-      'Author-only, project-scoped application notes. No Harness or canon writes. Local development authentication only.',
+      'Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated author: production bearer token or local development identity.',
     parameters: [
       parameter('projectId', 'path'),
       ...(detail ? [parameter('noteId', 'path')] : []),

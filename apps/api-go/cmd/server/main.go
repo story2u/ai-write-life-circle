@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/application"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/config"
+	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/identity"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/transport"
 	"log/slog"
 	"net"
@@ -48,7 +49,11 @@ func run() error {
 		return e
 	}
 	s := &application.Service{Root: c.Root, State: c.State, Project: c.Project}
-	h := transport.Handler(transport.Options{Service: s, Environment: c.Environment, ResolveActor: func(*http.Request) *application.Actor { return &application.Actor{ID: "local-author", Role: "author"} }})
+	resolver, e := identity.New(c)
+	if e != nil {
+		return e
+	}
+	h := transport.Handler(transport.Options{Service: s, Environment: c.Environment, ResolveActor: resolver})
 	server := &http.Server{Handler: h, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 * 1024}
 	listener, e := net.Listen("tcp", net.JoinHostPort(c.Host, c.Port))
 	if e != nil {

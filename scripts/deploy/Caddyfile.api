@@ -1,0 +1,9 @@
+{
+    admin off
+    http_port 8080
+}
+
+{$WRITER_AGENT_API_DOMAIN} {
+    header -Server
+    reverse_proxy 127.0.0.1:8787
+}

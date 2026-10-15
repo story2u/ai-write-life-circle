@@ -1475,8 +1475,8 @@ paths:
       x-design-status: engineering-extension
       x-required-role:
         - author
-      description: Author-only, project-scoped application notes. No Harness or canon writes. Local development
-        authentication only.
+      description: "Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated
+        author: production bearer token or local development identity."
       parameters:
         - name: projectId
           in: path
@@ -1542,8 +1542,8 @@ paths:
       x-design-status: engineering-extension
       x-required-role:
         - author
-      description: Author-only, project-scoped application notes. No Harness or canon writes. Local development
-        authentication only.
+      description: "Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated
+        author: production bearer token or local development identity."
       parameters:
         - name: projectId
           in: path
@@ -1624,8 +1624,8 @@ paths:
       x-design-status: engineering-extension
       x-required-role:
         - author
-      description: Author-only, project-scoped application notes. No Harness or canon writes. Local development
-        authentication only.
+      description: "Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated
+        author: production bearer token or local development identity."
       parameters:
         - name: projectId
           in: path
@@ -1697,8 +1697,8 @@ paths:
       x-design-status: engineering-extension
       x-required-role:
         - author
-      description: Author-only, project-scoped application notes. No Harness or canon writes. Local development
-        authentication only.
+      description: "Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated
+        author: production bearer token or local development identity."
       parameters:
         - name: projectId
           in: path
@@ -1780,7 +1780,9 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      description: Token identifies the actor role (author | agent | system). Mechanism undecided (OQ-026).
+      description: "Production: one configured author authenticated by a 256-bit opaque Bearer token over HTTPS;
+        token never comes from query strings or actor headers. Local development identity is development/test
+        only."
   headers:
     ETag:
       description: Current resource version (optimistic locking)

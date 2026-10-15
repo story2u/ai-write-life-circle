@@ -13,7 +13,7 @@
         "x-required-role": [
           "author"
         ],
-        "description": "Author-only, project-scoped application notes. No Harness or canon writes. Local development authentication only.",
+        "description": "Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated author: production bearer token or local development identity.",
         "parameters": [
           {
             "name": "projectId",
@@ -119,7 +119,7 @@
         "x-required-role": [
           "author"
         ],
-        "description": "Author-only, project-scoped application notes. No Harness or canon writes. Local development authentication only.",
+        "description": "Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated author: production bearer token or local development identity.",
         "parameters": [
           {
             "name": "projectId",
@@ -248,7 +248,7 @@
         "x-required-role": [
           "author"
         ],
-        "description": "Author-only, project-scoped application notes. No Harness or canon writes. Local development authentication only.",
+        "description": "Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated author: production bearer token or local development identity.",
         "parameters": [
           {
             "name": "projectId",
@@ -363,7 +363,7 @@
         "x-required-role": [
           "author"
         ],
-        "description": "Author-only, project-scoped application notes. No Harness or canon writes. Local development authentication only.",
+        "description": "Author-only, project-scoped application notes. No Harness or canon writes. Server-authenticated author: production bearer token or local development identity.",
         "parameters": [
           {
             "name": "projectId",
