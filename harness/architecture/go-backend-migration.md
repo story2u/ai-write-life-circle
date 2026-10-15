@@ -9,7 +9,7 @@
 - Workspace：按 project/actor 的 base64url 路径存 JSON，部分字段合并；Zod 移除未知字段，显式 null 不合法。首次布局缺省，保存布局时补齐 leftW=280/rightW=400、双面板关闭；其他字段保持。
 - Chapter：Harness 顶部键值元数据，不是 YAML。标题、稳定 ID、文件名和正整数 order 必须符合现有行为；完整原文件 SHA-256、Git blob SHA-1 和正文 Markdown 分别保留。正文不重排空行、CRLF、尾空格。读取允许 author/agent，历史及保存仅 author。
 - Draft：chapter-drafts/<project>/<chapter>.json，包含 sourceHash/sourceRevision、早期 sourceRevisionHistory、adoptedDraftRevisionId、不可变 revisions 与 noOpIdempotencyRecords。CAS 在锁内检查；内容 hash 为 UTF-8 SHA-256；幂等比较原 markdown hash 与 baseRevisionId，不包含 trigger/clientSavedAt。历史按 parent 链遍历，不按时间排序替代 lineage。完全相同应用正文被作者写入 Harness 时采纳新 source baseline，分歧为 409。
-- Note：notes/<project>.json 的 items/requests/audit 一次提交。actor+key 的 JSON 数组 base64url 是 replayKey；fingerprint 为 JSON.stringify([noteId|null, 经 Zod 归一化后的 input])，字段顺序固定 content/chapterId/purpose/baseVersion/status。Go 必须保持该顺序和 JavaScript 字符串转义。归档可逆，active next_writing 唯一，不清除旧计划。
+- Note：notes/<project>.json 的 items/requests/audit 一次提交。actor+key 的 JSON 数组 base64url 是 replayKey；fingerprint 为 JSON.stringify([noteId|null, 经 Zod 归一化后的 input])，字段顺序固定 content/chapterId/purpose/baseVersion/status。Go 必须保持该顺序和 JavaScript 字符串转义。当前锁定 Zod 的 max string 按 Unicode code points 检查，不能按 Go 字节或旧版 Zod 的 UTF-16 长度猜测。归档可逆，active next_writing 唯一，不清除旧计划。
 - Audit：章节保存先追加 requested，再按成功/冲突/失败追加结果；已有数据格式保留。完成审计失败时返回 AUDIT_WRITE_FAILED，即使草稿已落盘。Notes 审计在 notes JSON 内，与幂等结果原子提交。
 - 响应：no-store、Problem Details、ETag；x-request-id 目前仅章节保存响应和对应错误携带。401/403、请求校验与错误文案依现有实现。
 
@@ -23,7 +23,7 @@ apps/api-go 保留独立 cmd/server、cmd/harness；internal 分为 config、tra
 
 沿用旧 O_EXCL .lock 文件路径，确保 Go 多进程和旧 Node 的锁协议互斥；不自动清理未知锁，避免误删活跃锁。锁等待有界并响应 Context。临时文件同目录、独占创建、Sync、原子 Rename，保留已有 JSON 格式和数据目录，不升级、不清空。Note 事务完整提交；章节审计失败语义与旧实现一致。
 
-开发入口默认 127.0.0.1，仅显式开发身份。生产环境拒绝 local-author；内部诊断在非 development 为404。HTTP 层增加有界请求体（满足完整 2Mi UTF-16 Markdown 的 JSON 转义开销），不把未认证服务绑定公网。生产身份仍是独立未解决项，部署流程必须保持关闭，而非绕过保护。
+开发入口默认 127.0.0.1，仅显式开发身份。生产环境拒绝 local-author；内部诊断在非 development 为404。HTTP 层增加有界请求体（满足完整 2Mi Unicode code points 的 Markdown 的 JSON 转义开销），不把未认证服务绑定公网。生产身份仍是独立未解决项，部署流程必须保持关闭，而非绕过保护。
 
 ## 验证、切换与回滚
 
