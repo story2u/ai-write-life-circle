@@ -4,6 +4,7 @@
     {
       "input": "",
       "utf16Length": 0,
+      "key": "",
       "words": 0,
       "hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "quote": "\"\""
@@ -11,6 +12,7 @@
     {
       "input": "ASCII",
       "utf16Length": 5,
+      "key": "QVNDSUk",
       "words": 5,
       "hash": "sha256:481868aabe586b2a08c07657e7c2deb37bfa054baedf4e5d81e5f2a7c87124ac",
       "quote": "\"ASCII\""
@@ -18,6 +20,7 @@
     {
       "input": "中文😀é\r\n\r\n<> &",
       "utf16Length": 14,
+      "key": "5Lit5paH8J-YgGXMgQ0KDQo8PiAm",
       "words": 8,
       "hash": "sha256:0423dc9b91f3d6088c40837873126fa9cb6cae766d1b6c05f2d9d897918ffacc",
       "quote": "\"中文😀é\\r\\n\\r\\n<> &\""
@@ -25,6 +28,7 @@
     {
       "input": "\t\n\u000b\f\r         　﻿",
       "utf16Length": 17,
+      "key": "CQoLDA0gwqDhmoDigIDigIrigKjigKnigK_igZ_jgIDvu7_ChQ",
       "words": 1,
       "hash": "sha256:14185b68a21cad15bdc57ee1a1102d03b385177a96cb1244f6ee92827d68970d",
       "quote": "\"\\t\\n\\u000b\\f\\r         　﻿\""
@@ -32,6 +36,7 @@
     {
       "input": "\"\\\b\f\n\r\t\u0000\u001f",
       "utf16Length": 9,
+      "key": "IlwIDAoNCQAf",
       "words": 5,
       "hash": "sha256:885e3536d7663c85c665b437a8117f3bb8e93381dcaf1972ab82dcec45378cae",
       "quote": "\"\\\"\\\\\\b\\f\\n\\r\\t\\u0000\\u001f\""
@@ -39,6 +44,7 @@
     {
       "input": "U+2028 U+2029  <>&",
       "utf16Length": 18,
+      "key": "VSsyMDI44oCoVSsyMDI54oCpIDw-Jg",
       "words": 15,
       "hash": "sha256:7e2e91240911853f49cae796fe3b5dd1db0d93f7437cc000593774fc377b5705",
       "quote": "\"U+2028 U+2029  <>&\""
@@ -46,6 +52,7 @@
     {
       "input": "高\ud800中\udc00尾",
       "utf16Length": 5,
+      "key": "6auY77-95Lit77-95bC-",
       "words": 5,
       "hash": "sha256:ab2c3eb87fba443a477aaf576f8aacae5b14dc78a9de40e1863b19bda66b5258",
       "quote": "\"高\\ud800中\\udc00尾\""

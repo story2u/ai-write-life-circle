@@ -31,3 +31,11 @@ NODE_ENV=production
 ```
 
 不要提交 `.env` 文件到 Git。
+
+## Go API 镜像与当前部署边界
+
+Dockerfile.api 使用 Go 1.27.2 多阶段构建和 scratch 运行镜像，只有静态 Go 二进制，没有 Node.js。健康检查为 `/writer-agent-api --healthcheck`，实际请求 `/healthz`。Compose 保留 api_state Volume；只读挂载 Markdown 项目根目录（应包含 book/manuscript），可用 WRITER_AGENT_HARNESS_SOURCE 指定外部作品目录，而非仅挂载应用的 harness 文档目录，端口仅映射宿主机 loopback；镜像保持旧容器 UID，避免现有 root-owned Volume 需要改权迁移。
+
+生产身份尚未实现，`WRITER_AGENT_ENV=production` 必须拒绝启动。GitHub Actions 的 EC2 deploy job 明确暂停；镜像构建和隔离的 CI 运行验证继续执行。不得通过公开开发身份、修改保护或清空 Volume 来恢复部署。旧 `deploy-simple.sh` 等保留为历史 Web/PostgreSQL 工具，不是 Go API 的生产启用流程。
+
+完整切换与回滚步骤见 [Go API](../../apps/api-go/README.md) 与 [迁移报告](../../harness/reviews/go-backend-migration-report.md)。

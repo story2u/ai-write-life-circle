@@ -1,4 +1,10 @@
-# Writer Agent local API
+# Writer Agent legacy Node API
+
+Go is the default backend in `../api-go`. This implementation remains runnable as
+a differential oracle and rollback target; it is not shipped in the Go image.
+Use `pnpm dev:api:node` or `pnpm dev:local:node` explicitly. Existing storage is
+shared by format only: stop one writer before switching runtimes.
+
 
 The Fetch-compatible API reads a configured Markdown Harness and stores
 application drafts/state independently. It never writes Harness Markdown or
@@ -61,7 +67,7 @@ database and distributed coordination remain separate work.
 
 ## Verification and local use
 
-Run pnpm dev:api or pnpm dev:local. The root typecheck, lint, test, build and
+Run pnpm dev:api:node or pnpm dev:local:node for this legacy implementation. The root typecheck, lint, test, build and
 E2E commands include this package. OpenAPI source copies and generated status
 are in harness/contracts; pnpm openapi:check and pnpm openapi:lint verify them.
 pnpm harness:rebuild rebuilds a read-only projection. API/E2E tests use isolated

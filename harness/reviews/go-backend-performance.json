@@ -1,0 +1,78 @@
+{
+  "measuredAt": "2026-10-15T06:27:09.625Z",
+  "environment": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M5",
+    "node": "v22.22.3",
+    "go": "go version go1.27.2 darwin/arm64"
+  },
+  "method": {
+    "requestsPerOperation": 30,
+    "startSamples": 3,
+    "concurrencyForLatency": 1,
+    "notes": "Fresh processes, warm OS filesystem cache possible; loopback HTTP, same fixture and filesystem. Go fsyncs data/audit before acknowledgement; legacy Node rename/append does not fsync. RSS is a post-workload sample, not peak memory."
+  },
+  "results": {
+    "node": {
+      "coldProcessStart": {
+        "medianMs": 49.565,
+        "p95Ms": 61.243
+      },
+      "rssMiB": 82.11,
+      "latency": {
+        "chapterList": {
+          "medianMs": 0.647,
+          "p95Ms": 1.888
+        },
+        "chapterDetail": {
+          "medianMs": 0.651,
+          "p95Ms": 0.827
+        },
+        "notes": {
+          "medianMs": 0.24,
+          "p95Ms": 0.408
+        },
+        "save": {
+          "medianMs": 1.387,
+          "p95Ms": 1.692
+        }
+      },
+      "concurrency": {
+        "requests": 8,
+        "created": 1,
+        "conflicts": 7
+      }
+    },
+    "go": {
+      "coldProcessStart": {
+        "medianMs": 3.705,
+        "p95Ms": 3.777
+      },
+      "rssMiB": 20.11,
+      "latency": {
+        "chapterList": {
+          "medianMs": 0.28,
+          "p95Ms": 0.451
+        },
+        "chapterDetail": {
+          "medianMs": 0.364,
+          "p95Ms": 0.501
+        },
+        "notes": {
+          "medianMs": 0.178,
+          "p95Ms": 0.216
+        },
+        "save": {
+          "medianMs": 16.03,
+          "p95Ms": 17.855
+        }
+      },
+      "concurrency": {
+        "requests": 8,
+        "created": 1,
+        "conflicts": 7
+      }
+    }
+  }
+}

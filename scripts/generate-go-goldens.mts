@@ -7,7 +7,7 @@ import {rebuildHarnessProjection} from '../apps/api/src/harness/projection.js'
 import {noteCreateSchema,noteUpdateSchema} from '../packages/contracts/src/notes.js'
 const repo=fileURLToPath(new URL('..',import.meta.url))
 const strings=['','ASCII','中文😀e\u0301\r\n\r\n<> &','\t\n\v\f\r \u00a0\u1680\u2000\u200a\u2028\u2029\u202f\u205f\u3000\ufeff\u0085','"\\\b\f\n\r\t\u0000\u001f','U+2028\u2028U+2029\u2029 <>&','高\uD800中\uDC00尾']
-const cases=strings.map(input=>({input,utf16Length:input.length,words:Array.from(input.replace(/\s+/g,'')).length,hash:'sha256:'+createHash('sha256').update(input).digest('hex'),quote:JSON.stringify(input)}))
+const cases=strings.map(input=>({input,utf16Length:input.length,key:Buffer.from(input).toString('base64url'),words:Array.from(input.replace(/\s+/g,'')).length,hash:'sha256:'+createHash('sha256').update(input).digest('hex'),quote:JSON.stringify(input)}))
 const files={
  'manuscript/CH-001.md':'# Fixture\r\nID: CH-001\r\norder: 1\r\n\r\n中文😀  \r\n\r\n> quote\r\n- item\r\n',
  'manuscript/CH-02.md':'#\u3000Wide title\nID: CH-02\n\nFixture\n',

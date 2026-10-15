@@ -14,6 +14,7 @@ func TestNodeStringGolden(t *testing.T) {
 	var data struct {
 		Cases []struct {
 			Input  string `json:"input"`
+			Key    string `json:"key"`
 			Length int    `json:"utf16Length"`
 			Words  int    `json:"words"`
 			Hash   string `json:"hash"`
@@ -25,7 +26,7 @@ func TestNodeStringGolden(t *testing.T) {
 	}
 	for i, c := range data.Cases {
 		t.Run(string(rune('A'+i)), func(t *testing.T) {
-			if UTF16Len(c.Input) != c.Length || Words(c.Input) != c.Words || Hash(c.Input) != c.Hash || Quote(c.Input) != c.Quote {
+			if Key(c.Input) != c.Key || UTF16Len(c.Input) != c.Length || Words(c.Input) != c.Words || Hash(c.Input) != c.Hash || Quote(c.Input) != c.Quote {
 				t.Fatalf("Node string mismatch: length %d/%d words %d/%d hash %s/%s quote %q/%q", UTF16Len(c.Input), c.Length, Words(c.Input), c.Words, Hash(c.Input), c.Hash, Quote(c.Input), c.Quote)
 			}
 		})

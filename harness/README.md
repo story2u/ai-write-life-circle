@@ -13,6 +13,8 @@
 | [adapters.md](architecture/adapters.md) | 适配器模式 |
 | [harness-mapping.md](architecture/harness-mapping.md) | Harness 映射关系 |
 
+- [Go 后端迁移](architecture/go-backend-migration.md) · [验收与回滚](reviews/go-backend-migration-report.md)
+
 ### 2. 设计文档 (`design/`)
 
 | 文档 | 用途 |

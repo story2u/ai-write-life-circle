@@ -1,19 +1,20 @@
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const apiEntry = join(repositoryRoot, 'apps/api/dist/dev-server.js')
+const apiEntry = join(repositoryRoot, 'apps/api-go/dist/writer-agent-api')
 const fixtureRoot = await mkdtemp(join(tmpdir(), 'writer-agent-api-smoke-'))
 const stateDirectory = join(fixtureRoot, 'state')
-const child = spawn(process.execPath, [apiEntry], {
+const child = spawn(apiEntry, [], {
   cwd: repositoryRoot,
   env: {
     ...process.env,
     NODE_ENV: 'development',
+    PATH: fixtureRoot,
     WRITER_AGENT_API_PORT: '0',
     WRITER_AGENT_HARNESS_ROOT: fixtureRoot,
     WRITER_AGENT_STATE_DIR: stateDirectory,
@@ -91,3 +92,9 @@ try {
 
 assert.deepEqual(shutdownResult, { code: 0, signal: null }, `Built API did not shut down cleanly.\n${output}`)
 process.stdout.write('Built API process started, returned /healthz, and shut down cleanly.\n')
+
+for (const env of [{WRITER_AGENT_ENV:'production'}, {NODE_ENV:'production'}, {WRITER_AGENT_ENV:'development', WRITER_AGENT_API_HOST:'0.0.0.0'}]) {
+ const rejected = spawnSync(apiEntry, [], {cwd:repositoryRoot, env:{...process.env, ...env}, encoding:'utf8', timeout:3000})
+ assert.equal(rejected.status, 1, `Unsafe local identity configuration did not fail closed: ${rejected.stderr}`)
+}
+process.stdout.write('Production local identity and public bind guards passed.\n')

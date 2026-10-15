@@ -56,7 +56,8 @@ git push origin main
 /
 ├── apps/              # 应用代码
 │   ├── web/          # 前端应用（主要）
-│   └── api/          # 后端 API（未启用）
+│   ├── api-go/       # Go 默认后端
+│   └── api/          # Node 对照与回滚实现
 ├── packages/         # 共享包
 │   └── contracts/    # 类型定义
 ├── harness/          # 文档中心
