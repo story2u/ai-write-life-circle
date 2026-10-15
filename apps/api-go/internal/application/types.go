@@ -46,6 +46,7 @@ func same(a, b *string) bool   { return (a == nil && b == nil) || (a != nil && b
 
 type Service struct {
 	Root, State, Project string
+	ReviewsEnabled       bool
 	auditAppend          func(context.Context, string, any) error
 }
 

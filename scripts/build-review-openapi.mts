@@ -3,7 +3,7 @@ import { reviewJsonSchemas } from '../packages/contracts/src/reviews.js'
 const param = (name: string) => ({ name, in: 'path', required: true, schema: { type: 'string', minLength: 1 } })
 const response = (schema: string) => ({ description: 'Author-scoped evidence review result', content: { 'application/json': { schema: { $ref: `#/components/schemas/${schema}` } } } })
 function operation(id: string, result: string, params: string[], input?: string, mutation = false) {
-  return { operationId: id, summary: id, tags: ['Evidence Review'], 'x-implementation-status': 'implemented',
+  return { operationId: id, summary: id, tags: ['Evidence Review'], 'x-implementation-status': 'implemented', 'x-runtime': 'go',
     'x-required-role': ['author'], parameters: [...params.map(param), ...(mutation ? [{ name: 'Idempotency-Key', in: 'header', required: true, schema: { type: 'string', minLength: 1, maxLength: 128 } }] : [])],
     ...(input ? { requestBody: { required: true, content: { 'application/json': { schema: { $ref: `#/components/schemas/${input}` } } } } } : {}),
     responses: { [id === 'createEvidenceReview' ? '202' : '200']: response(result),

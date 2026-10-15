@@ -9,6 +9,7 @@
           "Evidence Review"
         ],
         "x-implementation-status": "implemented",
+        "x-runtime": "go",
         "x-required-role": [
           "author"
         ],
@@ -134,6 +135,7 @@
           "Evidence Review"
         ],
         "x-implementation-status": "implemented",
+        "x-runtime": "go",
         "x-required-role": [
           "author"
         ],
@@ -247,6 +249,7 @@
           "Evidence Review"
         ],
         "x-implementation-status": "implemented",
+        "x-runtime": "go",
         "x-required-role": [
           "author"
         ],
@@ -382,6 +385,7 @@
           "Evidence Review"
         ],
         "x-implementation-status": "implemented",
+        "x-runtime": "go",
         "x-required-role": [
           "author"
         ],
@@ -497,6 +501,7 @@
           "Evidence Review"
         ],
         "x-implementation-status": "implemented",
+        "x-runtime": "go",
         "x-required-role": [
           "author"
         ],
@@ -622,6 +627,7 @@
           "Evidence Review"
         ],
         "x-implementation-status": "implemented",
+        "x-runtime": "go",
         "x-required-role": [
           "author"
         ],

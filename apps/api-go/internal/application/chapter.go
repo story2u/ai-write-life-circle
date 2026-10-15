@@ -14,6 +14,7 @@ import (
 
 type Chapter struct {
 	ID, Title, Markdown, SourceHash, SourceRevisionID string
+	Path                                              string
 	VolumeID, Meta                                    string
 	Order                                             *int64
 }
@@ -45,7 +46,7 @@ func Sources(p harness.Projection) ([]Chapter, error) {
 		if compat.Trim(title) == "" {
 			return nil, invalidChapter(id, "a level-one Markdown title is required")
 		}
-		c := Chapter{ID: id, Title: compat.Trim(title), VolumeID: d.Metadata["volumeId"], Meta: d.Metadata["meta"], Markdown: d.Body, SourceHash: d.SHA256, SourceRevisionID: "source:" + d.Blob}
+		c := Chapter{Path: d.Path, ID: id, Title: compat.Trim(title), VolumeID: d.Metadata["volumeId"], Meta: d.Metadata["meta"], Markdown: d.Body, SourceHash: d.SHA256, SourceRevisionID: "source:" + d.Blob}
 		if raw, ok := d.Metadata["order"]; ok {
 			n, e := strconv.ParseFloat(raw, 64)
 			if !digits.MatchString(raw) || e != nil || n < 1 || n > 9007199254740991 || math.Trunc(n) != n {

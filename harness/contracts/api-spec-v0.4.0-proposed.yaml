@@ -1785,6 +1785,7 @@ paths:
       tags:
         - Evidence Review
       x-implementation-status: implemented
+      x-runtime: go
       x-required-role:
         - author
       parameters:
@@ -1862,6 +1863,7 @@ paths:
       tags:
         - Evidence Review
       x-implementation-status: implemented
+      x-runtime: go
       x-required-role:
         - author
       parameters:
@@ -1932,6 +1934,7 @@ paths:
       tags:
         - Evidence Review
       x-implementation-status: implemented
+      x-runtime: go
       x-required-role:
         - author
       parameters:
@@ -2016,6 +2019,7 @@ paths:
       tags:
         - Evidence Review
       x-implementation-status: implemented
+      x-runtime: go
       x-required-role:
         - author
       parameters:
@@ -2087,6 +2091,7 @@ paths:
       tags:
         - Evidence Review
       x-implementation-status: implemented
+      x-runtime: go
       x-required-role:
         - author
       parameters:
@@ -2165,6 +2170,7 @@ paths:
       tags:
         - Evidence Review
       x-implementation-status: implemented
+      x-runtime: go
       x-required-role:
         - author
       parameters:
