@@ -91,3 +91,5 @@ LLM 配置完整示例与边界见 [Go API 文档](../../apps/api-go/README.md)�
 3. 同键始终重放；相同 planHash 仅复用 running。completed 可通过重新预览、重新勾选及新幂等键创建独立 Run，保留旧结果与反馈。Review E2E 验证同正文第二次真实 HTTP 模型替身调用、两个历史记录和旧“有意为之”反馈仍在。Run/Plan 新增 strategyVersion，当前 continuity-review-v2，参与计划 hash；旧记录读取为 continuity-review-v1，原 hash 与反馈不变。
 
 模型质量验证继续按用户此前决定暂缓。本次修复没有调用真实模型、合并、部署或改写正式作品。
+
+CI 复验还修正了原 API E2E 的同步：主题/布局 PATCH 必须等待成功响应，再刷新验证持久化。原测试只等待请求发出，会在慢 runner 上先刷新并中断尚未确认的写入；所有恢复断言保留。
