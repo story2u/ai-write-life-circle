@@ -38,6 +38,10 @@ func (s *Service) load() (state, error) {
 		return st, storageFailure()
 	}
 	for id, r := range st.Runs {
+		if r.StrategyVersion == "" {
+			r.StrategyVersion = LegacyStrategyVersion
+			st.Runs[id] = r
+		}
 		if r.RunID != id || r.ProjectID != s.App.Project || len(r.Sources) == 0 || r.Version < 1 {
 			return st, storageFailure()
 		}

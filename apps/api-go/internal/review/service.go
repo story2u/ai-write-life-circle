@@ -112,7 +112,7 @@ func (s *Service) Start(ctx context.Context, a application.Actor, chapterID, key
 			return false, failure(409, "REVIEW_HISTORY_FULL", "The bounded review request history is full.")
 		}
 		for _, prior := range st.Runs {
-			if prior.PlanHash == plan.PlanHash && prior.CreatedBy == a.ID && (prior.Status == "running" || prior.Status == "completed") {
+			if prior.PlanHash == plan.PlanHash && prior.CreatedBy == a.ID && prior.Status == "running" {
 				run = prior
 				st.Requests[key] = requestRecord{fp, run.RunID, "create"}
 				return true, nil

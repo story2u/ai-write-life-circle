@@ -876,6 +876,10 @@
             ]
           }
         },
+        "strategyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
         "projectId": {
           "type": "string"
         },
@@ -1040,6 +1044,7 @@
         "revisionId",
         "contentHash",
         "reviewTypes",
+        "strategyVersion",
         "projectId",
         "chapterId",
         "planHash",
@@ -1076,6 +1081,10 @@
               "timeline_consistency"
             ]
           }
+        },
+        "strategyVersion": {
+          "type": "string",
+          "minLength": 1
         },
         "projectId": {
           "type": "string"
@@ -1558,6 +1567,7 @@
         "revisionId",
         "contentHash",
         "reviewTypes",
+        "strategyVersion",
         "projectId",
         "chapterId",
         "planHash",
@@ -2024,6 +2034,10 @@
                     "timeline_consistency"
                   ]
                 }
+              },
+              "strategyVersion": {
+                "type": "string",
+                "minLength": 1
               },
               "projectId": {
                 "type": "string"
@@ -2506,6 +2520,7 @@
               "revisionId",
               "contentHash",
               "reviewTypes",
+              "strategyVersion",
               "projectId",
               "chapterId",
               "planHash",

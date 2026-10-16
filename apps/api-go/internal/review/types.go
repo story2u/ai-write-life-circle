@@ -52,6 +52,7 @@ type Source struct {
 	Freshness   string  `json:"freshness"`
 }
 type Plan struct {
+	StrategyVersion string `json:"strategyVersion"`
 	Input
 	ProjectID              string        `json:"projectId"`
 	ChapterID              string        `json:"chapterId"`

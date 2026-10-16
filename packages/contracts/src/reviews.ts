@@ -43,6 +43,7 @@ export const reviewCreateSchema = reviewPreviewInputSchema.extend({
   consent: z.object({ confirmed: z.literal(true), planHash: hash }).strict(),
 }).strict()
 export const reviewPlanSchema = reviewPreviewInputSchema.extend({
+  strategyVersion: z.string().min(1),
   projectId: z.string(), chapterId: z.string(), planHash: hash, model: reviewModelSchema,
   sources: z.array(reviewSourceSchema).min(1), contextBytes: z.number().int().positive(),
   budgetBytes: z.number().int().positive(), excludedKnowledgeCount: z.number().int().nonnegative(),

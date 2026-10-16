@@ -150,7 +150,7 @@ func TestReviewSnapshotsFeedbackAndStaleness(t *testing.T) {
 	if a.Start == nil || *a.Start != 2 || a.OffsetEncoding != "utf16" {
 		t.Fatal("emoji offsets are not UTF-16", a)
 	}
-	repeated, e := s.Start(context.Background(), testAuthor, p.ChapterID, "another-key", creation(p))
+	repeated, e := s.Start(context.Background(), testAuthor, p.ChapterID, "first", creation(p))
 	if e != nil || repeated.RunID != r.RunID || fake.calls.Load() != 1 {
 		t.Fatal("duplicate model work", e)
 	}
@@ -176,6 +176,30 @@ func TestReviewSnapshotsFeedbackAndStaleness(t *testing.T) {
 	loaded, e := reloaded.Get(context.Background(), testAuthor, r.RunID)
 	if e != nil || loaded.Findings[0].Feedback.Choice != "intentional" {
 		t.Fatal("restart lost feedback", e)
+	}
+	rerun := finish(t, s, start(t, s, p, "explicit-rerun"))
+	if rerun.RunID == r.RunID || fake.calls.Load() != 2 || rerun.Findings[0].Feedback != nil || rerun.StrategyVersion != StrategyVersion {
+		t.Fatal("completed review could not be independently rerun")
+	}
+	if replay := start(t, s, p, "explicit-rerun"); replay.RunID != rerun.RunID || fake.calls.Load() != 2 {
+		t.Fatal("rerun idempotency lost")
+	}
+	items, err := s.List(context.Background(), testAuthor, p.ChapterID)
+	if err != nil || len(items) != 2 {
+		t.Fatal("rerun erased history", err)
+	}
+	st, err := s.load()
+	if err != nil || st.Runs[r.RunID].Findings[0].Feedback.Choice != "intentional" {
+		t.Fatal("rerun erased prior author feedback", err)
+	}
+	legacy := st.Runs[r.RunID]
+	legacy.StrategyVersion = ""
+	st.Runs[r.RunID] = legacy
+	if err := storage.Write(context.Background(), s.path(), st); err != nil {
+		t.Fatal(err)
+	}
+	if old, err := reloaded.Get(context.Background(), testAuthor, r.RunID); err != nil || old.StrategyVersion != LegacyStrategyVersion || old.Findings[0].Feedback.Choice != "intentional" {
+		t.Fatal("legacy strategy attribution lost", err)
 	}
 	writeFixture(t, s.App.Root, "manuscript/CH-003.md", "# 历史记录\nID: CH-003\norder: 3\n\n其他工具修改过的记录。\n")
 	stale, e := s.Get(context.Background(), testAuthor, r.RunID)
@@ -331,8 +355,15 @@ func TestContextBudgetAndKnowledgeIsolation(t *testing.T) {
 	}
 }
 func TestDuplicateConcurrentRunsAndFeedbackCAS(t *testing.T) {
-	s, fake := testService(t, nil)
+	gate := make(chan struct{})
+	var release sync.Once
+	defer release.Do(func() { close(gate) })
+	s, fake := testService(t, func(context.Context, llm.Request) (llm.Response, error) {
+		<-gate
+		return llm.Response{Text: validOutput()}, nil
+	})
 	p := plan(t, s)
+	s.Config.Timeout = 5 * time.Second
 	other := New(s.App, s.Config, fake)
 	defer other.Close()
 	var wg sync.WaitGroup
@@ -367,6 +398,7 @@ func TestDuplicateConcurrentRunsAndFeedbackCAS(t *testing.T) {
 		}
 		id = value
 	}
+	release.Do(func() { close(gate) })
 	r := finish(t, s, Run{RunID: id})
 	if fake.calls.Load() != 1 {
 		t.Fatal("duplicate model calls", fake.calls.Load())
@@ -503,5 +535,49 @@ func TestReviewHashContract(t *testing.T) {
 	}
 	if !validHash("sha256:" + strings.Repeat("a", 64)) {
 		t.Fatal("valid hash refused")
+	}
+}
+
+func TestHistoryUsesDirectoryVolumeOrder(t *testing.T) {
+	s, _ := testService(t, nil)
+	for _, c := range []struct{ id, volume, order string }{
+		{"CH-003", "VOL-1", "10"},
+		{"CH-004", "VOL-1", "11"},
+		{"CH-008", "VOL-2", "1"},
+		{"CH-009", "VOL-2", "2"},
+		{"CH-010", "VOL-3", "1"},
+	} {
+		writeFixture(t, s.App.Root, "manuscript/"+c.id+".md", "# "+c.id+"\nID: "+c.id+"\nvolumeId: "+c.volume+"\norder: "+c.order+"\n\n相同相关词。\n")
+	}
+	for _, tc := range []struct {
+		target string
+		want   []string
+	}{
+		{"CH-003", []string{}},
+		{"CH-004", []string{"CH-003"}},
+		{"CH-008", []string{"CH-004", "CH-003"}},
+		{"CH-009", []string{"CH-008", "CH-004", "CH-003"}},
+	} {
+		c, err := s.App.Source(tc.target)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, err := s.App.ReviewRevision(context.Background(), c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p, err := s.BuildPlan(context.Background(), tc.target, Input{r.ID, r.Hash, []string{"character_consistency"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := []string{}
+		for _, src := range p.Sources {
+			if src.Kind == "historical_chapter" {
+				got = append(got, *src.ChapterID)
+			}
+		}
+		if fmt.Sprint(got) != fmt.Sprint(tc.want) {
+			t.Fatalf("%s: history %v, want %v", tc.target, got, tc.want)
+		}
 	}
 }
