@@ -1,49 +1,30 @@
-name: Deploy Web → Cloudflare Pages
-
+name: Restore Web version before Sprint 3
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
-      - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
-
 permissions:
   contents: read
-  deployments: write
-
 jobs:
-  deploy:
+  restore:
+    if: github.ref == 'refs/heads/codex/restore-web-before-sprint3'
     runs-on: ubuntu-latest
-    name: Build & Deploy to Cloudflare Pages
-
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: 'false'
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.15.1
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build web
-        run: pnpm --filter @writer-agent/web build
-        env:
-          NODE_ENV: production
-
-      - name: Install Wrangler
-        run: npm install -g wrangler
-
-      - name: Deploy to Cloudflare Workers
-        run: wrangler deploy
-        working-directory: apps/web
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      - run: npm install -g wrangler@4.151.0
+      - name: Verify the unintended version is still active
+        run: |
+          wrangler deployments status --name story2u-web --json > /tmp/worker-before.json
+          node -e "const s=require('fs').readFileSync('/tmp/worker-before.json','utf8'); if(!s.includes('ff529159-04ac-4370-9afc-babe9d054478')) throw Error('Active deployment changed; refusing rollback')"
+      - name: Restore the previously deployed version
+        run: wrangler rollback 27d1302c-a582-4d0b-8376-65a665b88621 --name story2u-web --message 'Restore pre-Sprint-3 version; PR9 was approved for merge only, not deployment'
+      - name: Verify restored active version
+        run: |
+          wrangler deployments status --name story2u-web --json > /tmp/worker-after.json
+          node -e "const s=require('fs').readFileSync('/tmp/worker-after.json','utf8'); if(!s.includes('27d1302c-a582-4d0b-8376-65a665b88621')) throw Error('Restore not confirmed'); console.log('Restored active version verified: 27d1302c-a582-4d0b-8376-65a665b88621')"
