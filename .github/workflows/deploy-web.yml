@@ -21,7 +21,7 @@ jobs:
       - name: Verify the unintended version is still active
         run: |
           wrangler deployments list --name story2u-web --json > /tmp/worker-history.json
-          node -e "const h=JSON.parse(require('fs').readFileSync('/tmp/worker-history.json','utf8')); if(!Array.isArray(h)) throw Error('Unknown deployment history shape'); const prior=h.find(d=>!d.versions?.some(v=>v.version_id==='ff529159-04ac-4370-9afc-babe9d054478')); if(!prior?.versions?.some(v=>v.version_id==='27d1302c-a582-4d0b-8376-65a665b88621')) throw Error('Prior active version differs; refusing rollback'); console.log('Previous deployment version verified')"
+          node -e "const h=JSON.parse(require('fs').readFileSync('/tmp/worker-history.json','utf8')); if(!Array.isArray(h)) throw Error('Unknown deployment history shape'); h.sort((a,b)=>Date.parse(b.created_on)-Date.parse(a.created_on)); console.log(JSON.stringify(h.map(d=>({created_on:d.created_on,versions:d.versions})),null,2)); const prior=h.find(d=>!d.versions?.some(v=>v.version_id==='ff529159-04ac-4370-9afc-babe9d054478')); if(!prior?.versions?.some(v=>v.version_id==='27d1302c-a582-4d0b-8376-65a665b88621')) throw Error('Prior active version differs; refusing rollback'); console.log('Previous deployment version verified')"
           wrangler deployments status --name story2u-web --json > /tmp/worker-before.json
           node -e "const s=require('fs').readFileSync('/tmp/worker-before.json','utf8'); if(!s.includes('ff529159-04ac-4370-9afc-babe9d054478')) throw Error('Active deployment changed; refusing rollback')"
       - name: Restore the previously deployed version
