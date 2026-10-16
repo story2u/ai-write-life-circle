@@ -7,6 +7,8 @@ import (
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/application"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/config"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/identity"
+	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/llm"
+	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/review"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/transport"
 	"log/slog"
 	"net"
@@ -53,7 +55,18 @@ func run() error {
 	if e != nil {
 		return e
 	}
-	h := transport.Handler(transport.Options{Service: s, Environment: c.Environment, ResolveActor: resolver})
+	modelConfig, modelErr := llm.Load()
+	var modelClient llm.Client
+	if modelErr == nil {
+		client, err := llm.New(modelConfig)
+		if err == nil {
+			modelClient = client
+		}
+	}
+	s.ReviewsEnabled = modelClient != nil
+	reviews := review.New(s, modelConfig, modelClient)
+	defer reviews.Close()
+	h := transport.Handler(transport.Options{Service: s, Environment: c.Environment, ResolveActor: resolver, Reviews: reviews})
 	server := &http.Server{Handler: h, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 * 1024}
 	listener, e := net.Listen("tcp", net.JoinHostPort(c.Host, c.Port))
 	if e != nil {

@@ -423,6 +423,21 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     return enqueueSave(chapterId, docRef.current[chapterId] ?? [], markdownByChapterRef.current[chapterId] ?? '', editVersion)
   }, [current, enqueueSave, setChapterSaveState])
 
+  /** Freeze a confirmed saved revision for review; never substitute an older server body. */
+  const prepareReview = useCallback(async (chapterId = current) => {
+    if (adapter.mode !== 'api' || !loadedApiChaptersRef.current.has(chapterId)) throw new Error('请等待真实章节读取完成。')
+    if (recoveryDrafts[chapterId] || conflictedChaptersRef.current.has(chapterId)) throw new Error('先处理本地草稿恢复或版本冲突，再审查本章。')
+    const editVersion = editVersionsRef.current.get(chapterId) ?? 0
+    if (!await flushSave(chapterId)) throw new Error('正文尚未安全保存，审查未开始。请先解决保存问题。')
+    if ((editVersionsRef.current.get(chapterId) ?? 0) !== editVersion || savedEditVersionsRef.current.get(chapterId) !== editVersion) throw new Error('正文在保存期间又有修改，请停笔保存后重新发起审查。')
+    const version = apiVersionsRef.current[chapterId]
+    const markdown = markdownByChapterRef.current[chapterId]
+    if (!version || markdown === undefined) throw new Error('缺少已保存的章节版本，审查未开始。')
+    const contentHash = await hashMarkdown(markdown)
+    if ((editVersionsRef.current.get(chapterId) ?? 0) !== editVersion || version.contentHash !== contentHash) throw new Error('当前正文与已保存版本不一致，审查未开始。')
+    return { chapterId, revisionId: version.revisionId, contentHash, markdown }
+  }, [adapter.mode, current, flushSave, recoveryDrafts])
+
   const onChange = useCallback((paragraphs: string[], changedMarkdown?: string) => {
     const chapterId = current
     const markdown = changedMarkdown ?? plainParagraphsToMarkdown(paragraphs)
@@ -778,7 +793,7 @@ export function useWorkspaceController({ adapter, initialWorkspace, toast, reque
     editorGeneration,
     recoveryDraft: recoveryDrafts[current],
     restoreLocalDraft, reloadServerVersion, retryLoadChapter, exportLocalDraft,
-    flushSave, retrySave, onChange, switchChapter, runReview, cancelReview, decide,
+    flushSave, prepareReview, retrySave, onChange, switchChapter, runReview, cancelReview, decide,
     createProposal, sendChat, markChatSaved, requestChallenge,
   }
 }

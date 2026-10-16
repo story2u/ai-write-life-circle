@@ -11,6 +11,8 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /writer-agent-api ./cmd
 FROM scratch
 COPY --from=builder /runtime/ /
 COPY --from=builder /writer-agent-api /writer-agent-api
+# net/http needs trust roots for configured HTTPS model providers.
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 ENV HOME=/tmp \
     WRITER_AGENT_ENV=production \
     WRITER_AGENT_API_PORT=8787 \

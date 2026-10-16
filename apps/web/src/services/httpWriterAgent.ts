@@ -1,3 +1,4 @@
+import { httpReviewsAdapter } from './api/reviewsApi'
 import { httpNotesAdapter } from './api/notesApi'
 import type {
   ChallengeResponse,
@@ -20,6 +21,7 @@ export function createHttpWriterAgentAdapter(): ApiWriterAgentAdapter {
   return {
     mode: 'api',
     notes: httpNotesAdapter,
+    reviews: httpReviewsAdapter,
     async loadWorkspace(projectId) {
       const [workspace, chapters] = await Promise.all([getWorkspace(projectId), listChapters(projectId)])
       if (workspace.project.projectId !== projectId) {

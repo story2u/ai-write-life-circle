@@ -14,6 +14,7 @@ import (
 
 type Chapter struct {
 	ID, Title, Markdown, SourceHash, SourceRevisionID string
+	Path                                              string
 	VolumeID, Meta                                    string
 	Order                                             *int64
 }
@@ -45,7 +46,7 @@ func Sources(p harness.Projection) ([]Chapter, error) {
 		if compat.Trim(title) == "" {
 			return nil, invalidChapter(id, "a level-one Markdown title is required")
 		}
-		c := Chapter{ID: id, Title: compat.Trim(title), VolumeID: d.Metadata["volumeId"], Meta: d.Metadata["meta"], Markdown: d.Body, SourceHash: d.SHA256, SourceRevisionID: "source:" + d.Blob}
+		c := Chapter{Path: d.Path, ID: id, Title: compat.Trim(title), VolumeID: d.Metadata["volumeId"], Meta: d.Metadata["meta"], Markdown: d.Body, SourceHash: d.SHA256, SourceRevisionID: "source:" + d.Blob}
 		if raw, ok := d.Metadata["order"]; ok {
 			n, e := strconv.ParseFloat(raw, 64)
 			if !digits.MatchString(raw) || e != nil || n < 1 || n > 9007199254740991 || math.Trunc(n) != n {
@@ -82,22 +83,11 @@ func (s *Service) Source(id string) (Chapter, error) {
 	}
 	return Unique(p, id)
 }
-func (s *Service) Chapters() (any, error) {
-	p, e := s.Projection()
-	if e != nil {
-		return nil, e
-	}
-	for _, c := range p.Collisions {
-		if chapterRE.MatchString(c.ID) {
-			return nil, duplicateChapter(c.ID, c.Paths)
-		}
-	}
-	all, e := Sources(p)
-	if e != nil {
-		return nil, e
-	}
+
+// chapterGroups is the directory's canonical volume and within-volume order.
+// Volume order follows first appearance in the deterministic Harness projection.
+func chapterGroups(all []Chapter) [][]Chapter {
 	groups := [][]Chapter{}
-	volumeIDs := []string{}
 	indices := map[string]int{}
 	for _, c := range all {
 		key := c.VolumeID
@@ -109,12 +99,10 @@ func (s *Service) Chapters() (any, error) {
 			i = len(groups)
 			indices[key] = i
 			groups = append(groups, []Chapter{})
-			volumeIDs = append(volumeIDs, c.VolumeID)
 		}
 		groups[i] = append(groups[i], c)
 	}
-	volumes := []any{}
-	for groupIndex, g := range groups {
+	for _, g := range groups {
 		sort.SliceStable(g, func(i, j int) bool {
 			a, b := int64(9007199254740991), int64(9007199254740991)
 			if g[i].Order != nil {
@@ -133,6 +121,35 @@ func (s *Service) Chapters() (any, error) {
 			}
 			return harness.LocaleCompare(g[i].ID, g[j].ID) < 0
 		})
+	}
+	return groups
+}
+
+// OrderedChapters flattens the exact chapter directory order for historical review.
+func OrderedChapters(all []Chapter) []Chapter {
+	ordered := []Chapter{}
+	for _, group := range chapterGroups(all) {
+		ordered = append(ordered, group...)
+	}
+	return ordered
+}
+
+func (s *Service) Chapters() (any, error) {
+	p, e := s.Projection()
+	if e != nil {
+		return nil, e
+	}
+	for _, c := range p.Collisions {
+		if chapterRE.MatchString(c.ID) {
+			return nil, duplicateChapter(c.ID, c.Paths)
+		}
+	}
+	all, e := Sources(p)
+	if e != nil {
+		return nil, e
+	}
+	volumes := []any{}
+	for _, g := range chapterGroups(all) {
 		items := []any{}
 		for _, c := range g {
 			m := map[string]any{"chapterId": c.ID, "title": c.Title, "wordCount": compat.Words(c.Markdown)}
@@ -145,8 +162,8 @@ func (s *Service) Chapters() (any, error) {
 			items = append(items, m)
 		}
 		v := map[string]any{"chapters": items}
-		if volumeIDs[groupIndex] != "" {
-			v["volumeId"] = volumeIDs[groupIndex]
+		if g[0].VolumeID != "" {
+			v["volumeId"] = g[0].VolumeID
 		}
 		volumes = append(volumes, v)
 	}

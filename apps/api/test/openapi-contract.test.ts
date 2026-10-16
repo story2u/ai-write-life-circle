@@ -20,7 +20,7 @@ import { createApiHandler } from '../src/http.js'
 
 const contractPath = fileURLToPath(new URL('../../../harness/contracts/api-spec-v0.4.0-proposed.yaml', import.meta.url))
 const contract = YAML.parse(await readFile(contractPath, 'utf8')) as {
-  paths: Record<string, Record<string, { operationId?: string; 'x-implementation-status'?: string; responses?: Record<string, unknown> }>>
+  paths: Record<string, Record<string, { operationId?: string; 'x-implementation-status'?: string; 'x-runtime'?: string; responses?: Record<string, unknown> }>>
   components: { schemas: Record<string, unknown> }
 }
 const contractId = 'https://writer-agent.test/contracts/v0.4'
@@ -71,7 +71,7 @@ describe('versioned OpenAPI contract', () => {
   it('marks every operation implemented or proposed and lists only the implemented Workspace, Chapter and Note routes', () => {
     const operations = Object.values(contract.paths).flatMap((pathItem) => Object.values(pathItem))
     expect(operations.every((operation) => ['implemented', 'proposed'].includes(operation['x-implementation-status'] ?? ''))).toBe(true)
-    expect(operations.filter((operation) => operation['x-implementation-status'] === 'implemented').map((operation) => operation.operationId).sort()).toEqual(implementedOperationIds)
+    expect(operations.filter((operation) => operation['x-implementation-status'] === 'implemented' && operation['x-runtime'] !== 'go').map((operation) => operation.operationId).sort()).toEqual(implementedOperationIds)
   })
 
   it('keeps the implemented API responses and chapter save body aligned with both OpenAPI and Zod', async () => {

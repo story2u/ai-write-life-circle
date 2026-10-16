@@ -64,6 +64,9 @@ chapterRevisionCreate.required = chapterRevisionCreate.required.map((name) => na
 
 const problemCodes = source.components.schemas.Problem?.properties?.code?.enum
 if (Array.isArray(problemCodes) && !problemCodes.includes('AUDIT_WRITE_FAILED')) problemCodes.push('AUDIT_WRITE_FAILED')
+for (const code of ['REVIEW_CONTEXT_TOO_LARGE', 'REVIEW_EMPTY_CHAPTER', 'REVIEW_REVISION_CHANGED', 'REVIEW_SOURCE_UNAVAILABLE', 'REVIEW_UNAVAILABLE', 'REVIEW_BUSY', 'REVIEW_CONSENT_REQUIRED', 'REVIEW_CONTEXT_CHANGED', 'REVIEW_HISTORY_FULL', 'REVIEW_NOT_COMPLETED', 'REVIEW_NOT_RUNNING', 'REVIEW_VERSION_CONFLICT', 'REVIEW_STORAGE_FAILED']) {
+  if (Array.isArray(problemCodes) && !problemCodes.includes(code)) problemCodes.push(code)
+}
 
 const auditSchema = source.components.schemas.AuditRecord
 if (auditSchema?.properties) {
@@ -90,6 +93,12 @@ for (const code of ['NOTE_VERSION_CONFLICT', 'NEXT_WRITING_EXISTS', 'METHOD_NOT_
   if (Array.isArray(problemCodes) && !problemCodes.includes(code)) problemCodes.push(code)
 }
 source['x-notes-extension-provenance'] = notesExtension.provenance
+
+const reviewExtension = JSON.parse(await readFile(new URL('../harness/contracts/review-engineering-extension.json', import.meta.url), 'utf8'))
+Object.assign(source.paths, reviewExtension.paths)
+Object.assign(source.components.schemas, reviewExtension.schemas)
+source.tags.push({ name: 'Evidence Review', description: 'Author-triggered, fixed-revision continuity review. Verified quotes are evidence, not verified AI judgments.' })
+source['x-review-extension-provenance'] = reviewExtension.provenance
 
 const generated = YAML.stringify(source, { indent: 2, lineWidth: 110 })
 if (process.argv.includes('--check')) {

@@ -33,6 +33,7 @@ export const capabilitiesSchema = z.object({
   knowledge: z.boolean(),
   annotations: z.boolean(),
   canonChanges: z.boolean(),
+  evidenceReview: z.boolean().optional(),
 })
 export type AuthorNote = z.infer<typeof authorNoteSchema>
 export type NoteCreate = z.infer<typeof noteCreateSchema>

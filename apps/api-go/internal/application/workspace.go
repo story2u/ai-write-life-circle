@@ -33,7 +33,12 @@ func (s *Service) Workspace(actor string) (any, error) {
 	if e != nil {
 		return nil, e
 	}
-	return map[string]any{"project": map[string]any{"projectId": s.Project}, "userState": state, "counts": map[string]any{}, "runningTasks": []any{}, "capabilities": map[string]bool{"notes": true, "agentRuntime": false, "knowledge": false, "annotations": false, "canonChanges": false}}, nil
+	capabilities := map[string]bool{"notes": true, "agentRuntime": false, "knowledge": false, "annotations": false, "canonChanges": false}
+	if s.ReviewsEnabled {
+		capabilities["evidenceReview"] = true
+		capabilities["annotations"] = true
+	}
+	return map[string]any{"project": map[string]any{"projectId": s.Project}, "userState": state, "counts": map[string]any{}, "runningTasks": []any{}, "capabilities": capabilities}, nil
 }
 func (s *Service) PatchWorkspace(ctx context.Context, actor Actor, input any) (any, error) {
 	if actor.Role != "author" {

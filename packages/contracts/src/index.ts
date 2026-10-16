@@ -173,3 +173,5 @@ export const workspaceStateSchema = z.object({
 export type WorkspaceState = z.infer<typeof workspaceStateSchema>
 
 export * from './notes.js'
+
+export * from './reviews.js'

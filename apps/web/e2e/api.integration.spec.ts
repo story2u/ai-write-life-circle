@@ -36,11 +36,11 @@ test('real Harness chapter read, save, recovery, conflict safety, and Workspace 
   await pageA.reload()
   await expect(pageA.getByLabel('正文编辑器')).toContainText(firstEdit)
 
-  const themePatch = pageA.waitForRequest((request) => request.method() === 'PATCH' && request.url().includes('/workspace'))
+  const themePatch = pageA.waitForResponse((response) => response.request().method() === 'PATCH' && response.url().includes('/workspace') && response.ok() && response.request().postDataJSON()?.theme === 'dark')
   await pageA.getByRole('button', { name: '深色主题' }).click()
   await expect(pageA.locator('.dark')).toHaveCount(1)
   await themePatch
-  const layoutPatch = pageA.waitForRequest((request) => request.method() === 'PATCH' && request.url().includes('/workspace'))
+  const layoutPatch = pageA.waitForResponse((response) => response.request().method() === 'PATCH' && response.url().includes('/workspace') && response.ok() && response.request().postDataJSON()?.layout?.focus === true)
   await pageA.getByRole('button', { name: '专注' }).click()
   await expect(pageA.getByRole('button', { name: '退出专注' })).toBeVisible()
   await layoutPatch
