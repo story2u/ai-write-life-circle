@@ -58,7 +58,7 @@ LLM 配置完整示例与边界见 [Go API 文档](../../apps/api-go/README.md)�
 | --- | --- |
 | pnpm install --frozen-lockfile | 通过 |
 | pnpm typecheck / lint / build | 通过 |
-| pnpm test | Go race、Node 29 项、Web 55 项、Review HTTP 评测通过 |
+| pnpm test | Go race、Node 29 项、Web 70 项、Review HTTP 评测通过 |
 | pnpm eval:review（纳入 pnpm test） | 8 类隔离夹具，至少 69 次 HTTP/契约检查（轮询次数随调度变化）；不是模型质量评分 |
 | pnpm test:e2e | 9 项原 Demo 视觉/交互、2 项原 API、3 项新 Review 测试 |
 | pnpm openapi:check / openapi:lint | 通过；lint 有 37 条文档 warnings，无错误 |
@@ -83,3 +83,11 @@ LLM 配置完整示例与边界见 [Go API 文档](../../apps/api-go/README.md)�
 未实现通用 Runtime、多 Agent、自动研究/工具调用、流式输出、向量检索、完整全书覆盖、正式知识写入、自动改稿、多机任务调度、自动归档、模型语义准确率及成本监控。下一步先配置一个兼容模型，在合成 A–D 夹具上做多次人工离线评分，再由作者明确授权小范围真实作品验证，积累 useful/false_positive/intentional/ignored 反馈。
 
 本次不变更生产环境。交付 PR 保持 Open，后续模型接入、合并和部署另行执行。
+
+## PR #9 审查修复（2026-10-16）
+
+1. 历史章节改为复用目录的卷分组与卷内排序，以全局位置过滤与计算距离。跨卷回归覆盖上一卷 order=10/11、下一卷 order=1/2、后续卷 order=1：保留应选历史并拒绝未来章节；原 95 项 Node/Go 对照保留。
+2. Review UI 状态按项目/章节/切换 epoch 隔离，请求携带代次及所选 Run 检查。15 项新 Hook 回归覆盖 start/cancel/feedback 成功或失败在 B 列表前后返回、A→B→A、跨项目切换、A finally 不清除 B 忙状态，以及不确定响应重试键保留。已接受的服务端操作继续保存，仅丢弃过期 UI 更新。
+3. 同键始终重放；相同 planHash 仅复用 running。completed 可通过重新预览、重新勾选及新幂等键创建独立 Run，保留旧结果与反馈。Review E2E 验证同正文第二次真实 HTTP 模型替身调用、两个历史记录和旧“有意为之”反馈仍在。Run/Plan 新增 strategyVersion，当前 continuity-review-v2，参与计划 hash；旧记录读取为 continuity-review-v1，原 hash 与反馈不变。
+
+模型质量验证继续按用户此前决定暂缓。本次修复没有调用真实模型、合并、部署或改写正式作品。

@@ -35,9 +35,9 @@ export function ReviewMarginPanel({ review, locate, select, saveNote, marksHidde
     <section className="space-y-3 border-b border-line px-5 pb-4">
       <div className="flex items-center gap-2"><h2 className="flex-1 text-ui font-medium">本章连续性审查</h2><Btn size="sm" disabled={!!review.busy} onClick={review.refresh}>刷新记录</Btn></div>
       {!review.available && <p className="text-ui-sm text-ink-3">真实审查不可用：服务端尚未配置可用模型，或此后端不支持审查。历史记录仍可查看。</p>}
-      <Btn size="sm" variant="outline" disabled={!review.available || !!review.busy || emptyChapter || run?.status === 'running'} onClick={() => void review.prepare()}>审查本章</Btn>
+      <Btn size="sm" variant="outline" disabled={!review.available || !!review.busy || emptyChapter || run?.status === 'running'} onClick={() => void review.prepare()}>{run?.status === 'completed' ? '重新审查' : '审查本章'}</Btn>
       {review.runs.length > 0 && <label className="block text-ui-sm text-ink-3">审查记录<select aria-label="审查记录" className="mt-1 w-full rounded border border-line bg-surface p-2 text-ink" value={run?.runId ?? ''} disabled={!!review.busy} onChange={(event) => void review.choose(event.target.value)}>{review.runs.map((item) => <option key={item.runId} value={item.runId}>{new Date(item.startedAt).toLocaleString('zh-CN')} · {statuses[item.status]}</option>)}</select></label>}
-      {run && <p role="status" className="text-ui-sm text-ink-3">{statuses[run.status]} · {run.model.model}{run.usage ? ` · 输入 ${run.usage.inputTokens} / 输出 ${run.usage.outputTokens} tokens` : ''}</p>}
+      {run && <p role="status" className="text-ui-sm text-ink-3">{statuses[run.status]} · {run.model.model} · {run.strategyVersion}{run.usage ? ` · 输入 ${run.usage.inputTokens} / 输出 ${run.usage.outputTokens} tokens` : ''}</p>}
       {run?.status === 'running' && <div className="space-y-2"><p className="text-ui-sm text-ink-3">正在核对固定版本。你可以继续写作，结果完成后按需查看。</p><Btn size="sm" disabled={!!review.busy} onClick={() => void review.cancel()}>取消审查</Btn></div>}
       {run?.status === 'failed' && <p role="alert" className="text-ui-sm text-warn">审查未完成：{run.failureCode ?? '未知错误'}。正文和正式资料保持不变。</p>}
       {review.stale && <p role="alert" className="rounded bg-warn-soft p-2 text-ui-sm text-warn">正文或历史证据已变化。这份结果基于旧快照，不能定位到当前正文；可以重新审查。</p>}

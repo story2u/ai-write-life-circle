@@ -63,8 +63,10 @@ Base URL 为 API 前缀，客户端追加 `/chat/completions`。远程服务只�
 - POST `/reviews/:runId/cancel`：取消；迟到结果不能覆盖取消状态。
 - POST `/reviews/:runId/findings/:findingId/feedback`：四种作者反馈，baseVersion CAS。
 
-启动/取消/反馈要求 Idempotency-Key。预览/启动要求 revisionId、contentHash、reviewTypes；启动额外要求 consent.confirmed=true 和预览的 planHash。来源或模型改变返回 409，需要重新授权。幂等键重放返回同一运行，同计划成功/运行中任务去重；失败/取消任务使用新键重试。
+启动/取消/反馈要求 Idempotency-Key。预览/启动要求 revisionId、contentHash、reviewTypes；启动额外要求 consent.confirmed=true 和预览的 planHash。来源或模型改变返回 409，需要重新授权。相同幂等键重放返回同一运行；同计划仍在运行时复用任务，已完成后作者可重新授权并用新键创建独立 Run，旧结果与反馈保留。网络响应丢失时，前端同一次授权沿用原键重试；重新预览或显式重新审查才创建新授权键。失败/取消任务也可使用新键重试。
 
 状态在 STATE_DIR/review-runs 下，每项目一个 JSON，权限 0600，原子保存运行/反馈/幂等，不混入 Draft、Notes、Audit 或正式 Harness。备份时包含整个状态目录；Review 快照也含原文，需按作品敏感资料保护。每项目最多 200 个运行、10000 条请求/反馈，达到上限需人工备份归档，不自动删记录。每项目同时一个运行；工作进程重启后原 running 在 deadline 到期读取时转为 interrupted，不自动重新发送作品。跨进程共享状态可协调，但远端进程取消不保证立即终止另一个进程的模型 HTTP 请求，结果仍不会覆盖取消；当前部署以单进程为准。
 
 `pnpm test:review` / `pnpm eval:review` 为真实 HTTP 路径的确定性测试。`pnpm eval:review:live` 显式授权发送合成夹具给配置的真实模型；作者真实作品不用于 CI。用户暂缓真实模型联调，当前不宣称真实 LLM E2E。
+
+审查历史范围与章节目录共用卷分组、卷内排序，按全局位置选择目标之前的章节；卷顺序保持目录的既有规则（Harness 确定性投影中各卷首次出现的顺序），不把卷内 order 当作全书序号。Plan/Run 保存 strategyVersion，当前为 continuity-review-v2，参与 planHash 和模型输入；今后改变 Prompt、上下文选择或证据策略时应升级常量。旧状态缺少此字段时读取为 continuity-review-v1，保留原 planHash、记录与作者反馈。

@@ -301,7 +301,7 @@ export default function WritingSpace({
                 <Icon name="pen" />
                 随手记
               </Btn>
-              {adapter.mode === 'api' && <Btn size="sm" disabled={!reviews.available || !!reviews.busy || !current || !(workspace.markdownByChapter[current] ?? '').trim() || reviews.run?.status === 'running'} onClick={() => void reviews.prepare()}>{reviews.busy === 'preview' ? '准备审查…' : '审查本章'}</Btn>}
+              {adapter.mode === 'api' && <Btn size="sm" disabled={!reviews.available || !!reviews.busy || !current || !(workspace.markdownByChapter[current] ?? '').trim() || reviews.run?.status === 'running'} onClick={() => void reviews.prepare()}>{reviews.busy === 'preview' ? '准备审查…' : reviews.run?.status === 'completed' ? '重新审查' : '审查本章'}</Btn>}
               <Btn size="sm" onClick={() => openThink(selection)}>
                 思考
               </Btn>

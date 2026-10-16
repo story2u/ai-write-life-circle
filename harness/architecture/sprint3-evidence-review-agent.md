@@ -16,7 +16,7 @@ LLM Client 只暴露 Generate(ctx, request)，使用标准 HTTP OpenAI-compatibl
 
 ## 数据与证据
 
-ReviewPlan/Run 包含 project/chapter/revision/contentHash、reviewTypes、无密钥 ModelInfo、完整上下文快照引用、planHash、预算、状态和诊断。Run 状态为 running/completed/failed/cancelled，单项目最多 1 个活动任务，固定版本重复请求复用；幂等键冲突明确拒绝。请求断开不代表取消已接受的异步任务，取消有独立端点；进程中断后达到 deadline 的遗留运行标记 failed，不冒称完成。
+ReviewPlan/Run 包含 strategyVersion（参与 planHash 和模型输入）、project/chapter/revision/contentHash、reviewTypes、无密钥 ModelInfo、完整上下文快照引用、planHash、预算、状态和诊断。Run 状态为 running/completed/failed/cancelled，单项目最多 1 个活动任务，同一幂等键重放以及同计划运行中请求复用；已完成后作者重新授权可创建独立 Run，保留原结果及反馈；幂等键冲突明确拒绝。请求断开不代表取消已接受的异步任务，取消有独立端点；进程中断后达到 deadline 的遗留运行标记 failed，不冒称完成。
 
 模型候选必须含两类之一、标题、AI 推断、作者问题、其他可能解释、至少两条不同来源引文，其中至少一条来自目标正文。严格 JSON 拒绝未知字段/修改动作；每条引文必须逐字存在于本次允许的片段，服务端重新计算 Hash/项目/修订。不存在来源、编造引文、未确认知识不能成为正式注记。引文核验仅证明引用真实，不证明 AI 推断或叙述者认知等于客观事实。
 
@@ -37,3 +37,11 @@ TextAnchor 的 start/end 明确定义为原始 Markdown 的 UTF-16 code units，
 不做多用户认证、部署、自动生成正文、Canon 写回、向量库、多 Agent 或工具循环。真实模型联调与离线 Eval 独立报告，未配置时明确未执行。
 
 参考：[OpenAI 结构化输出](https://developers.openai.com/api/docs/guides/structured-outputs)；兼容服务仍需配置 JSON 模式，服务端始终独立校验，不依赖模型承诺。
+
+## PR #9 审查修正
+
+历史来源使用 application.OrderedChapters，与目录的卷分组和卷内排序共用实现，先判定全局先后再按相关度/距离排序。卷内重新编号不会引入未来章节或排除上一卷历史。保留既有目录排序和 Node/Go 兼容行为。
+
+前端 scope 绑定 projectId、chapterId 和单调递增 epoch（含 A→B→A），请求还校验代次及所选 runId。历史、选中结果、预览、错误和忙状态均按 epoch 隔离；旧请求成功/失败/finally 不更新新章节，不递增其代次或清除其操作。已被服务端接受的任务继续保留，丢弃迟到 UI 更新不撤销服务端操作。
+
+策略版本更新为 continuity-review-v2；旧持久化记录归属 continuity-review-v1。新授权与网络重试分别使用新键/原键，重新打开授权弹窗必须重新勾选。已经完成的审查允许明确“重新审查”，不因同一 planHash 永久返回旧结果。
