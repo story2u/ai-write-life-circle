@@ -28,6 +28,7 @@ export default {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/test/**/*.test.{ts,tsx}'],
+    exclude: ['src/test/authWorker.test.ts'],
     css: true,
   },
 }

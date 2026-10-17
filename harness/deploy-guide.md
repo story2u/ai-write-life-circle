@@ -57,7 +57,7 @@ sudo bash install-api-https.sh api.example.com /home/ubuntu/nginx/nginx.conf ./d
 - HTTP 只重定向 HTTPS，不转发业务写入；生产 internal projection 返回 404。
 - 从公网验证证书链、主机名和有效期，重启 API 后验证可用性。测试数据使用隔离状态目录，不自动写入作者数据。
 
-本地 curl 配置文件应设置 0600，并包含 `header = "Authorization: Bearer <token>"`。随后可使用 `curl --config /PRIVATE/PATH/api.curl https://API_DOMAIN/v1/projects/local/notes`。不要在浏览器包或 Git 中放令牌；目前没有多用户登录、跨域前端接入或 OIDC。
+本地 curl 配置文件应设置 0600，并包含 `header = "Authorization: Bearer <token>"`。随后可使用 `curl --config /PRIVATE/PATH/api.curl https://API_DOMAIN/v1/projects/local/notes`。不要在浏览器包或 Git 中放令牌。Go 自身仍是单作者 Bearer；Web 的 Better Auth Google 登录和同源 Worker 代理配置见 [Google 登录](google-login.md)。
 
 ## 运维、轮换与回滚
 
