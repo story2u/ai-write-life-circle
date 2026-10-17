@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { authClient, sessionExpiredEvent } from './authClient'
 
-const App = lazy(() => import('../../app/App'))
+const App = lazy(() => window.location.pathname==='/studio/publish'?import('../../site/Publish'):import('../../app/App'))
 type Author = { name: string; email: string }
 
 export default function AuthGate() {
@@ -31,7 +31,8 @@ export default function AuthGate() {
     setBusy(true)
     setMessage('')
     try {
-      const result = await authClient.signIn.social({ provider: 'google', callbackURL: '/', errorCallbackURL: '/?login=failed' })
+      const callbackURL=import.meta.env.VITE_STORY2U_PUBLIC_SITE==='true'?(window.location.pathname==='/studio/publish'?'/studio/publish':'/studio'):'/'
+      const result = await authClient.signIn.social({ provider: 'google', callbackURL, errorCallbackURL: callbackURL+'?login=failed' })
       if (result.error) throw new Error('暂时无法连接 Google 登录，请稍后重试。')
     } catch (error: unknown) {
       setMessage(error instanceof Error ? error.message : '登录失败，请重试。')
@@ -63,7 +64,7 @@ export default function AuthGate() {
     </main>
   )
   return (
-    <div className="authenticated-workspace flex h-dvh flex-col bg-page text-ink">
+    <div className={window.location.pathname==='/studio/publish'?'flex min-h-dvh flex-col bg-page text-ink':'authenticated-workspace flex h-dvh flex-col bg-page text-ink'}>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-b border-line px-3 py-1 text-xs text-ink-2">
         {message && <><p role="alert" className="mr-auto text-danger">{message}</p><button type="button" disabled={busy} onClick={() => void signIn()}>重新登录</button></>}
         <span>{user.email}</span><button type="button" disabled={busy} onClick={() => void signOut()}>退出登录</button>

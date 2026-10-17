@@ -9,10 +9,10 @@
     "build": "pnpm build:api:go && pnpm --filter @writer-agent/web build",
     "typecheck": "pnpm --filter @writer-agent/contracts typecheck && pnpm --filter @writer-agent/api typecheck && pnpm --filter @writer-agent/web typecheck",
     "lint": "pnpm --filter @writer-agent/web lint && ./apps/web/node_modules/.bin/eslint --config apps/web/eslint.config.js apps/api/src apps/api/test packages/contracts/src",
-    "test": "pnpm test:api:go && pnpm test:api:node && pnpm test:review && pnpm --filter @writer-agent/web test",
-    "openapi:generate": "pnpm --filter @writer-agent/api exec tsx ../../scripts/build-notes-openapi.mts && pnpm --filter @writer-agent/api exec tsx ../../scripts/build-review-openapi.mts && node scripts/build-openapi-candidate.mjs",
-    "openapi:check": "pnpm --filter @writer-agent/api exec tsx ../../scripts/build-notes-openapi.mts --check && pnpm --filter @writer-agent/api exec tsx ../../scripts/build-review-openapi.mts --check && node scripts/build-openapi-candidate.mjs --check",
-    "openapi:lint": "pnpm exec redocly lint harness/contracts/api-spec-v0.4.0-proposed.yaml",
+    "test": "pnpm test:api:go && pnpm test:api:node && pnpm test:review && pnpm test:publication && pnpm --filter @writer-agent/web test",
+    "openapi:generate": "pnpm --filter @writer-agent/api exec tsx ../../scripts/build-notes-openapi.mts && pnpm --filter @writer-agent/api exec tsx ../../scripts/build-review-openapi.mts && node scripts/build-openapi-candidate.mjs && pnpm --filter @writer-agent/api exec tsx ../../scripts/build-publication-openapi.mts",
+    "openapi:check": "pnpm --filter @writer-agent/api exec tsx ../../scripts/build-notes-openapi.mts --check && pnpm --filter @writer-agent/api exec tsx ../../scripts/build-review-openapi.mts --check && node scripts/build-openapi-candidate.mjs --check && pnpm --filter @writer-agent/api exec tsx ../../scripts/build-publication-openapi.mts --check",
+    "openapi:lint": "pnpm exec redocly lint harness/contracts/api-spec-v0.4.0-proposed.yaml && pnpm exec redocly lint harness/contracts/publication-api-v1.json",
     "dev:api": "pnpm dev:api:go",
     "harness:rebuild": "go run -C apps/api-go ./cmd/harness",
     "test:e2e": "pnpm --filter @writer-agent/web test:e2e",
@@ -30,7 +30,8 @@
     "bench:api": "pnpm build:api:node && pnpm build:api:go && node scripts/benchmark-api.mjs",
     "test:review": "pnpm build:api:go && node scripts/test-review-api.mjs",
     "eval:review": "pnpm test:review",
-    "eval:review:live": "pnpm build:api:go && node scripts/test-review-api.mjs --live --confirm-fixtures"
+    "eval:review:live": "pnpm build:api:go && node scripts/test-review-api.mjs --live --confirm-fixtures",
+    "test:publication": "pnpm --filter @writer-agent/contracts build && pnpm build:api:go && node scripts/test-publication-api.mjs"
   },
   "devDependencies": {
     "@redocly/cli": "2.63.0",

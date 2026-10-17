@@ -1,3 +1,5 @@
+import { handlePublicSite } from './public'
+import { publicationRoute } from './publication-route'
 import { authConfigured, authorAllowed, createAuth, type Env } from './auth'
 
 function problem(status: number, code: string, detail: string) {
@@ -7,6 +9,7 @@ function problem(status: number, code: string, detail: string) {
 }
 
 function allowedRoute(path: string, method: string, project: string) {
+  if(publicationRoute(path,method,project))return true
   const base = `/v1/projects/${encodeURIComponent(project)}`
   if (!path.startsWith(base + '/')) return false
   const suffix = path.slice(base.length)
@@ -37,8 +40,14 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     canonical.search = url.search
     return Response.redirect(canonical.href, 308)
   }
+  const publicResponse=await handlePublicSite(request,{...env,ASSETS:{fetch:(assetRequest:Request)=>env.ASSETS.fetch(assetRequest as never) as unknown as Promise<Response>},WRITER_AGENT_API_ORIGIN:env.WRITER_AGENT_API_ORIGIN||'https://api.story2u.xyz'})
+  if(publicResponse)return publicResponse
   const privateRoute = url.pathname === '/api/session' || url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/v1/')
-  if (!privateRoute) return env.ASSETS.fetch(request as never) as unknown as Promise<Response>
+  if (!privateRoute) {
+    const response=await (env.ASSETS.fetch(request as never) as unknown as Promise<Response>)
+    if(url.pathname.startsWith('/studio')){const headers=new Headers(response.headers);headers.set('x-robots-tag','noindex,nofollow');headers.set('cache-control','no-store');return new Response(response.body,{status:response.status,headers})}
+    return response
+  }
   if (!authConfigured(env)) return problem(503, 'AUTH_NOT_CONFIGURED', '登录服务尚未配置完成。')
   if (url.origin !== new URL(env.BETTER_AUTH_URL).origin) return problem(403, 'ORIGIN_FORBIDDEN', '请使用正式作品入口。')
   if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -82,7 +91,9 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
         }
       }
       // Only the redirect flow is exposed; client input cannot override scopes or Google parameters.
-      const safeBody = { provider: 'google', callbackURL: '/', errorCallbackURL: '/?login=failed' }
+      const requested=typeof body.callbackURL==='string'?new URL(body.callbackURL,url.origin).pathname:'/'
+      const callbackURL=['/','/studio','/studio/publish'].includes(requested)?requested:'/'
+      const safeBody = { provider: 'google', callbackURL, errorCallbackURL: callbackURL+'?login=failed' }
       request = new Request(request.url, { method: 'POST', headers: request.headers, body: JSON.stringify(safeBody) })
     }
     if (url.pathname === '/api/auth/google/callback') {

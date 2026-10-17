@@ -200,6 +200,21 @@ body {
 }
 
 .ghost:hover { background: var(--surface-2); }
+
+@theme { --container-site: 76rem; --container-read: 40rem; --text-hero: 56px; --text-hero--line-height: 68px; }
+/* ---------- story2u reader ---------- */
+.reader { --r-bg: var(--paper); --r-ink: var(--ink); --r-ink-2: var(--ink-3); background: var(--r-bg); color: var(--r-ink); transition: background 0.3s, color 0.3s; }
+.reader-soft { --r-bg: #f3ead8; --r-ink: #3b3226; --r-ink-2: #7a6c58; }
+.reader-dark { --r-bg: #151513; --r-ink: #cdc6b8; --r-ink-2: #8a8478; }
+.reader .r-ink-2 { color: var(--r-ink-2); }
+.reader .r-bg { background: var(--r-bg); color: var(--r-ink); }
+.reader .r-card { background: color-mix(in srgb, var(--r-ink) 5%, transparent); }
+.reader .r-card:hover { background: color-mix(in srgb, var(--r-ink) 9%, transparent); }
+.reader-text p { text-indent: 2em; margin: 0 0 var(--r-gap, 1em); letter-spacing: 0.02em; }
+.reader-progress { background: var(--r-ink-2); }
+
+.site-markdown :is(h1,h2,h3,h4) {font-family:var(--font-prose);font-size:1.3em;margin:1.5em 0 .7em;text-indent:0}
+.site-markdown :is(ul,ol){padding-left:2em;margin:1em 0;list-style:revert}.site-markdown pre{overflow:auto;white-space:pre-wrap}.site-markdown blockquote{border-left:2px solid var(--line);padding-left:1em}.site-markdown img{max-width:100%;height:auto}
 /* The account bar shares the viewport with the editor rather than covering it. */
 .authenticated-workspace > .flex-1 > div { height: 100%; }
 .authenticated-workspace > .flex-1 > div > .h-dvh { height: 100%; }

@@ -66,3 +66,13 @@ sudo bash install-api-https.sh api.example.com /home/ubuntu/nginx/nginx.conf ./d
 回滚代码时先停止 API，备份当前完整状态，再将 current 指回上一 release 并启动。不要直接解压旧状态覆盖新写入；必要的数据恢复先在另一目录验证。首次上线没有旧 API 数据，不等于日后无需备份。证书私钥、身份文件和备份都不得进入 Git。
 
 旧 Web/PostgreSQL 的 BUILD_AND_DEPLOY/deploy-simple 等脚本均已废弃。GitHub Actions 的 EC2 自动部署仍禁用；本次提供可审计的手动发布路径，不自动启用旧 SSH job。
+
+## Public site V1（尚未部署）
+
+开发 PR 叠放于尚未合并的 Google OAuth PR #11；先审查合并 #11，再将站点 PR base 切回 main，核对 diff/CI。没有复制另一套认证。Worker 已组合匿名白名单 SSR/Public API、既有 Better Auth/D1，以及经过会话与 Go ownership 双重检查的 publication 路由；后端 Bearer 仅用于作者操作，不送入公开请求、hydration 或 VITE_*。
+
+部署顺序：停止 Go 服务并完整备份作者状态（含 publications），更新 Go API，确认匿名 `/v1/public/home` 符合共享契约，再部署 Web。Web workflow 在 D1/Worker 变更前执行该检查；不要仅部署前端指向旧后端。现有 Google 回调 `https://www.story2u.xyz/api/auth/google/callback` 保持不变；已登录作者访问 `/studio` 或 `/studio/publish`。
+
+公开 HTML/API/OG/sitemap 均 no-store，不使用共享页面缓存。若未来加 CDN 缓存，必须先实现撤回失效协议；已下载或第三方索引内容无法远程撤回。静态 Docker serve 镜像只验证浏览器资源构建，不提供生产 SSR，正式公开站使用组合后的 Cloudflare Worker。
+
+本任务不触发发布、不改生产 secrets、DNS、TLS 或真实作品。详见 [渲染 ADR](architecture/public-site-rendering.md) 和 [交付报告](reviews/story2u-public-site-v1-report.md)。

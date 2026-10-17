@@ -99,6 +99,7 @@ jobs:
             apps/web/test-results/
             apps/web/test-results-api/
             apps/web/test-results-review/
+            apps/web/test-results-public/
           retention-days: 14
 
   go-container:

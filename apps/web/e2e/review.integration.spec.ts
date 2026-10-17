@@ -41,6 +41,8 @@ test('author consent, real HTTP review, verified snapshots, read-only location, 
   await page.getByRole('button',{name:'有意为之',exact:true}).click()
   await expect(page.getByText('已标记：有意为之',{exact:true})).toBeVisible()
   await page.screenshot({path:'test-results-review/completed-review.png',fullPage:true})
+  // Feedback and debounced workspace preferences have separate commits.
+  await expect.poll(async()=> (await (await request.get(`${api}/workspace`)).json()).userState.layout?.rightOpen).toBe(true)
   await page.reload()
   await expect(page.getByText('两处记录可能存在差异',{exact:true})).toBeVisible()
   await page.getByText('两处记录可能存在差异',{exact:true}).click()
@@ -94,6 +96,8 @@ test('missing model capability disables new reviews while retaining real history
   await page.goto('/')
   await expect(page.getByLabel('正文编辑器')).toBeVisible()
   await expect(page.getByRole('button',{name:/^(审查本章|重新审查)$/}).first()).toBeDisabled()
+  const notes=page.getByRole('button',{name:'注记',exact:true})
+  if(await notes.isVisible()) await notes.click()
   await expect(page.getByText(/真实审查不可用：服务端尚未配置可用模型/)).toBeVisible()
   expect((await (await request.get(`${model}/stats`)).json()).calls).toBe(count)
   expect(await page.evaluate(()=>localStorage.getItem('writer-agent.v2'))).toBeNull()

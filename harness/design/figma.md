@@ -25,3 +25,7 @@ Playwright 检查 1440/1024/768/390px，Light/Dark、写作、抽屉、Focus，�
 ## 契约来源
 
 旧完整来源 `harness/contracts/source/api-spec-v0.4.0-figma-copy.yaml` 保留。新导出副本 `harness/contracts/source/api-spec-vnext-export-2026-10-14.yaml` 与旧来源解析后完全相同；新 Note/Capabilities 是独立工程扩展，不冒称 Figma 新 API。详见[实施报告](../reviews/vnext-figma-fullstack-sync.md)。
+
+## story2u Public Website V1
+
+2026-10-17 读取同一 Make 的最新公开站点导出；新增 Home/Discover/Book/Reader/Publish 与 site handoff，区别于本文件上方的10月14日 Studio 快照。来源指纹、候选契约差异与组件映射见 [公开站差异分析](story2u-public-site-v1-gap-analysis.md)，四种宽度视觉验证及限制见 [公开站交付报告](../reviews/story2u-public-site-v1-report.md)。

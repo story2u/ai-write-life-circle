@@ -43,7 +43,17 @@ jobs:
           NODE_ENV: production
           VITE_WRITER_AGENT_MODE: api
           VITE_WRITER_AGENT_PROJECT_ID: local
+          VITE_STORY2U_PUBLIC_SITE: true
           VITE_WRITER_AGENT_AUTH: google
+
+      - name: Require compatible public API before switching web entry
+        run: |
+          node --input-type=module - <<'JS'
+          import { publicHomeSchema } from './packages/contracts/dist/index.js'
+          const response = await fetch('https://api.story2u.xyz/v1/public/home', { signal: AbortSignal.timeout(15000), redirect: 'error' })
+          if (!response.ok) throw new Error('Deploy the publication Go API before the public web entry')
+          publicHomeSchema.parse(await response.json())
+          JS
 
       - name: Prepare persistent authentication database
         run: node scripts/prepare-auth-deploy.mjs

@@ -8,6 +8,7 @@ import (
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/config"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/identity"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/llm"
+	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/publication"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/review"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/transport"
 	"log/slog"
@@ -66,7 +67,12 @@ func run() error {
 	s.ReviewsEnabled = modelClient != nil
 	reviews := review.New(s, modelConfig, modelClient)
 	defer reviews.Close()
-	h := transport.Handler(transport.Options{Service: s, Environment: c.Environment, ResolveActor: resolver, Reviews: reviews})
+	ownerID := c.AuthorID
+	if ownerID == "" && c.AuthMode == "local" && c.Environment != "production" {
+		ownerID = "local-author"
+	}
+	publications := publication.New(c.State, map[string]publication.Book{c.Project: {App: s, OwnerID: ownerID}})
+	h := transport.Handler(transport.Options{Service: s, Environment: c.Environment, ResolveActor: resolver, Reviews: reviews, Publications: publications})
 	server := &http.Server{Handler: h, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 * 1024}
 	listener, e := net.Listen("tcp", net.JoinHostPort(c.Host, c.Port))
 	if e != nil {

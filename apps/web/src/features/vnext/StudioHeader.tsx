@@ -55,6 +55,11 @@ export default function StudioHeader({
           </div>
         )}
         <div className="ml-auto flex items-center gap-1">
+          {import.meta.env.VITE_STORY2U_PUBLIC_SITE === 'true' && <>
+            <Btn size="sm" onClick={() => { if (window.confirm('返回 story2u 前请确认草稿已保存。')) window.location.assign('/') }}>story2u</Btn>
+            {!demo && <Btn size="sm" onClick={() => { void (async () => { try { if(workspace.current) await workspace.prepareReview(workspace.current); window.location.assign('/studio/publish') } catch { studio.toast('正文尚未安全保存，发布未开始。请先处理保存问题。') } })() }}>发布</Btn>}
+          </>}
+
           {(pinned || (view === 'write' && chapter.id)) && (
             <span
               className={`${readonly ? 'text-ink-2' : pinned ? (saveState.s === 'recovery' ? 'text-warn' : 'text-danger') : 'chrome hidden sm:inline'} text-ui-sm`}
