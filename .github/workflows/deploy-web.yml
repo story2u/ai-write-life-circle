@@ -31,6 +31,6 @@ jobs:
           zones=get('/zones?name=story2u.xyz')
           if not zones.get('success'): print(zones); raise SystemExit(1)
           zone=zones['result'][0]['id']
-          for path in ['/settings/ssl','/rulesets','/pagerules','/workers/routes']:
+          for path in ['/dns_records']:
             print(path,json.dumps(get('/zones/'+zone+path)))
           PYTHON
