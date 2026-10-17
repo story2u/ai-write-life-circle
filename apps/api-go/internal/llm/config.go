@@ -56,13 +56,33 @@ func Load() (Config, error) {
 	if c.Provider == "" {
 		c.Provider = "openai-compatible"
 	}
+	if c.BaseURL == "" {
+		c.BaseURL = "https://api.deepseek.com"
+	}
+	// Keep other compatible providers opt-in: never supply a DeepSeek model
+	// or request dialect for an explicitly configured third-party endpoint.
+	endpoint := strings.TrimRight(c.BaseURL, "/")
+	deepSeek := endpoint == "https://api.deepseek.com" || endpoint == "https://api.deepseek.com/v1"
+	defaultTimeout, defaultOutputTokens := 60, 2048
+	if deepSeek {
+		if c.Model == "" {
+			c.Model = "deepseek-flash"
+		}
+		if c.ResponseFormat == "" {
+			c.ResponseFormat = "json_object"
+		}
+		if c.TokenParameter == "" {
+			c.TokenParameter = "max_tokens"
+		}
+		defaultTimeout, defaultOutputTokens = 180, 8192
+	}
 	if c.ResponseFormat == "" {
 		c.ResponseFormat = "none"
 	}
 	if c.TokenParameter == "" {
 		c.TokenParameter = "max_completion_tokens"
 	}
-	seconds, e := number("WRITER_AGENT_LLM_TIMEOUT_SECONDS", 60, 1, 180)
+	seconds, e := number("WRITER_AGENT_LLM_TIMEOUT_SECONDS", defaultTimeout, 1, 180)
 	if e != nil {
 		return c, Fail("LLM_INVALID_CONFIG")
 	}
@@ -71,7 +91,7 @@ func Load() (Config, error) {
 	if e != nil {
 		return c, Fail("LLM_INVALID_CONFIG")
 	}
-	c.MaxOutputTokens, e = number("WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS", 2048, 128, 8192)
+	c.MaxOutputTokens, e = number("WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS", defaultOutputTokens, 128, 8192)
 	if e != nil {
 		return c, Fail("LLM_INVALID_CONFIG")
 	}

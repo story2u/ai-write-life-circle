@@ -33,7 +33,11 @@ HTTP 对正文实施 32MiB 上限，覆盖 2Mi Unicode 字符的合法 JSON 转�
 
 新增 `internal/llm`（可注入 Client、配置、OpenAI-compatible HTTP）、`internal/review`（只读上下文、精确引文/版本核验、异步运行、独立原子状态）、`transport/review.go`。没有 Agent 框架、工具执行、自动改稿或知识写入。
 
-服务端本地环境变量：
+默认使用 DeepSeek，服务端只需配置 `WRITER_AGENT_LLM_API_KEY`，其余变量可以省略或留空。密钥通过本地环境/服务端 secret 注入，不进入前端、Git 或命令行参数。未设置任何模型连接信息时，审查 capability 仍关闭。
+
+GitHub 仓库 Settings → Secrets and variables → Actions：在 Repository secrets 中设置 `WRITER_AGENT_LLM_API_KEY`；Repository variables 均为可选覆盖项。工作流必须将 secret/vars 显式传给 Go 进程，GitHub 保存配置本身不会改变 EC2 环境。当前历史 API 部署工作流没有下发这些配置，保持暂停；生产 systemd 服务需由部署流程安全更新 `/etc/writer-agent/api.env` 后重启。不要把模型密钥放入 `VITE_*`。
+
+使用其他 OpenAI-compatible 服务时，显式设置地址与模型：
 
 ```sh
 export WRITER_AGENT_LLM_PROVIDER=openai-compatible
@@ -43,15 +47,20 @@ export WRITER_AGENT_LLM_MODEL=your-supported-model
 pnpm dev:local
 ```
 
-Base URL 为 API 前缀，客户端追加 `/chat/completions`。远程服务只允许 HTTPS 且要求密钥；HTTP 仅允许 localhost/loopback，表示 **API 服务器本机**，不是浏览器本机。不跟随重定向，不自动重试。缺失或非法模型配置时 capability 不启用，不悄悄切换模型；其他 API 保持可用。正式部署仍需已有 Bearer 认证与 HTTPS。
+Base URL 为 API 前缀，客户端追加 `/chat/completions`。远程服务只允许 HTTPS 且要求密钥；HTTP 仅允许 localhost/loopback，表示 **API 服务器本机**，不是浏览器本机。不跟随重定向，不自动重试。非法显式配置会关闭 capability，不会回退默认值；其他 API 保持可用。正式部署仍需已有 Bearer 认证与 HTTPS。
 
-| 可选变量 | 默认 / 范围 |
-| --- | --- |
-| WRITER_AGENT_LLM_TIMEOUT_SECONDS | 60 / 1–180 秒 |
-| WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS | 12000 / 2048–64000；实际为保守 UTF-8 字节预算，非 tokenizer 计数 |
-| WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS | 2048 / 128–8192 |
-| WRITER_AGENT_LLM_RESPONSE_FORMAT | none；可选 json_object、json_schema，按服务商能力显式选择 |
-| WRITER_AGENT_LLM_TOKEN_PARAMETER | max_completion_tokens；旧兼容服务可选 max_tokens |
+| 可选变量 | DeepSeek 默认 | 其他显式端点默认 / 范围 |
+| --- | --- | --- |
+| WRITER_AGENT_LLM_PROVIDER | openai-compatible | openai-compatible |
+| WRITER_AGENT_LLM_BASE_URL | https://api.deepseek.com | 必须显式配置 |
+| WRITER_AGENT_LLM_MODEL | deepseek-flash | 必须显式配置 |
+| WRITER_AGENT_LLM_TIMEOUT_SECONDS | 180 | 60 / 1–180 秒 |
+| WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS | 12000 | 12000 / 2048–64000；实际为保守 UTF-8 字节预算，非 tokenizer 计数 |
+| WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS | 8192 | 2048 / 128–8192 |
+| WRITER_AGENT_LLM_RESPONSE_FORMAT | json_object | none；可选 none、json_object、json_schema |
+| WRITER_AGENT_LLM_TOKEN_PARAMETER | max_tokens | max_completion_tokens；可选 max_tokens |
+
+DeepSeek 默认规则适用于上述官方地址及其 `/v1` 前缀（允许末尾 `/`）；其他地址不会继承 DeepSeek 模型或请求格式。[DeepSeek 官方接口](https://api-docs.deepseek.com/zh-cn/api/create-chat-completion/)支持 `max_tokens` 和 `json_object`，当前默认开启思考，因此预留 8192 输出 token 和 180 秒上限；仍可能超时或达到输出上限，需要真实联调确认。默认值不代表已验证模型质量。
 
 仅支持 Chat Completions 兼容接口，不假设所有服务商支持 JSON Schema 或相同 token 参数。结构化输出参考 [OpenAI 官方说明](https://developers.openai.com/api/docs/guides/structured-outputs)。无论服务商格式模式如何，服务端均执行严格结构和引用核验。
 

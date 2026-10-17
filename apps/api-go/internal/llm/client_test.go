@@ -22,11 +22,69 @@ func errorCode(e error) string {
 	}
 	return ""
 }
-func TestConfigurationAndPrivacy(t *testing.T) {
+func clearModelEnvironment(t *testing.T) {
+	t.Helper()
 	for _, key := range []string{"PROVIDER", "BASE_URL", "API_KEY", "MODEL", "RESPONSE_FORMAT", "TOKEN_PARAMETER", "TIMEOUT_SECONDS", "MAX_OUTPUT_TOKENS"} {
 		t.Setenv("WRITER_AGENT_LLM_"+key, "")
 	}
 	t.Setenv("WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS", "")
+}
+func TestDeepSeekEnvironmentDefaults(t *testing.T) {
+	for _, endpoint := range []string{"", "https://api.deepseek.com", "https://api.deepseek.com/v1/"} {
+		t.Run(endpoint, func(t *testing.T) {
+			clearModelEnvironment(t)
+			t.Setenv("WRITER_AGENT_LLM_API_KEY", "test-only-key")
+			t.Setenv("WRITER_AGENT_LLM_BASE_URL", endpoint)
+			c, err := Load()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if c.Provider != "openai-compatible" || c.Model != "deepseek-flash" || c.ResponseFormat != "json_object" || c.TokenParameter != "max_tokens" || c.Timeout != 180*time.Second || c.MaxOutputTokens != 8192 || c.MaxContextBytes != 12000 {
+				t.Fatal("incorrect DeepSeek defaults")
+			}
+			if endpoint == "" && c.BaseURL != "https://api.deepseek.com" {
+				t.Fatal("incorrect default endpoint")
+			}
+		})
+	}
+}
+func TestEnvironmentOverridesAndOtherProviders(t *testing.T) {
+	clearModelEnvironment(t)
+	t.Setenv("WRITER_AGENT_LLM_API_KEY", "test-only-key")
+	for name, value := range map[string]string{"MODEL": "explicit-model", "RESPONSE_FORMAT": "none", "TOKEN_PARAMETER": "max_completion_tokens", "TIMEOUT_SECONDS": "42", "MAX_OUTPUT_TOKENS": "512"} {
+		t.Setenv("WRITER_AGENT_LLM_"+name, value)
+	}
+	t.Setenv("WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS", "4096")
+	c, err := Load()
+	if err != nil || c.Model != "explicit-model" || c.ResponseFormat != "none" || c.TokenParameter != "max_completion_tokens" || c.Timeout != 42*time.Second || c.MaxOutputTokens != 512 || c.MaxContextBytes != 4096 {
+		t.Fatal("explicit configuration was not preserved", err)
+	}
+	for _, endpoint := range []string{"http://127.0.0.1:11434/v1", "https://other.example/v1", "https://api.deepseek.com.attacker.test"} {
+		clearModelEnvironment(t)
+		t.Setenv("WRITER_AGENT_LLM_BASE_URL", endpoint)
+		t.Setenv("WRITER_AGENT_LLM_API_KEY", "test-only-key")
+		if _, err := Load(); errorCode(err) != "LLM_INVALID_CONFIG" {
+			t.Fatal("third-party endpoint must require its own model")
+		}
+		t.Setenv("WRITER_AGENT_LLM_MODEL", "other-model")
+		c, err := Load()
+		if err != nil || c.ResponseFormat != "none" || c.TokenParameter != "max_completion_tokens" || c.Timeout != 60*time.Second || c.MaxOutputTokens != 2048 {
+			t.Fatal("changed third-party provider defaults", err)
+		}
+	}
+	clearModelEnvironment(t)
+	t.Setenv("WRITER_AGENT_LLM_MODEL", "deepseek-flash")
+	if _, err := Load(); errorCode(err) != "LLM_INVALID_CONFIG" {
+		t.Fatal("remote endpoint must still require a key")
+	}
+	t.Setenv("WRITER_AGENT_LLM_API_KEY", "test-only-key")
+	t.Setenv("WRITER_AGENT_LLM_TOKEN_PARAMETER", "invalid")
+	if _, err := Load(); errorCode(err) != "LLM_INVALID_CONFIG" {
+		t.Fatal("invalid explicit value silently fell back")
+	}
+}
+func TestConfigurationAndPrivacy(t *testing.T) {
+	clearModelEnvironment(t)
 	if _, e := Load(); errorCode(e) != "LLM_NOT_CONFIGURED" {
 		t.Fatal(e)
 	}
