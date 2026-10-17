@@ -40,3 +40,15 @@ pnpm dev:local    # 本地 API + 前端
 先保存真实章节，再点击“审查本章”，核对模型、资料范围并勾选授权。完成后按需查看页边注记、两处只读证据，标记有用/误报/有意为之/忽略；所有判断仍由作者确认。正文或证据变化后旧结果标记过期。未配置模型时禁用新审查，不加载演示发现。
 
 配置与限制见 [Go API](apps/api-go/README.md)、[实施报告](harness/reviews/sprint3-evidence-review-agent-report.md) 和 [评测说明](harness/evals/review-agent/README.md)。`pnpm eval:review` 运行隔离的确定性工程评测；真实模型验证按用户决定暂缓，不能据此宣称审查准确率。
+
+### story2u public website V1 (in progress)
+
+The Go publication domain and anonymous snapshot catalog are being implemented
+on `codex/story2u-public-site-v1`. See the
+[gap analysis](harness/design/story2u-public-site-v1-gap-analysis.md),
+[publication domain](harness/architecture/publication-domain.md) and
+[rendering ADR](harness/architecture/public-site-rendering.md).
+This is not a deployed public reading website: latest Make source export and
+Google OAuth PR #11 integration are still required for the public React pages,
+Studio publishing wizard and SEO. No production content is published by these
+development tests.

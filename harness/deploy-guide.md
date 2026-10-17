@@ -66,3 +66,14 @@ sudo bash install-api-https.sh api.example.com /home/ubuntu/nginx/nginx.conf ./d
 回滚代码时先停止 API，备份当前完整状态，再将 current 指回上一 release 并启动。不要直接解压旧状态覆盖新写入；必要的数据恢复先在另一目录验证。首次上线没有旧 API 数据，不等于日后无需备份。证书私钥、身份文件和备份都不得进入 Git。
 
 旧 Web/PostgreSQL 的 BUILD_AND_DEPLOY/deploy-simple 等脚本均已废弃。GitHub Actions 的 EC2 自动部署仍禁用；本次提供可审计的手动发布路径，不自动启用旧 SSH job。
+
+## Public site V1 integration (not deployed)
+
+Publication/public Go endpoints and their independent contract are under
+active development. Google OAuth PR #11 remains an integration dependency:
+future Worker changes must explicitly allow anonymous GET public API/SSR paths,
+protect /studio and its publication API with the existing session, and inject
+only the server-held Go bearer for owner operations. Never expose the bearer
+to public requests, hydration data or VITE_* configuration. Public HTML/API must
+be no-store so unlist/withdraw cannot serve stale shared snapshots. Current
+branch does not change Web routing, production secrets, DNS or deployments.
