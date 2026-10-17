@@ -97,8 +97,8 @@ PR #11 head `4f78e1c` 仍 Open。通过 Git merge 其提交历史形成叠放 PR
 
 Playwright完整回归为16个测试：Studio9、Revision/Notes2、Review3、Google登录1、公开站全链路1。公开站覆盖上表多阶段场景。Review回归仅修正等待偏好保存的测试同步，不删除失败用例或弱化业务断言。真实LLM质量不在本任务验收范围。
 
-GitHub CI：待推送后填入运行链接；本地通过不等于远端CI已通过。OpenAPI旧合同37项warning，新合同3项warning（license与内联schema对应的未引用组件），均无error；未伪造项目license。
+GitHub CI：[PR #12 checks](https://github.com/story2u/ai-write-life-circle/pull/12/checks)。PR 与 Push 各执行一次 CI，每次含 verify 与 Go container 两个 Job；最终状态以该页最新提交为准，本地通过不替代远端结果。OpenAPI旧合同37项warning，新合同3项warning（license与内联schema对应的未引用组件），均无error；未伪造项目license。
 
 ## 12. PR
 
-待创建：base `codex/google-oauth-better-auth`，head `codex/story2u-public-site-v1`，保持Open，不合并、不部署。
+[PR #12 — Add story2u public reading site and revision-bound publication](https://github.com/story2u/ai-write-life-circle/pull/12)。base `codex/google-oauth-better-auth`，head `codex/story2u-public-site-v1`，保持Open，不合并、不部署。
