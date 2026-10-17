@@ -32,7 +32,7 @@ jobs:
           CONFIG
           cat > probe.js <<'JS'
           export default { async fetch(request,env) {
-            if(request.headers.get('Authorization') !== 'Bearer '+env.PROBE_TOKEN) return new Response(null,{status:404});
+            if(request.headers.get('Authorization') !== 'Bearer '+env.PROBE_TOKEN) return Response.json({probeRecognized:true,credentialPresent:!!request.headers.get('Authorization'),tokenConfigured:typeof env.PROBE_TOKEN,tokenLength:env.PROBE_TOKEN?.length},{status:404});
             const result=[];
             for (const userAgent of [null,'WriterAgent-API-Check']) {
               const headers=new Headers({authorization:'Bearer '+env.WRITER_AGENT_API_TOKEN}); if(userAgent) headers.set('user-agent',userAgent);
@@ -52,4 +52,4 @@ jobs:
           Path('probe.curl').write_text('header = "Authorization: Bearer '+probe+'"\n')
           PYTHON
           npx --yes wrangler@4.151.1 deploy --secrets-file runtime-secrets.json
-          curl -fsS --retry 4 --retry-delay 2 --config probe.curl https://story2u-auth-probe.bluedao10000.workers.dev
+          curl -fsS --retry 10 --retry-all-errors --retry-delay 3 --config probe.curl https://story2u-auth-probe.bluedao10000.workers.dev
