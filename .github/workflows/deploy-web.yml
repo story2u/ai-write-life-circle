@@ -31,12 +31,11 @@ jobs:
           zones=get('/zones?name=story2u.xyz')
           if not zones.get('success'): print(zones); raise SystemExit(1)
           zone=zones['result'][0]['id']
-          before=get('/zones/'+zone+'/settings/ssl')
-          print('previous_tls_mode', before.get('result',{}).get('value'))
-          req=urllib.request.Request(base+'/zones/'+zone+'/settings/ssl',method='PATCH',headers={'Authorization':'Bearer '+os.environ['CLOUDFLARE_API_TOKEN'],'Content-Type':'application/json'},data=json.dumps({'value':'strict'}).encode())
-          try:
-            with urllib.request.urlopen(req) as response: result=json.load(response)
-            print('tls_update',json.dumps(result))
-          except urllib.error.HTTPError as e:
-            print('tls_update_failed',e.code,json.loads(e.read()).get('errors')); raise SystemExit(1)
+          print('tls_mode',get('/zones/'+zone+'/settings/ssl').get('result',{}).get('value'))
+          print('worker_routes',json.dumps(get('/zones/'+zone+'/workers/routes').get('result')))
+          for url in ['https://www.story2u.xyz','https://story2u.xyz','https://api.story2u.xyz/health','https://www.story2u.xyz/v1/projects/local/workspace']:
+            try:
+              with urllib.request.urlopen(url,timeout=15) as response: print('public_status',url,response.status)
+            except urllib.error.HTTPError as e: print('public_status',url,e.code)
+            except Exception as e: print('public_error',url,type(e).__name__)
           PYTHON
