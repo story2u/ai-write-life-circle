@@ -1,6 +1,6 @@
 # Google 登录与真实 Web API
 
-前端使用 Better Auth 1.7.10 的 Google OAuth。Cloudflare Worker 处理 `/api/auth/*` 和 `/api/session`，D1 `story2u-auth` 保存用户、会话、OAuth account/state 和登录限流。作品仍保存在现有 Go API，D1 不保存小说。生产构建设置 `VITE_WRITER_AGENT_AUTH=google`、`VITE_WRITER_AGENT_MODE=api`、`VITE_WRITER_AGENT_PROJECT_ID=local`；本地原有 Demo/隔离 API 测试不强制登录。
+前端使用 Better Auth 1.7.10 的 Google OAuth。Cloudflare Worker 处理 `/api/auth/*` 和 `/api/session`，D1 `story2u-auth` 保存用户、会话、OAuth account/state 和登录限流。作品仍保存在现有 Go API，D1 不保存小说。`www.story2u.xyz/*` 使用 Worker Route 覆盖现有已代理 DNS，不删除或替换已有 DNS 记录；部署 token 需要该 zone 的 Workers Routes Edit/Zone Read 权限。生产构建设置 `VITE_WRITER_AGENT_AUTH=google`、`VITE_WRITER_AGENT_MODE=api`、`VITE_WRITER_AGENT_PROJECT_ID=local`；本地原有 Demo/隔离 API 测试不强制登录。
 
 ## Google Cloud 配置
 
