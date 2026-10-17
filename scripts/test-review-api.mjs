@@ -7,7 +7,8 @@ import YAML from 'yaml'
 import { createReviewFixture, cases } from './lib/review-fixture.mjs'
 const live = process.argv.includes('--live')
 if (live && !process.argv.includes('--confirm-fixtures')) throw Error('Live evaluation requires --confirm-fixtures to authorize sending only synthetic fixture text.')
-if (live && (!process.env.WRITER_AGENT_LLM_BASE_URL || !process.env.WRITER_AGENT_LLM_MODEL)) throw Error('Configure the model locally before live evaluation.')
+// The Go service owns defaults and validation, including key-only DeepSeek setup.
+if (live && ![process.env.WRITER_AGENT_LLM_API_KEY, process.env.WRITER_AGENT_LLM_BASE_URL].some(value => value?.trim())) throw Error('Configure WRITER_AGENT_LLM_API_KEY (DeepSeek defaults), or an explicit model endpoint, before live evaluation.')
 const fixture = await createReviewFixture()
 const schema = YAML.parse(await readFile(new URL('../harness/contracts/api-spec-v0.4.0-proposed.yaml', import.meta.url), 'utf8'))
 const ajv = new Ajv({ strict: false }); addFormats(ajv)
