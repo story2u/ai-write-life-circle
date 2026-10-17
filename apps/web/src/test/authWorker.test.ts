@@ -96,6 +96,16 @@ describe('Better Auth sessions and single-project authorization', () => {
     expect(callback.status).toBe(302)
     expect(callback.headers.get('location')).toContain('error=')
     expect(db.prepare('SELECT COUNT(*) AS count FROM session').get()?.count).toBe(0)
+    // The code exchange must use the same custom URI even after routing through Better Auth's internal callback.
+    const exchange = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      expect(new URLSearchParams(init?.body as string).get('redirect_uri')).toBe(origin + '/api/auth/google/callback')
+      return Response.json({ access_token: 'fixture-access-token', token_type: 'Bearer', expires_in: 3600 })
+    })
+    vi.stubGlobal('fetch', exchange)
+    const context = await createAuth(env).$context
+    const provider = context.socialProviders.find(item => item.id === 'google')!
+    await provider.validateAuthorizationCode({ code: 'fixture-code', codeVerifier: 'fixture-verifier', redirectURI: origin + '/api/auth/callback/google' })
+    expect(exchange).toHaveBeenCalledTimes(1)
   })
   it('rejects external OAuth return URLs and cross-site mutations before processing them', async () => {
     expect((await handleRequest(request('/api/auth/sign-in/social', 'POST', '{"provider":"google","callbackURL":"https://evil.example"}'), env)).status).toBe(403)
