@@ -1,30 +1,19 @@
-name: Configure API model (manual)
+name: Diagnose API authentication (manual)
 on:
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: writer-agent-production-api
-  cancel-in-progress: false
 jobs:
-  configure:
+  diagnose:
     if: github.ref == 'refs/heads/codex/ops-configure-deepseek-20261017'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Send runtime configuration over pinned SSH
+      - name: Compare configured backend credentials without exposing values
         shell: bash
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          WRITER_AGENT_LLM_API_KEY: ${{ secrets.WRITER_AGENT_LLM_API_KEY }}
-          WRITER_AGENT_LLM_PROVIDER: ${{ vars.WRITER_AGENT_LLM_PROVIDER }}
-          WRITER_AGENT_LLM_BASE_URL: ${{ vars.WRITER_AGENT_LLM_BASE_URL }}
-          WRITER_AGENT_LLM_MODEL: ${{ vars.WRITER_AGENT_LLM_MODEL }}
-          WRITER_AGENT_LLM_RESPONSE_FORMAT: ${{ vars.WRITER_AGENT_LLM_RESPONSE_FORMAT }}
-          WRITER_AGENT_LLM_TOKEN_PARAMETER: ${{ vars.WRITER_AGENT_LLM_TOKEN_PARAMETER }}
-          WRITER_AGENT_LLM_TIMEOUT_SECONDS: ${{ vars.WRITER_AGENT_LLM_TIMEOUT_SECONDS }}
-          WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS: ${{ vars.WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS }}
-          WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS: ${{ vars.WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS }}
+          WRITER_AGENT_API_TOKEN: ${{ secrets.WRITER_AGENT_API_TOKEN }}
         run: |
           set -euo pipefail
           umask 077
@@ -33,4 +22,11 @@ jobs:
           trap 'rm -f "$key_file" "$hosts_file"' EXIT
           printf '%s\n' "$EC2_SSH_KEY" > "$key_file"
           printf '%s\n' 'ec2-16-170-155-138.eu-north-1.compute.amazonaws.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEfvu4+N8AnA5tN9rVPW0IJ7ueagH6Z8hS9onER7qfEU' > "$hosts_file"
-          python3 -c 'import json,os; print(json.dumps({k:v for k,v in os.environ.items() if k.startswith("WRITER_AGENT_LLM_") or k == "WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS"}))' | ssh -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts_file" -o ConnectTimeout=20 ubuntu@ec2-16-170-155-138.eu-north-1.compute.amazonaws.com 'test "$(readlink -f /opt/writer-agent/current)" = "/opt/writer-agent/releases/b061cfc6c04cf7b36b039ec6199cafa1d367bca7" && sudo python3 /opt/writer-agent/releases/b061cfc6c04cf7b36b039ec6199cafa1d367bca7/configure-api-llm.py'
+          python3 - <<'PYTHON'
+          import os,urllib.request,urllib.error
+          request=urllib.request.Request('https://api.story2u.xyz/v1/projects/local/workspace',headers={'Authorization':'Bearer '+os.environ['WRITER_AGENT_API_TOKEN']})
+          try:
+              with urllib.request.urlopen(request,timeout=20) as response: print('GitHub secret authenticated API status:',response.status)
+          except urllib.error.HTTPError as error: print('GitHub secret authenticated API status:',error.code)
+          PYTHON
+          python3 -c 'import os;print(os.environ["WRITER_AGENT_API_TOKEN"],end="")' | ssh -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts_file" ubuntu@ec2-16-170-155-138.eu-north-1.compute.amazonaws.com 'sudo python3 -c '''import sys,hmac;from pathlib import Path;print("GitHub and server token match:",hmac.compare_digest(sys.stdin.read().strip(),Path("/etc/writer-agent/auth-token").read_text().strip()))''''
