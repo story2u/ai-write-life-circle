@@ -23,6 +23,7 @@ export async function handlePublicSite(
   if (request.method !== 'GET' && request.method !== 'HEAD') return null
   if (
     !publicPath(url.pathname) &&
+    !/^\/(?:books|authors|discover)(?:\/|$)/.test(url.pathname) &&
     !url.pathname.startsWith('/v1/public/') &&
     url.pathname !== '/sitemap.xml' &&
     url.pathname !== '/robots.txt' &&
@@ -129,7 +130,7 @@ export async function handlePublicSite(
     path !== '/robots.txt' &&
     !/^\/og\/books\/[a-z0-9-]+\.svg$/.test(path)
   )
-    return null
+    return new Response(request.method === 'HEAD' ? null : 'Public content not found', { status: 404, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } })
   const shell = await env.ASSETS.fetch(new Request(new URL('/', url)))
   if (!shell.ok)
     return new Response('Site unavailable', {

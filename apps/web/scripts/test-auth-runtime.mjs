@@ -96,6 +96,10 @@ try {
   assert.match(publicHTML, /story2u-data/)
   assert.match(publicHTML, /rel="canonical"/)
   assert.equal(response.headers.get('cache-control'), 'no-store')
+  response = await mf.dispatchFetch(origin + '/books/synthetic/chapters/CH-002')
+  assert.equal(response.status,404)
+  response = await mf.dispatchFetch(origin + '/v1/public/unknown')
+  assert.equal(response.status,404)
   response = await mf.dispatchFetch(
     origin + '/v1/studio/books/local/publication',
   )

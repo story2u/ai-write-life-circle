@@ -229,6 +229,11 @@ describe('public Worker composition', () => {
     WRITER_AGENT_API_TOKEN: 'DO_NOT_FORWARD',
     ASSETS: { fetch: vi.fn(async () => new Response(template)) },
   }
+  it('delegates private routes even without public configuration and rejects malformed public URLs', async () => {
+    expect(await handlePublicSite(new Request(origin+'/api/session'),{...env,BETTER_AUTH_URL:''})).toBeNull()
+    expect((await handlePublicSite(new Request(origin+'/books/story-1/chapters/CH-002'),env))?.status).toBe(404)
+    expect((await handlePublicSite(new Request(origin+'/v1/public/unknown'),env))?.status).toBe(404)
+  })
   it('forwards no cookie, browser credential, actor header, or backend bearer on public reads', async () => {
     const fetcher = vi.fn(
       async (_input: string | URL | Request, init?: RequestInit) => {

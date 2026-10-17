@@ -93,7 +93,7 @@ PR #11 head `4f78e1c` 仍 Open。通过 Git merge 其提交历史形成叠放 PR
 
 ## 11. 自动化结果
 
-本地通过：frozen install、typecheck、lint、pnpm test（Go Race全包、Node29、Review fixture、Publication33、Web85及Worker8）、build/SSR、OpenAPI生成一致性与lint、go vet、Node/Go95项兼容、auth schema、workerd+D1、生产身份与持久化smoke、默认Go+Vite启动smoke。
+本地通过：frozen install、typecheck、lint、pnpm test（Go Race全包、Node29、Review fixture、Publication33、Web86及Worker8）、build/SSR、OpenAPI生成一致性与lint、go vet、Node/Go95项兼容、auth schema、workerd+D1、生产身份与持久化smoke、默认Go+Vite启动smoke。
 
 Playwright完整回归为16个测试：Studio9、Revision/Notes2、Review3、Google登录1、公开站全链路1。公开站覆盖上表多阶段场景。Review回归仅修正等待偏好保存的测试同步，不删除失败用例或弱化业务断言。真实LLM质量不在本任务验收范围。
 
