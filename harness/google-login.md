@@ -31,6 +31,12 @@
 
 部署工作流查找或创建固定名称的 D1，生成忽略的 `wrangler.auth.generated.toml`，在配置完整后应用增量 SQL migrations，再通过 Wrangler `--secrets-file` 同时发布 Worker 和 runtime secrets。缺少 OAuth/身份配置会在切换线上版本前失败。数据库不会在每次部署重建；不要删除它来修复登录问题。首次运行若提示 D1 权限不足，更新现有 Cloudflare token 的 account D1 权限后重试。
 
+## Cloudflare 回源 TLS
+
+Zone 的 SSL/TLS encryption mode 必须为 **Full (strict)**，Go API 源站须具有有效的 `api.story2u.xyz` HTTPS 证书。不能使用 Flexible：即使 Worker 中 fetch 的 URL 是 HTTPS，同 zone 的子请求仍可能按 Flexible 使用 HTTP 回源，被源站重定向为 308，最终在工作台显示“作品服务连接失败”。直连 API 或从 workers.dev 探测成功不能排除此问题。
+
+验收必须从正式 `www.story2u.xyz` 域名的已登录会话加载工作区；保留后端 `redirect: manual` 和重定向拒绝策略，不通过自动跟随重定向或明文 HTTP 规避故障。Cloudflare 官方说明见 [重定向循环与 SSL 模式](https://developers.cloudflare.com/ssl/troubleshooting/too-many-redirects/)。如同 zone 还代理其他源站，切换前应确认它们的 HTTPS 证书有效。
+
 ## 权限与会话
 
 两个授权邮箱共享现有 `local` 项目和固定 Go 作者身份。这是同一作者的账号白名单，不是多租户隔离；未来开放给其他作者前必须单独实现项目 ACL。
