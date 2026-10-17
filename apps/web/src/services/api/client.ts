@@ -15,6 +15,10 @@ export async function requestApi(path: string, init: RequestInit = {}): Promise<
   const response = await fetch(path, { ...init, headers })
   const body = await readJson(response)
 
+  if (response.status === 401 && import.meta.env.VITE_WRITER_AGENT_AUTH === 'google') {
+    window.dispatchEvent(new Event('writer-agent:session-expired'))
+  }
+
   if (!response.ok) {
     const parsed = problemV04Schema.safeParse(body)
     const problem = parsed.success ? parsed.data : undefined

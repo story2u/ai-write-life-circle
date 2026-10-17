@@ -1,6 +1,20 @@
 name = "story2u-web"
-compatibility_date = "2024-09-23"
+main = "worker/index.ts"
+compatibility_date = "2026-10-17"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+routes = [{ pattern = "www.story2u.xyz/*", zone_name = "story2u.xyz" }]
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[vars]
+BETTER_AUTH_URL = "https://www.story2u.xyz"
+WRITER_AGENT_API_ORIGIN = "https://api.story2u.xyz"
+WRITER_AGENT_PROJECT_ID = "local"
+
+# Deployment generates a separate config with the existing AUTH_DB D1 ID.
+# OAuth credentials, author allowlist and API bearer are runtime secrets/variables.

@@ -12,6 +12,8 @@ coverage/
 .vite/
 *.tsbuildinfo
 .dev.vars
+.wrangler/
+apps/web/wrangler.auth.generated.toml
 apps/web/playwright-report/
 apps/web/test-results/
 # >>> Comet managed project state >>>
@@ -26,3 +28,4 @@ apps/api-go/server
 apps/api-go/server.exe
 
 apps/web/test-results-review/
+apps/web/test-results-auth/
