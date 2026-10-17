@@ -201,4 +201,5 @@ body {
 
 .ghost:hover { background: var(--surface-2); }
 /* The account bar shares the viewport with the editor rather than covering it. */
+.authenticated-workspace > .flex-1 > div { height: 100%; }
 .authenticated-workspace > .flex-1 > div > .h-dvh { height: 100%; }
