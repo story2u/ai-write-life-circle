@@ -55,6 +55,11 @@ jobs:
       - name: Go static analysis
         run: go vet -C apps/api-go ./...
 
+      - name: Auth schema and Cloudflare D1 runtime
+        run: |
+          pnpm --filter @writer-agent/web auth:schema --check
+          pnpm --filter @writer-agent/web test:auth:runtime
+
       - name: Node and Go compatibility
         run: pnpm test:api:parity
 
@@ -94,6 +99,7 @@ jobs:
             apps/web/test-results/
             apps/web/test-results-api/
             apps/web/test-results-review/
+            apps/web/test-results-public/
           retention-days: 14
 
   go-container:

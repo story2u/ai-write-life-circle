@@ -14,7 +14,7 @@
 
 锁顺序固定为出版全局锁，再按 chapterId 排序获取每个章节 draft 锁。发布重新读取并验证当前 revisionId/contentHash/volumeId/chapterOrder、章节标题与全局卷顺序，保持章节锁直到出版 rename 完成。并发 Save 不能在检查后、提交前插入。Harness 文件的外部直接改写不遵守应用锁；正式导入/替换 Harness 应停止相关服务，不能宣称跨任意外部文件写入也存在事务隔离。
 
-预览只接受章节身份与修订指纹，正文只能由服务端保存的 Revision 构建。chapterOrder=0 表示 Harness 未显式声明 order；公开顺序始终来自 `OrderedChapters()`，不按请求数组或 CH 编号重排跨卷章节。选中1–100章，单次快照正文总量不超过20MiB。
+预览只接受章节身份与修订指纹，正文只能由服务端保存的 Revision 构建。chapterOrder=0 表示 Harness 未显式声明 order；公开顺序始终来自 `OrderedChapters()`，不按请求数组或 CH 编号重排跨卷章节。首次发布选中1–100章；已有作品可选0章以撤回全部章节并生成 unlisted 版本（空作品不能直接重新上架）。通常选中1–100章，单次快照正文总量不超过20MiB。
 
 提交采用 previewId + baseVersionId，任何选中头版本/标题/排序变化均409，必须重新预览和人工确认。相同 Idempotency-Key 重放原版本；同键不同请求422。跨动作同键亦拒绝。失败事务不会消耗该键。预览不是公开发布；Agent 在领域和传输层均被拒绝。幂等键的作用域是作者+书籍。
 
@@ -24,10 +24,32 @@
 
 匿名只读 /v1/public/*，仅从 currentVersionId 指向且 state=listed 的快照构造明确的 PublicBook/PublicChapter/PublicAuthor DTO。没有读取私有 Harness/Revision/Notes/Review API。内部ID/hash/所有者/审计/预览不会序列化。不存在读取旧公开版本的匿名端点。下架后新源站请求404，首页/目录不再包含该书；章节撤回后旧章节URL404。
 
-所有公开与管理响应均 no-store。不承诺从用户已打开页面、下载内容、搜索引擎副本撤回文字。前端 SSR/CDN 必须沿用此策略，否则源站正确不能等同于 CDN 撤回。当前尚无 SSR/Sitemap 实现，不能将 API no-store 当作完整 SEO/页面撤回验收。
+所有公开与管理响应均 no-store。不承诺从用户已打开页面、下载内容、搜索引擎副本撤回文字。前端 SSR/CDN 必须沿用此策略，否则源站正确不能等同于 CDN 撤回。Worker SSR、动态 Sitemap 与 OG 同样只读当前公开指针并使用 no-store；浏览器与 HTTP 回归验证撤回后旧 URL 404 且 Sitemap 删除。
 
 单文件保存全部历史的代价是文件随版本数增长，所有出版请求串行化。适合少量作品 MVP，需监控体积并在规模增长时另行评估存储；本任务不重构原有草稿存储。
 
 ## 已执行验证
 
 Go 测试覆盖草稿与快照隔离、只选一章、多卷/下一章、不可变历史、变更后预览409、磁盘失败与同键重试、锁保持到提交、并发发布CAS、过期预览、空正文、跨作者和Agent拒绝、独立出版历史及slug唯一。真实 HTTP 测试 `pnpm test:publication` 对响应同时做 OpenAPI/Zod 校验，固定合成章节，无生产数据/真实模型调用。
+
+## 业务流程与信任边界
+
+```mermaid
+flowchart TD
+  A[作者私有 Studio：创作与保存 Revision] --> B[选择已保存章节和公开资料]
+  B --> C[Go 验证所有者与版本，冻结私有预览]
+  C --> D[作者阅读预览并人工确认发布]
+  D --> E[Go 再次校验 CAS、Revision 与 Hash]
+  E -->|变化或写失败| F[409 或失败：旧公开版本保持不变]
+  F --> B
+  E -->|持锁提交| G[原子写入不可变版本、当前指针、幂等及审计]
+  G --> H[公开 Snapshot 白名单 DTO]
+  H --> I[匿名 SSR 首页与目录]
+  I --> J[读者只读阅读器与本机进度]
+  A --> K[后续更新草稿：不改变公开内容]
+  K --> B
+  D --> L[撤回章节或下架：追加新版本]
+  L --> H
+```
+
+主线没有 Business Flow Explorer；另一个未合并分支的可视化及作者未提交文档未修改。本图记录本次完整流程。内部出版备注仅在作者历史返回，公开 DTO、HTML、sitemap 不包含。

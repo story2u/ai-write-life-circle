@@ -42,7 +42,7 @@ test('author consent, real HTTP review, verified snapshots, read-only location, 
   await expect(page.getByText('已标记：有意为之',{exact:true})).toBeVisible()
   await page.screenshot({path:'test-results-review/completed-review.png',fullPage:true})
   // Feedback and debounced workspace preferences have separate commits.
-  await expect.poll(async()=> (await (await request.get(`${api}/workspace`)).json()).layout.rightOpen).toBe(true)
+  await expect.poll(async()=> (await (await request.get(`${api}/workspace`)).json()).userState.layout?.rightOpen).toBe(true)
   await page.reload()
   await expect(page.getByText('两处记录可能存在差异',{exact:true})).toBeVisible()
   await page.getByText('两处记录可能存在差异',{exact:true}).click()

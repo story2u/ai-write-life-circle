@@ -132,23 +132,16 @@ export default function Publish() {
     if (step === 1) {
       setBusy(true)
       try {
-        const selections = loaded!.drafts
-          .filter((d) => selected.includes(d.chapterId))
-          .map(
-            ({
-              chapterId,
-              revisionId,
-              contentHash,
-              volumeId,
-              chapterOrder,
-            }) => ({
-              chapterId,
-              revisionId,
-              contentHash,
-              volumeId,
-              chapterOrder,
-            }),
-          )
+        const directory = await listChapters(project)
+        const entries = directory.volumes.flatMap(v => (v.chapters ?? []).filter(c => selected.includes(c.chapterId ?? '')).map(c => ({ c, v })))
+        if (entries.length !== selected.length) throw Error('章节目录已变化，请重新载入后选择章节。')
+        const selections = await Promise.all(entries.map(async ({c,v}) => {
+          if (!c.chapterId) throw Error('章节目录缺少稳定 ID。')
+          const detail = await getChapter(project, c.chapterId)
+          const {revisionId,contentHash} = detail.headRevision
+          if (!revisionId || !contentHash) throw Error('章节修订缺少指纹，无法发布。')
+          return { chapterId: c.chapterId, revisionId, contentHash, volumeId: v.volumeId ?? '', chapterOrder: c.order ?? 0 }
+        }))
         const value = await previewPublication(project, {
           baseVersionId: base,
           metadata: meta,

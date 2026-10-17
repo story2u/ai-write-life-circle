@@ -45,3 +45,9 @@ Markdown 是保存源，纯文本段落只用于展示与定位。保留原始 M
 新增真实 Go + HTTP 模型替身 E2E，覆盖授权前零调用、定位无保存、两处快照、四类反馈机制中的有意为之、刷新、过期与保存失败阻断；原有 Demo/保存恢复/409/Notes E2E 保留。
 
 审查请求按项目、章节和切换 epoch 隔离，start/cancel/feedback 的迟到成功或失败不影响当前章节的结果、加载、提示或忙状态；A→B→A 也不会接纳第一次 A 的响应。丢弃 UI 更新不撤销已接受的服务端操作，返回原章节后可读取真实记录。同次发送响应不确定时复用授权会话幂等键；显式“重新审查”重新预览、重新勾选并创建新 Run，原反馈保留。状态中展示审查策略版本。
+
+## story2u 公开阅读与作者出版
+
+`src/site` 与 Studio 私有模型分离：public DTO → mapper → UI；`server.tsx` 在 Worker 输出真实 HTML 与安全 hydration，`mount.tsx` 仅接续公开数据。阅读器使用只读 Markdown、独立设置/进度存储和可取消的 restoration lifecycle，不加载 TipTap/AI 管理功能。草稿、笔记、审查不会成为站点数据源。
+
+`/studio/publish` 复用同一 AuthGate；四步向导调用 typed publicationApi，选择最新保存版本、服务端固定预览、双重人工确认、CAS/幂等提交。Studio 发布入口先走已有保存队列，失败或409时不离开编辑器。更新/撤回/下架追加出版版本，不改原始草稿。具体隔离与撤回限制见 [出版领域](publication-domain.md)、[渲染 ADR](public-site-rendering.md)。

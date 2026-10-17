@@ -57,7 +57,7 @@ sudo bash install-api-https.sh api.example.com /home/ubuntu/nginx/nginx.conf ./d
 - HTTP 只重定向 HTTPS，不转发业务写入；生产 internal projection 返回 404。
 - 从公网验证证书链、主机名和有效期，重启 API 后验证可用性。测试数据使用隔离状态目录，不自动写入作者数据。
 
-本地 curl 配置文件应设置 0600，并包含 `header = "Authorization: Bearer <token>"`。随后可使用 `curl --config /PRIVATE/PATH/api.curl https://API_DOMAIN/v1/projects/local/notes`。不要在浏览器包或 Git 中放令牌；目前没有多用户登录、跨域前端接入或 OIDC。
+本地 curl 配置文件应设置 0600，并包含 `header = "Authorization: Bearer <token>"`。随后可使用 `curl --config /PRIVATE/PATH/api.curl https://API_DOMAIN/v1/projects/local/notes`。不要在浏览器包或 Git 中放令牌。Go 自身仍是单作者 Bearer；Web 的 Better Auth Google 登录和同源 Worker 代理配置见 [Google 登录](google-login.md)。
 
 ## 运维、轮换与回滚
 
@@ -67,13 +67,12 @@ sudo bash install-api-https.sh api.example.com /home/ubuntu/nginx/nginx.conf ./d
 
 旧 Web/PostgreSQL 的 BUILD_AND_DEPLOY/deploy-simple 等脚本均已废弃。GitHub Actions 的 EC2 自动部署仍禁用；本次提供可审计的手动发布路径，不自动启用旧 SSH job。
 
-## Public site V1 integration (not deployed)
+## Public site V1（尚未部署）
 
-Publication/public Go endpoints and their independent contract are under
-active development. Google OAuth PR #11 remains an integration dependency:
-future Worker changes must explicitly allow anonymous GET public API/SSR paths,
-protect /studio and its publication API with the existing session, and inject
-only the server-held Go bearer for owner operations. Never expose the bearer
-to public requests, hydration data or VITE_* configuration. Public HTML/API must
-be no-store so unlist/withdraw cannot serve stale shared snapshots. Current
-branch does not change Web routing, production secrets, DNS or deployments.
+开发 PR 叠放于尚未合并的 Google OAuth PR #11；先审查合并 #11，再将站点 PR base 切回 main，核对 diff/CI。没有复制另一套认证。Worker 已组合匿名白名单 SSR/Public API、既有 Better Auth/D1，以及经过会话与 Go ownership 双重检查的 publication 路由；后端 Bearer 仅用于作者操作，不送入公开请求、hydration 或 VITE_*。
+
+部署顺序：停止 Go 服务并完整备份作者状态（含 publications），更新 Go API，确认匿名 `/v1/public/home` 符合共享契约，再部署 Web。Web workflow 在 D1/Worker 变更前执行该检查；不要仅部署前端指向旧后端。现有 Google 回调 `https://www.story2u.xyz/api/auth/google/callback` 保持不变；已登录作者访问 `/studio` 或 `/studio/publish`。
+
+公开 HTML/API/OG/sitemap 均 no-store，不使用共享页面缓存。若未来加 CDN 缓存，必须先实现撤回失效协议；已下载或第三方索引内容无法远程撤回。静态 Docker serve 镜像只验证浏览器资源构建，不提供生产 SSR，正式公开站使用组合后的 Cloudflare Worker。
+
+本任务不触发发布、不改生产 secrets、DNS、TLS 或真实作品。详见 [渲染 ADR](architecture/public-site-rendering.md) 和 [交付报告](reviews/story2u-public-site-v1-report.md)。

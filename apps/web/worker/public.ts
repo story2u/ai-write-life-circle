@@ -19,8 +19,10 @@ export async function handlePublicSite(
   request: Request,
   env: PublicEnv,
 ): Promise<Response | null> {
-  let site: URL, apiOrigin: URL
   const url = new URL(request.url)
+  if (request.method !== 'GET' && request.method !== 'HEAD') return null
+  if (!publicPath(url.pathname) && !url.pathname.startsWith('/v1/public/') && url.pathname !== '/sitemap.xml' && url.pathname !== '/robots.txt' && !/^\/og\/books\/[a-z0-9-]+\.svg$/.test(url.pathname)) return null
+  let site: URL, apiOrigin: URL
   try {
     site = new URL(env.BETTER_AUTH_URL)
     apiOrigin = new URL(env.WRITER_AGENT_API_ORIGIN)
@@ -121,7 +123,7 @@ export async function handlePublicSite(
     !/^\/og\/books\/[a-z0-9-]+\.svg$/.test(path)
   )
     return null
-  const shell = await env.ASSETS.fetch(new Request(new URL('/index.html', url)))
+  const shell = await env.ASSETS.fetch(new Request(new URL('/', url)))
   if (!shell.ok)
     return new Response('Site unavailable', {
       status: 503,

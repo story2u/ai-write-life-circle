@@ -62,5 +62,5 @@ It does not overwrite the Sprint 3 or Figma source contract. Root
 `pnpm test:publication` uses an isolated real Go server and validates HTTP
 responses against both OpenAPI and Zod. Publication API uses the same Go Author
 Actor/Bearer boundary; public reads are anonymous and snapshot-only. Browser
-BFF integration depends on the still-open Google OAuth PR #11. See
+BFF is integrated via Git history with the still-open Google OAuth PR #11; the public-site PR is stacked on that branch. See
 [publication domain](../architecture/publication-domain.md).
