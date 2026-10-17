@@ -47,6 +47,6 @@ pnpm dev:local    # 本地 API + 前端
 
 本次开发 PR 依赖尚未合并的 Google OAuth PR #11，已通过 Git 历史整合到同一认证链，不另建身份系统。尚未合并或部署，生产内容没有被测试发布。未来部署必须先更新 Go API，再部署 Web；Web workflow 会先校验 Public API 契约。
 
-本地公开站点可使用 `VITE_STORY2U_PUBLIC_SITE=true VITE_WRITER_AGENT_MODE=api VITE_WRITER_AGENT_PROJECT_ID=local pnpm dev:local`（开发环境既有本地身份）；生产构建必须配置 Google 登录，禁止开发身份。`pnpm test:publication` 运行33项隔离真实 HTTP 检查，`pnpm test:e2e` 包含公开站点全链路、SEO和四种宽度截图。
+本地公开站点可使用 `WRITER_AGENT_PUBLIC_SSR=1 VITE_STORY2U_PUBLIC_SITE=true VITE_WRITER_AGENT_MODE=api VITE_WRITER_AGENT_PROJECT_ID=local pnpm dev:local`（开发环境既有本地身份）；生产构建必须配置 Google 登录，禁止开发身份。`pnpm test:publication` 运行33项隔离真实 HTTP 检查，`pnpm test:e2e` 包含公开站点全链路、SEO和四种宽度截图。
 
 [差异分析](harness/design/story2u-public-site-v1-gap-analysis.md) · [出版事务](harness/architecture/publication-domain.md) · [渲染 ADR](harness/architecture/public-site-rendering.md) · [交付报告](harness/reviews/story2u-public-site-v1-report.md)

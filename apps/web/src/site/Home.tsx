@@ -45,7 +45,13 @@ export default function Home() {
           <Hero
             book={featured}
             author={au(featured)}
-            progress={allChapters(featured).some((c) => c.slug === prog[featured.slug]?.chapter) ? prog[featured.slug]?.chapter : undefined}
+            progress={
+              allChapters(featured).some(
+                (c) => c.slug === prog[featured.slug]?.chapter,
+              )
+                ? prog[featured.slug]?.chapter
+                : undefined
+            }
           />
         )}
 

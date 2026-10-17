@@ -5,7 +5,7 @@ export function Markdown({ markdown }: { markdown: string }) {
       <ReactMarkdown
         skipHtml
         components={{
-          h1:({children})=><h2>{children}</h2>,
+          h1: ({ children }) => <h2>{children}</h2>,
           a: ({ href, children }) => (
             <a href={href} rel="noreferrer noopener">
               {children}

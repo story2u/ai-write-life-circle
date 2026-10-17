@@ -43,7 +43,9 @@ export function BookDetail({ slug }: { slug: string }) {
   const author = authors.find((a) => a.slug === book.authorSlug)
   const chapters = allChapters(book)
   const candidate = prog[book.slug]
-  const p = chapters.some((c) => c.slug === candidate?.chapter) ? candidate : undefined
+  const p = chapters.some((c) => c.slug === candidate?.chapter)
+    ? candidate
+    : undefined
   return (
     <>
       <Header />

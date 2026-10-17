@@ -4,7 +4,7 @@ import { PublicSite } from './Root'
 import { loadSite, publicPath } from './api'
 import { allChapters } from './data'
 import type { SiteData } from './context'
-import { publicCatalogSchema } from '@writer-agent/contracts'
+import { publicCatalogSchema, publicBookSchema } from '@writer-agent/contracts'
 const escape = (text: string) =>
   text.replace(
     /[&<>"']/g,
@@ -105,8 +105,7 @@ export async function renderPublic(
           headers: { 'cache-control': 'no-store' },
         })
       if (!response.ok) throw Error()
-      const { publicBookSchema } = await import('@writer-agent/contracts'),
-        b = publicBookSchema.parse(await response.json())
+      const b = publicBookSchema.parse(await response.json())
       const lines =
         Array.from(b.title)
           .slice(0, 48)

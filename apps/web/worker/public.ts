@@ -21,7 +21,14 @@ export async function handlePublicSite(
 ): Promise<Response | null> {
   const url = new URL(request.url)
   if (request.method !== 'GET' && request.method !== 'HEAD') return null
-  if (!publicPath(url.pathname) && !url.pathname.startsWith('/v1/public/') && url.pathname !== '/sitemap.xml' && url.pathname !== '/robots.txt' && !/^\/og\/books\/[a-z0-9-]+\.svg$/.test(url.pathname)) return null
+  if (
+    !publicPath(url.pathname) &&
+    !url.pathname.startsWith('/v1/public/') &&
+    url.pathname !== '/sitemap.xml' &&
+    url.pathname !== '/robots.txt' &&
+    !/^\/og\/books\/[a-z0-9-]+\.svg$/.test(url.pathname)
+  )
+    return null
   let site: URL, apiOrigin: URL
   try {
     site = new URL(env.BETTER_AUTH_URL)

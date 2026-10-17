@@ -40,8 +40,10 @@ const initial: PublicationMetadata = {
   coverUrl: '',
 }
 export default function Publish() {
-  const sitePrefs=prefs.use()
-  useEffect(()=>{document.documentElement.classList.toggle('dark',sitePrefs.dark)},[sitePrefs.dark])
+  const sitePrefs = prefs.use()
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', sitePrefs.dark)
+  }, [sitePrefs.dark])
   const project = import.meta.env.VITE_WRITER_AGENT_PROJECT_ID?.trim() || ''
   const [loaded, setLoaded] = useState<Loaded | null>(null),
     [error, setError] = useState(''),
@@ -53,7 +55,7 @@ export default function Publish() {
     [preview, setPreview] = useState<PublicationPreview | null>(null),
     [busy, setBusy] = useState(false),
     [success, setSuccess] = useState<PublicationVersion | null>(null)
-  const [note,setNote]=useState('')
+  const [note, setNote] = useState('')
   const [ack, setAck] = useState({ rights: false, scope: false }),
     [key, setKey] = useState(() => crypto.randomUUID())
   const mounted = useRef(true)
@@ -133,15 +135,29 @@ export default function Publish() {
       setBusy(true)
       try {
         const directory = await listChapters(project)
-        const entries = directory.volumes.flatMap(v => (v.chapters ?? []).filter(c => selected.includes(c.chapterId ?? '')).map(c => ({ c, v })))
-        if (entries.length !== selected.length) throw Error('章节目录已变化，请重新载入后选择章节。')
-        const selections = await Promise.all(entries.map(async ({c,v}) => {
-          if (!c.chapterId) throw Error('章节目录缺少稳定 ID。')
-          const detail = await getChapter(project, c.chapterId)
-          const {revisionId,contentHash} = detail.headRevision
-          if (!revisionId || !contentHash) throw Error('章节修订缺少指纹，无法发布。')
-          return { chapterId: c.chapterId, revisionId, contentHash, volumeId: v.volumeId ?? '', chapterOrder: c.order ?? 0 }
-        }))
+        const entries = directory.volumes.flatMap((v) =>
+          (v.chapters ?? [])
+            .filter((c) => selected.includes(c.chapterId ?? ''))
+            .map((c) => ({ c, v })),
+        )
+        if (entries.length !== selected.length)
+          throw Error('章节目录已变化，请重新载入后选择章节。')
+        const selections = await Promise.all(
+          entries.map(async ({ c, v }) => {
+            if (!c.chapterId) throw Error('章节目录缺少稳定 ID。')
+            const detail = await getChapter(project, c.chapterId)
+            const { revisionId, contentHash } = detail.headRevision
+            if (!revisionId || !contentHash)
+              throw Error('章节修订缺少指纹，无法发布。')
+            return {
+              chapterId: c.chapterId,
+              revisionId,
+              contentHash,
+              volumeId: v.volumeId ?? '',
+              chapterOrder: c.order ?? 0,
+            }
+          }),
+        )
         const value = await previewPublication(project, {
           baseVersionId: base,
           metadata: meta,
@@ -166,7 +182,7 @@ export default function Publish() {
     try {
       const value = await commitPublication(
         project,
-        { baseVersionId: base, previewId: preview.previewId },
+        { baseVersionId: base, previewId: preview.previewId, note },
         key,
       )
       if (mounted.current) setSuccess(value)
@@ -417,7 +433,8 @@ export default function Publish() {
                   .reverse()
                   .map((v) => (
                     <li key={v.versionId} className="text-ui">
-                      v{v.versionNumber} · {v.chapters.length}章 {v.note ? `· ${v.note}` : ''} ·{' '}
+                      v{v.versionNumber} · {v.chapters.length}章{' '}
+                      {v.note ? `· ${v.note}` : ''} ·{' '}
                       {v.state === 'listed' ? '公开' : '下架'}
                       <span className="block text-micro text-ink-3">
                         {v.createdAt}
@@ -691,7 +708,18 @@ export default function Publish() {
                   我了解：发布后任何人都可以阅读和分享这些章节，搜索引擎可以收录。笔记、设定和未选草稿不会公开。
                 </Choice>
               </div>
-              <div className="mt-6 rounded-md bg-surface-2 p-3"><TextArea label="发布说明（仅你可见）" value={note} maxLength={2000} disabled={busy} onChange={(value)=>{setNote(value);setKey(crypto.randomUUID())}}/></div>
+              <div className="mt-6 rounded-md bg-surface-2 p-3">
+                <TextArea
+                  label="发布说明（仅你可见）"
+                  value={note}
+                  maxLength={2000}
+                  disabled={busy}
+                  onChange={(value) => {
+                    setNote(value)
+                    setKey(crypto.randomUUID())
+                  }}
+                />
+              </div>
               <p className="mt-6 text-micro text-ink-3">
                 发布只由你手动完成。Agent 不会替你发布。
               </p>

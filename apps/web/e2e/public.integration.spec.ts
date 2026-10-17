@@ -35,24 +35,51 @@ test('real Studio publish → anonymous SSR reading → draft isolation → upda
   ])
     await page.getByRole('textbox', { name: label, exact: true }).fill(value)
   await page.getByRole('button', { name: '科幻', exact: true }).click()
-  await page.getByRole('button',{name:'封面配色 1',exact:true}).click()
-  for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:1000});await page.screenshot({path:`test-results-public/wizard-metadata-${width}.png`,fullPage:true})}
-  await page.setViewportSize({width:1440,height:1000})
+  await page.getByRole('button', { name: '封面配色 1', exact: true }).click()
+  for (const width of [1440, 1024, 768, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.screenshot({
+      path: `test-results-public/wizard-metadata-${width}.png`,
+      fullPage: true,
+    })
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 })
 
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   await page.getByRole('checkbox').first().check()
-  for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:1000});await page.screenshot({path:`test-results-public/wizard-chapters-${width}.png`,fullPage:true})}
-  await page.setViewportSize({width:1440,height:1000})
+  for (const width of [1440, 1024, 768, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.screenshot({
+      path: `test-results-public/wizard-chapters-${width}.png`,
+      fullPage: true,
+    })
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 })
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   await expect(page.getByRole('heading', { name: '读者将看到' })).toBeVisible()
-  for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:1000});await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:`test-results-public/wizard-preview-${width}.png`})}
-  await page.setViewportSize({width:1440,height:1000})
+  for (const width of [1440, 1024, 768, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.evaluate(() => scrollTo(0, 0))
+    await page.screenshot({
+      path: `test-results-public/wizard-preview-${width}.png`,
+    })
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 })
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   await expect(
     page.getByRole('button', { name: '发布', exact: true }),
   ).toBeDisabled()
-  for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:1000});await page.screenshot({path:`test-results-public/wizard-confirm-${width}.png`,fullPage:true})}
-  await page.setViewportSize({width:1440,height:1000})
+  for (const width of [1440, 1024, 768, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.screenshot({
+      path: `test-results-public/wizard-confirm-${width}.png`,
+      fullPage: true,
+    })
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page
+    .getByRole('textbox', { name: '发布说明（仅你可见）' })
+    .fill('PRIVATE_AUTHOR_PUBLICATION_NOTE')
   await page.getByRole('checkbox').nth(0).check()
   await page.getByRole('checkbox').nth(1).check()
   await page.getByRole('button', { name: '发布', exact: true }).click()
@@ -61,6 +88,7 @@ test('real Studio publish → anonymous SSR reading → draft isolation → upda
   ).toBeVisible()
   let management = await (await request.get(studio)).json(),
     version = management.publication.versions.at(-1)
+  expect(version.note).toBe('PRIVATE_AUTHOR_PUBLICATION_NOTE')
   const slug = version.chapters[0].slug,
     book = '/books/synthetic-letter',
     reader = `${book}/chapters/${slug}`
@@ -86,6 +114,7 @@ test('real Studio publish → anonymous SSR reading → draft isolation → upda
     expect(html).toContain('application/ld+json')
     for (const secret of [
       'NEVER_PUBLIC_SITE_NOTE',
+      'PRIVATE_AUTHOR_PUBLICATION_NOTE',
       'ownerUserId',
       'sourceRevisionId',
       'sourceContentHash',
@@ -236,10 +265,9 @@ test('real Studio publish → anonymous SSR reading → draft isolation → upda
   expect(
     (await (await request.get(studio)).json()).publication.versions,
   ).toHaveLength(1)
-  // Reloading manager obtains fresh saved revisions and the author previews anew.
-  await page.reload()
-  await page.getByRole('button', { name: '更新公开版本…', exact: true }).click()
-  await page.getByRole('button', { name: '下一步', exact: true }).click()
+  // Retry in the same wizard: the next preview reloads saved revisions.
+  await page.getByRole('button', { name: '上一步', exact: true }).click()
+  await page.getByRole('button', { name: '上一步', exact: true }).click()
   await page.getByRole('checkbox').nth(1).check()
   await page.getByRole('checkbox').nth(2).check()
   await page.getByRole('button', { name: '下一步', exact: true }).click()
@@ -300,8 +328,34 @@ test('real Studio publish → anonymous SSR reading → draft isolation → upda
       ).toBe(true)
     }
   }
-  await page.goto('/');await expect(page.locator('html')).toHaveAttribute('data-site-hydrated','true');await page.getByRole('button',{name:'深色',exact:true}).click();await expect(page.locator('html')).toHaveClass(/dark/)
-  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.screenshot({path:`test-results-public/home-dark-${width}.png`,fullPage:true});await page.goto('/studio/publish');await expect(page.getByRole('heading',{name:'合成来信',exact:true})).toBeVisible();await expect(page.locator('html')).toHaveClass(/dark/);await page.screenshot({path:`test-results-public/publication-dark-${width}.png`,fullPage:true});await page.goto('/');await expect(page.locator('html')).toHaveAttribute('data-site-hydrated','true')}
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-site-hydrated',
+    'true',
+  )
+  await page.getByRole('button', { name: '深色', exact: true }).click()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.screenshot({
+      path: `test-results-public/home-dark-${width}.png`,
+      fullPage: true,
+    })
+    await page.goto('/studio/publish')
+    await expect(
+      page.getByRole('heading', { name: '合成来信', exact: true }),
+    ).toBeVisible()
+    await expect(page.locator('html')).toHaveClass(/dark/)
+    await page.screenshot({
+      path: `test-results-public/publication-dark-${width}.png`,
+      fullPage: true,
+    })
+    await page.goto('/')
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-site-hydrated',
+      'true',
+    )
+  }
   // Withdraw chapter using a new complete fixed-revision set.
   const choices = version.chapters
     .filter((c: { chapterId: string }) => c.chapterId !== 'CH-001')
