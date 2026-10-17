@@ -30,6 +30,13 @@ function allowedRoute(path: string, method: string, project: string) {
 
 export async function handleRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url)
+  if (env.BETTER_AUTH_URL && url.origin !== new URL(env.BETTER_AUTH_URL).origin) {
+    if (request.method !== 'GET' && request.method !== 'HEAD') return problem(403, 'ORIGIN_FORBIDDEN', '请使用正式作品入口。')
+    const canonical = new URL(env.BETTER_AUTH_URL)
+    canonical.pathname = url.pathname
+    canonical.search = url.search
+    return Response.redirect(canonical.href, 308)
+  }
   const privateRoute = url.pathname === '/api/session' || url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/v1/')
   if (!privateRoute) return env.ASSETS.fetch(request as never) as unknown as Promise<Response>
   if (!authConfigured(env)) return problem(503, 'AUTH_NOT_CONFIGURED', '登录服务尚未配置完成。')
@@ -46,6 +53,7 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
   if (url.pathname.startsWith('/api/auth/')) {
     const routes: Record<string, string> = {
       '/api/auth/sign-in/social': 'POST', '/api/auth/callback/google': 'GET',
+      '/api/auth/google/callback': 'GET',
       '/api/auth/get-session': 'GET', '/api/auth/sign-out': 'POST', '/api/auth/error': 'GET',
     }
     if (routes[url.pathname] !== request.method) return problem(404, 'NOT_FOUND', '接口不存在。')
@@ -76,6 +84,11 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
       // Only the redirect flow is exposed; client input cannot override scopes or Google parameters.
       const safeBody = { provider: 'google', callbackURL: '/', errorCallbackURL: '/?login=failed' }
       request = new Request(request.url, { method: 'POST', headers: request.headers, body: JSON.stringify(safeBody) })
+    }
+    if (url.pathname === '/api/auth/google/callback') {
+      // Preserve query/state cookies; Google code exchange uses the configured public redirectURI.
+      const internal = new URL('/api/auth/callback/google' + url.search, url.origin)
+      request = new Request(internal, { method: 'GET', headers: request.headers })
     }
     const response = await auth.handler(request)
     const headers = new Headers(response.headers)

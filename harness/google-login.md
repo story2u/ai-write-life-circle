@@ -6,10 +6,12 @@
 
 创建 OAuth Client，类型为 Web application：
 
-- Authorized JavaScript origin：`https://story2u-web.bluedao10000.workers.dev`
-- Authorized redirect URI：`https://story2u-web.bluedao10000.workers.dev/api/auth/callback/google`
+- Authorized JavaScript origin：`https://www.story2u.xyz`
+- Authorized redirect URI：`https://www.story2u.xyz/api/auth/google/callback`
 - Google Auth Platform 应用若处于 Testing，将允许的 Google 邮箱加入 Test users。
 - 仅请求 Better Auth Google 默认身份 scopes，不增加 Drive/Gmail 权限。
+
+按作者要求使用 `/api/auth/google/callback`：Google provider 显式设置 redirectURI，Worker 内部转发到 Better Auth 的 `/api/auth/callback/google`，保留 state 和 Cookie；授权 URL 与 token exchange 使用同一个外部回调。旧 workers.dev 入口的 GET/HEAD 重定向至 www，跨域写请求拒绝。
 
 参考 [Better Auth Google 文档](https://better-auth.com/docs/authentication/google)。如 Google 要求验证应用域名，应使用自己控制的正式 Web 域名，并同时更新 Worker 的 BETTER_AUTH_URL、OAuth origin 与 redirect URI；不能仅修改其中一处。
 

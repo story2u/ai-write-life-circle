@@ -35,7 +35,7 @@ try {
   response = await mf.dispatchFetch(origin + '/api/auth/sign-in/social', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: '{"provider":"google","callbackURL":"/"}' })
   assert.equal(response.status, 200)
   const { url } = await response.json()
-  assert.equal(new URL(url).searchParams.get('redirect_uri'), origin + '/api/auth/callback/google')
+  assert.equal(new URL(url).searchParams.get('redirect_uri'), origin + '/api/auth/google/callback')
   assert.match(response.headers.get('set-cookie'), /HttpOnly/)
   const now = Date.now()
   await db.prepare('INSERT INTO user (id,name,email,emailVerified,createdAt,updatedAt) VALUES (?,?,?,?,?,?)').bind('fixture-author', 'Author', 'author@example.com', 1, now, now).run()
