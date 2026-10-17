@@ -1,32 +1,55 @@
-name: Diagnose API authentication (manual)
+name: Probe edge to API (manual)
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  diagnose:
+  probe:
     if: github.ref == 'refs/heads/codex/ops-configure-deepseek-20261017'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      WRITER_AGENT_API_TOKEN: ${{ secrets.WRITER_AGENT_API_TOKEN }}
     steps:
-      - name: Compare configured backend credentials without exposing values
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Protected temporary edge probe
         shell: bash
-        env:
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          WRITER_AGENT_API_TOKEN: ${{ secrets.WRITER_AGENT_API_TOKEN }}
         run: |
           set -euo pipefail
           umask 077
-          key_file=$(mktemp)
-          hosts_file=$(mktemp)
-          trap 'rm -f "$key_file" "$hosts_file"' EXIT
-          printf '%s\n' "$EC2_SSH_KEY" > "$key_file"
-          printf '%s\n' 'ec2-16-170-155-138.eu-north-1.compute.amazonaws.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEfvu4+N8AnA5tN9rVPW0IJ7ueagH6Z8hS9onER7qfEU' > "$hosts_file"
+          probe_root=$(mktemp -d)
+          cd "$probe_root"
+          trap 'npx --yes wrangler@4.151.1 delete --name story2u-auth-probe --force >/dev/null 2>&1 || true; rm -rf "$probe_root"' EXIT
+          cat > wrangler.toml <<'CONFIG'
+          name = "story2u-auth-probe"
+          main = "probe.js"
+          compatibility_date = "2026-10-17"
+          workers_dev = true
+          CONFIG
+          cat > probe.js <<'JS'
+          export default { async fetch(request,env) {
+            if(request.headers.get('Authorization') !== 'Bearer '+env.PROBE_TOKEN) return new Response(null,{status:404});
+            const result=[];
+            for (const userAgent of [null,'WriterAgent-API-Check']) {
+              const headers=new Headers({authorization:'Bearer '+env.WRITER_AGENT_API_TOKEN}); if(userAgent) headers.set('user-agent',userAgent);
+              const response=await fetch('https://api.story2u.xyz/v1/projects/local/workspace',{headers,redirect:'manual'});
+              const text=await response.text();let code;try{code=JSON.parse(text).code}catch{}
+              const location=response.headers.get('location');
+              result.push({status:response.status,server:response.headers.get('server'),via:response.headers.get('via'),contentType:response.headers.get('content-type'),location:location?new URL(location).origin:null,code:typeof code==='string'&&/^[A-Z_]+$/.test(code)?code:null,userAgent:!!userAgent});
+            }
+            return Response.json(result,{headers:{'cache-control':'no-store'}});
+          }};
+          JS
           python3 - <<'PYTHON'
-          import os,urllib.request,urllib.error
-          request=urllib.request.Request('https://api.story2u.xyz/v1/projects/local/workspace',headers={'Authorization':'Bearer '+os.environ['WRITER_AGENT_API_TOKEN']})
-          try:
-              with urllib.request.urlopen(request,timeout=20) as response: print('GitHub secret authenticated API status:',response.status)
-          except urllib.error.HTTPError as error: print('GitHub secret authenticated API status:',error.code)
+          import secrets,json,os
+          from pathlib import Path
+          probe=secrets.token_hex(32)
+          Path('runtime-secrets.json').write_text(json.dumps({'WRITER_AGENT_API_TOKEN':os.environ['WRITER_AGENT_API_TOKEN'],'PROBE_TOKEN':probe}))
+          Path('probe.curl').write_text('header = "Authorization: Bearer '+probe+'"\n')
           PYTHON
-          python3 -c 'import os;print(os.environ["WRITER_AGENT_API_TOKEN"],end="")' | ssh -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts_file" ubuntu@ec2-16-170-155-138.eu-north-1.compute.amazonaws.com 'sudo python3 -c '''import sys,hmac;from pathlib import Path;print("GitHub and server token match:",hmac.compare_digest(sys.stdin.read().strip(),Path("/etc/writer-agent/auth-token").read_text().strip()))''''
+          npx --yes wrangler@4.151.1 deploy --secrets-file runtime-secrets.json
+          curl -fsS --retry 4 --retry-delay 2 --config probe.curl https://story2u-auth-probe.bluedao10000.workers.dev
