@@ -31,6 +31,12 @@ jobs:
           zones=get('/zones?name=story2u.xyz')
           if not zones.get('success'): print(zones); raise SystemExit(1)
           zone=zones['result'][0]['id']
-          for path in ['/dns_records']:
-            print(path,json.dumps(get('/zones/'+zone+path)))
+          before=get('/zones/'+zone+'/settings/ssl')
+          print('previous_tls_mode', before.get('result',{}).get('value'))
+          req=urllib.request.Request(base+'/zones/'+zone+'/settings/ssl',method='PATCH',headers={'Authorization':'Bearer '+os.environ['CLOUDFLARE_API_TOKEN'],'Content-Type':'application/json'},data=json.dumps({'value':'strict'}).encode())
+          try:
+            with urllib.request.urlopen(req) as response: result=json.load(response)
+            print('tls_update',json.dumps(result))
+          except urllib.error.HTTPError as e:
+            print('tls_update_failed',e.code,json.loads(e.read()).get('errors')); raise SystemExit(1)
           PYTHON
