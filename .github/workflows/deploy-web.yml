@@ -16,42 +16,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Protected temporary edge probe
-        shell: bash
+      - name: Read zone TLS settings
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          set -euo pipefail
-          umask 077
-          probe_root=$(mktemp -d)
-          cd "$probe_root"
-          trap 'npx --yes wrangler@4.151.1 delete --name story2u-auth-probe --force >/dev/null 2>&1 || true; rm -rf "$probe_root"' EXIT
-          cat > wrangler.toml <<'CONFIG'
-          name = "story2u-auth-probe"
-          main = "probe.js"
-          compatibility_date = "2026-10-17"
-          workers_dev = true
-          routes = [{ pattern = "www.story2u.xyz/__writer_probe/*", zone_name = "story2u.xyz" }]
-          CONFIG
-          cat > probe.js <<'JS'
-          export default { async fetch(request,env) {
-            if(request.headers.get('Authorization') !== 'Bearer '+env.PROBE_TOKEN) return Response.json({probeRecognized:true,credentialPresent:!!request.headers.get('Authorization'),tokenConfigured:typeof env.PROBE_TOKEN,tokenLength:env.PROBE_TOKEN?.length},{status:404});
-            const result=[];
-            for (const userAgent of [null,'WriterAgent-API-Check']) {
-              const headers=new Headers({authorization:'Bearer '+env.WRITER_AGENT_API_TOKEN}); if(userAgent) headers.set('user-agent',userAgent);
-              const response=await fetch('https://api.story2u.xyz/v1/projects/local/workspace',{headers,redirect:'manual'});
-              const text=await response.text();let code;try{code=JSON.parse(text).code}catch{}
-              const location=response.headers.get('location');
-              result.push({parentHost:new URL(request.url).hostname,status:response.status,server:response.headers.get('server'),via:response.headers.get('via'),contentType:response.headers.get('content-type'),location:location?new URL(location).origin:null,code:typeof code==='string'&&/^[A-Z_]+$/.test(code)?code:null,userAgent:!!userAgent});
-            }
-            return Response.json(result,{headers:{'cache-control':'no-store'}});
-          }};
-          JS
           python3 - <<'PYTHON'
-          import secrets,json,os
-          from pathlib import Path
-          probe=secrets.token_hex(32)
-          Path('runtime-secrets.json').write_text(json.dumps({'WRITER_AGENT_API_TOKEN':os.environ['WRITER_AGENT_API_TOKEN'],'PROBE_TOKEN':probe}))
-          Path('probe.curl').write_text('header = "Authorization: Bearer '+probe+'"\n')
+          import urllib.request, json, os
+          base='https://api.cloudflare.com/client/v4'
+          def get(path):
+            req=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+os.environ['CLOUDFLARE_API_TOKEN']})
+            try:
+              with urllib.request.urlopen(req) as r: return json.load(r)
+            except urllib.error.HTTPError as e: return {'status':e.code,'error':json.loads(e.read()).get('errors')}
+          zones=get('/zones?name=story2u.xyz')
+          if not zones.get('success'): print(zones); raise SystemExit(1)
+          zone=zones['result'][0]['id']
+          for path in ['/settings/ssl','/rulesets','/pagerules','/workers/routes']:
+            print(path,json.dumps(get('/zones/'+zone+path)))
           PYTHON
-          npx --yes wrangler@4.151.1 deploy --secrets-file runtime-secrets.json
-          curl -fsS --retry 10 --retry-all-errors --retry-delay 3 --config probe.curl https://story2u-auth-probe.bluedao10000.workers.dev
-          curl -fsS --retry 10 --retry-all-errors --retry-delay 3 --config probe.curl https://www.story2u.xyz/__writer_probe/check
