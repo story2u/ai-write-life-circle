@@ -1,49 +1,36 @@
-name: Deploy Web → Cloudflare Pages
-
+name: Configure API model (manual)
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
-      - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
-
 permissions:
   contents: read
-  deployments: write
-
+concurrency:
+  group: writer-agent-production-api
+  cancel-in-progress: false
 jobs:
-  deploy:
+  configure:
+    if: github.ref == 'refs/heads/codex/ops-configure-deepseek-20261017'
     runs-on: ubuntu-latest
-    name: Build & Deploy to Cloudflare Pages
-
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.15.1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build web
-        run: pnpm --filter @writer-agent/web build
+      - name: Send runtime configuration over pinned SSH
+        shell: bash
         env:
-          NODE_ENV: production
-
-      - name: Install Wrangler
-        run: npm install -g wrangler
-
-      - name: Deploy to Cloudflare Workers
-        run: wrangler deploy
-        working-directory: apps/web
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          WRITER_AGENT_LLM_API_KEY: ${{ secrets.WRITER_AGENT_LLM_API_KEY }}
+          WRITER_AGENT_LLM_PROVIDER: ${{ vars.WRITER_AGENT_LLM_PROVIDER }}
+          WRITER_AGENT_LLM_BASE_URL: ${{ vars.WRITER_AGENT_LLM_BASE_URL }}
+          WRITER_AGENT_LLM_MODEL: ${{ vars.WRITER_AGENT_LLM_MODEL }}
+          WRITER_AGENT_LLM_RESPONSE_FORMAT: ${{ vars.WRITER_AGENT_LLM_RESPONSE_FORMAT }}
+          WRITER_AGENT_LLM_TOKEN_PARAMETER: ${{ vars.WRITER_AGENT_LLM_TOKEN_PARAMETER }}
+          WRITER_AGENT_LLM_TIMEOUT_SECONDS: ${{ vars.WRITER_AGENT_LLM_TIMEOUT_SECONDS }}
+          WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS: ${{ vars.WRITER_AGENT_LLM_MAX_OUTPUT_TOKENS }}
+          WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS: ${{ vars.WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          key_file=$(mktemp)
+          hosts_file=$(mktemp)
+          trap 'rm -f "$key_file" "$hosts_file"' EXIT
+          printf '%s\n' "$EC2_SSH_KEY" > "$key_file"
+          printf '%s\n' 'ec2-16-170-155-138.eu-north-1.compute.amazonaws.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEfvu4+N8AnA5tN9rVPW0IJ7ueagH6Z8hS9onER7qfEU' > "$hosts_file"
+          python3 -c 'import json,os; print(json.dumps({k:v for k,v in os.environ.items() if k.startswith("WRITER_AGENT_LLM_") or k == "WRITER_AGENT_REVIEW_MAX_CONTEXT_TOKENS"}))' | ssh -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts_file" -o ConnectTimeout=20 ubuntu@ec2-16-170-155-138.eu-north-1.compute.amazonaws.com 'test "$(readlink -f /opt/writer-agent/current)" = "/opt/writer-agent/releases/b061cfc6c04cf7b36b039ec6199cafa1d367bca7" && sudo python3 /opt/writer-agent/releases/b061cfc6c04cf7b36b039ec6199cafa1d367bca7/configure-api-llm.py'
