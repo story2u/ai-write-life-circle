@@ -79,3 +79,27 @@ DeepSeek 默认规则适用于上述官方地址及其 `/v1` 前缀（允许末�
 `pnpm test:review` / `pnpm eval:review` 为真实 HTTP 路径的确定性测试。`pnpm eval:review:live` 显式授权发送合成夹具给配置的真实模型；作者真实作品不用于 CI。用户暂缓真实模型联调，当前不宣称真实 LLM E2E。
 
 审查历史范围与章节目录共用卷分组、卷内排序，按全局位置选择目标之前的章节；卷顺序保持目录的既有规则（Harness 确定性投影中各卷首次出现的顺序），不把卷内 order 当作全书序号。Plan/Run 保存 strategyVersion，当前为 continuity-review-v2，参与 planHash 和模型输入；今后改变 Prompt、上下文选择或证据策略时应升级常量。旧状态缺少此字段时读取为 continuity-review-v1，保留原 planHash、记录与作者反馈。
+
+### Publication and public catalog
+
+The default Go server registers its configured project as a Studio book owned by
+the configured author. `internal/publication.Service.Books` supports distinct
+server-trusted book owners and Harness/App instances; the default executable
+currently mounts one project. Production does not fall back to a local author.
+
+- Author GET `/v1/studio/books/:bookId/publication` and `/versions`.
+- Author POST `/publication/preview`, `/versions`, `/unlist`, `/relist`.
+- Anonymous GET `/v1/public/home`, `/books`, `/books/:slug`,
+  `/books/:slug/chapters/:chapterSlug`, `/authors/:slug`, `/categories`.
+
+Publishing requires a persisted preview and exact current saved revisions;
+mutations require Idempotency-Key and baseVersionId. A new version contains the
+complete selected public chapter set, so omission withdraws a chapter. It never
+changes an old version or a draft. Catalog filters: q/category/status/sort,
+cursor numeric offset, limit1–100 (default24). All responses are no-store.
+
+State: `WRITER_AGENT_STATE_DIR/publications/state-v1.json`. Back up this directory
+with the existing author state. No file is written to Harness. See
+[harness/architecture/publication-domain.md](../../harness/architecture/publication-domain.md)
+and the separate [OpenAPI](../../harness/contracts/publication-api-v1.json).
+Run `pnpm test:publication` for real HTTP/Zod/OpenAPI verification.

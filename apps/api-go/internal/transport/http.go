@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/application"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/compat"
+	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/publication"
 	"github.com/story2u/ai-write-life-circle/apps/api-go/internal/review"
 	"io"
 	"math"
@@ -23,6 +24,7 @@ type Options struct {
 	Environment  string
 	ResolveActor Resolver
 	Reviews      *review.Service
+	Publications *publication.Service
 }
 
 const MaxBodyBytes int64 = 32 * 1024 * 1024
@@ -137,6 +139,9 @@ func Handler(o Options) http.Handler {
 		}()
 		path := r.URL.EscapedPath()
 		method := r.Method
+		if handlePublication(o, w, r, path) {
+			return
+		}
 		if handleReview(o, w, r, path) {
 			return
 		}
